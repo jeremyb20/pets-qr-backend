@@ -6,8 +6,7 @@
     "npm": "7.13.0"
   },
   "scripts": {
-    "start": "nodemon app.js",
-    "build": "npm run build --prod"
+    "start": "nodemon app.js"
   },
   "private": true,
   "dependencies": {
