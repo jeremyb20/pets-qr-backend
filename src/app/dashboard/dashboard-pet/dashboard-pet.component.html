@@ -1,0 +1,526 @@
+<div id="dashboard-pet" class="p-1 no-gutters justify-content-between mb-4 align-items-center mt-3">
+    <div class="container-fluid" *ngIf="profile">
+        <div class="row">
+            <div class="col-sm">
+              <h5 class="page-heading"> <i class="fa fa-paw" aria-hidden="true"></i>  Bienvenido a tu perfil {{profile.petName}}!</h5>
+              <div class="dropdown mb-3">
+                <button class="btn btn-success dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-plus mt-1 mr-3"></i> Más
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                  <a class="dropdown-item" (click)="newPetRegister()"><i class="fa fa-paw mt-1 mr-3"></i> Añadir Can</a>
+                  <!-- <a class="dropdown-item" href="#"><i class="fa fa-user mt-1 mr-3"></i> Añadir Familiar</a> -->
+                  <a class="dropdown-item" (click)="changeProfilePet()"><i class="fa fa-edit mt-1 mr-3"></i> Cambiar Perfil</a>
+                  <a class="dropdown-item" (click)="deleteProfilePet()"><i class="fa fa-trash mt-1 mr-3"></i> Eliminar Perfil</a>
+
+                  <!-- <a class="dropdown-item" href="#"></a> -->
+                </div>
+              </div>
+            </div>
+            <!-- <div *ngIf="profile.code.length > 0" class="col-sm">
+                <div class="alert error-message text-center" *ngIf="profile.code.length > 0" [ngClass]="{'alert-dark': profile.code[0].status == 'Ordenando','alert-info': profile.code[0].status == 'Pendiente', 'alert-primary': profile.code[0].status == 'Preparando', 'alert-warning': profile.code[0].status == 'Entrega', 'alert-success': profile.code[0].status == 'Recibido'}">
+                    <i class="fa fa-paw mt-1 mr-3"></i> <strong class="text-center">QR status: {{ profile.code[0].status }}</strong>
+                </div>
+              </div> -->
+            <div class="col-sm">
+                <div class="row">
+                    <div class="col-6" >
+                        <!-- <button [disabled]="code == 'Ordenando' || code == 'Pendiente' || code == 'Preparando' || code == 'Enviado' || code == 'Recibido'" (click)="generateQrCode()" type="submit" class="btn btn-yellow btn-sm col-12 float-right mb-2"> -->
+                        <!-- <button (click)="goShopping()" type="submit" class="btn btn-yellow btn-sm col-12 float-right mb-2">
+                          <i class="fas fa-cart-plus"></i>
+                          Mi Carrito
+                        </button> -->
+                    </div>
+                    <div class="col-12">
+                        <button (click)="goToProfile()" class="btn btn-yellow btn-sm col-12 float-right mb-2">	
+                            <i class="fas fa-eye"></i> Ver como
+                        </button>
+                    </div>
+                 </div>
+            </div>
+          </div>
+
+        <div class="row no-gutters">
+            <div class="col-xs-12 col-12 col-sm-4 col-md-4 col-lg-4">
+                <div class="userProfileInfo p-2" [ngClass]="{'p-4': Media.IsMobile, 'userProfileInfobg-normal': profile.petStatus != 'Perdido', 'userProfileInfobg-red': profile.petStatus == 'Perdido' }">
+                    <div class="image text-center">
+                        <img class="w-100 h-100" style="border-radius: 15px; max-height: 700px; max-width: 500px;" src="{{profile.photo}}" alt="{{profile.photo}}">
+                        <a (click)="updatePhoto()" class="editImage">
+                            <i class="fa fa-camera"></i>
+                        </a>
+                    </div>
+                    <div class="box mt-5">
+                        <div>
+                            <button (click)="reportProfile()" class="btn w-100 btn-danger"><img style="height: 30px; width: 30px;" alt="{{profile.photo}}" src="https://cdn2.iconfinder.com/data/icons/cute-husky-emoticon/512/husky_emoji_sad-512.png"> Reportar perfil de {{profile.petName}} </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-12 col-12 col-sm-8 col-md-8 col-lg-8 p-2">
+                <div class="card-deck">
+                    <div *ngIf="profile.ownerPetName" class="card">
+                        <div class="card-body">
+                            <span class="card-title"><i class="fa fa-user"></i> Propietari@</span>
+                            <p class="card-text">{{profile.ownerPetName}}</p>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.phone" class="card">
+                        <div class="card-body">
+                            <span class="card-title"><i class="fa fa-phone fa-flip-horizontal"></i> Teléfono</span>
+                            <p class="card-text">{{profile.phone}}</p>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.email" class="card">
+                        <div class="card-body">
+                            <span class="card-title"><i class="fa fa-envelope"></i> Email</span>
+                            <p class="card-text" >{{profile.email}}</p>
+                        </div>
+                    </div>
+                </div> 
+                <div class="card-deck">
+                    <div *ngIf="profile.age" class="card">
+                        <div class="card-body">
+                            <span class="card-title"> Edad</span>
+                            <p class="card-text">{{profile.age}} años</p>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.address" class="card">
+                        <div class="card-body">
+                            <span class="card-title">Direción de habitación</span>
+                            <p class="card-text" >{{profile.address}}</p>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.favoriteActivities" class="card">
+                        <div class="card-body">
+                            <span class="card-title"> Actividades Favoritas</span>
+                            <p class="card-text">{{profile.favoriteActivities}}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-deck">
+                    <div *ngIf="profile.healthAndRequirements" class="card">
+                        <div class="card-body">
+                            <span class="card-title">Salud y Cuidados</span>
+                            <p class="card-text" >{{profile.healthAndRequirements}}</p>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.veterinarianContact" class="card">
+                        <div class="card-body">
+                            <span class="card-title"> Nombre Veterinario</span>
+                            <p class="card-text">{{profile.veterinarianContact}}</p>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.phoneVeterinarian" class="card">
+                        <div class="card-body">
+                            <span class="card-title"> Teléfono Veterinario</span>
+                            <p class="card-text">{{profile.phoneVeterinarian}}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-deck">
+                    <div *ngIf="profile.linkTwitter" class="card">
+                        <div class="card-body">
+                            <a *ngIf="profile.linkTwitter != ''" target="_blank" href="{{profile.linkTwitter}}" class="btn btn-block btn-twitter"> <i class="fab fa-twitter"></i> Link Twitter</a>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.linkFacebook" class="card">
+                        <div class="card-body">
+                            <a *ngIf="profile.linkFacebook != ''" target="_blank" href="{{profile.linkFacebook}}" class="btn btn-block btn-facebook"> <i class="fab fa-facebook-f"></i> Link facebook</a>
+                        </div>
+                    </div>
+                    <div *ngIf="profile.linkInstagram" class="card">
+                        <div class="card-body">
+                            <a *ngIf="profile.linkInstagram != ''" target="_blank" href="{{profile.linkInstagram}}" class="btn btn-block btn-instagram"> <i class="fab fa-instagram"></i> Link instagram</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  <div class="modal fade" id="updatePhotoModal" tabindex="-1" role="dialog" aria-labelledby="updatePhotoModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="updatePhotoModal">Actualiza foto perfil</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="updatePhotoSubmit()">
+            <div class="form-group mb-1 text-center">
+                <label class="font-weight-bold">Foto:</label>
+                <input #photoinput type="file" name="image" accept="image/*" class="d-none"
+                  (change)="processFile($event)">
+                <img [src]="photoSelected || '../../../assets/upload.png'" alt="" style="height: 66px;" class="img-fluid" (click)="photoinput.click()" srcset="">
+            </div>
+  
+              <div class="modal-footer text-center">
+                <button type="button" class="btn btn-secondary float-left mr-auto" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary float-right">
+                  <i *ngIf="!loading" class="fas fa-edit"></i>
+                  <svg *ngIf="loading" class="loader" viewBox="0 0 24 24">
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                    </svg>
+                  Actualizar
+                </button>
+              </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="profile" class="modal fade" id="reportProfileModal" tabindex="-1" role="dialog" aria-labelledby="reportProfileModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="reportProfileModal">Reportar a {{profile.petName}}</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <div class="row no-gutters">
+                <ng-select [searchable]="false" (change)="changeLeagueOwner(petStatusInfo)" [(ngModel)]="petStatusInfo" [clearable]="false" class="rounded-0 flex-fill" id="inputGroupSelect01">
+                    <ng-option *ngFor="let item of FilteredPetStatus" [value]="item.Id">
+                        <span class="ng-option-label">{{ item.Name }}</span>
+                    </ng-option>
+                </ng-select>   
+            </div>
+          <form class="form mt-3" *ngIf="showReportForm" [formGroup]="newLostPetForm" (ngSubmit)="sendPetStatusLost()" >
+            <div class="form-group">
+                <label for="exampleInputEmail1">Último lugar visto</label>
+                <input type="text" formControlName="lastPlaceLost" class="form-control" placeholder="" [ngClass]="{ 'is-invalid': submitted && h.lastPlaceLost.errors }" />
+                <div *ngIf="submitted && h.lastPlaceLost.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && h.lastPlaceLost.errors }">
+                    <div *ngIf="h.lastPlaceLost.errors.required">Nuevo titulo es requerido</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="exampleInputPassword1">Día que se perdió</label>
+                <input type="date" id="datefield" formControlName="date" min="today" class="form-control" [ngClass]="{ 'is-invalid': submitted && h.date.errors }" />
+                <div *ngIf="submitted && h.date.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && h.date.errors }">
+                    <div *ngIf="h.date.errors.required">Dia que se perdio es requerido</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="exampleFormControlTextarea1">Describa como fué que se perdió</label>
+                <textarea class="form-control" formControlName="descriptionLost" placeholder="Esto nos ayudara para informar en el sitio" class="form-control" [ngClass]="{ 'is-invalid': submitted && h.descriptionLost.errors }"></textarea>
+                <div *ngIf="submitted && h.descriptionLost.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && h.descriptionLost.errors }">
+                    <div *ngIf="h.descriptionLost.errors.required">Descripcion es requerido</div>
+                </div>
+            </div>
+
+              <div class="modal-footer text-center">
+                <button type="button" class="btn btn-secondary float-left mr-auto" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary float-right">
+                  <i *ngIf="!loading" class="fas fa-edit"></i>
+                  <svg *ngIf="loading" class="loader" viewBox="0 0 24 24">
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                    </svg>
+                  Enviar reporte
+                </button>
+              </div>
+          </form>
+          <div *ngIf="!showReportForm">
+            <div class="modal-footer text-center">
+                <button type="button" class="btn btn-secondary float-left mr-auto" data-dismiss="modal">Cancelar</button>
+                <button (click)="updateReportStatus()" type="submit" class="btn btn-primary float-right">
+                  <i *ngIf="!loading" class="fas fa-edit"></i>
+                  <svg *ngIf="loading" class="loader" viewBox="0 0 24 24">
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                    </svg>
+                  Actualizar Status
+                </button>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  
+  <div class="modal fade" id="newPetModal" tabindex="-1" role="dialog" aria-labelledby="newPetModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="newPetModal">Agregar nuevo can</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="text-danger">En caso de no tener veterinario puede agregar "No tengo" y el teléfono "88888888"</p>
+            <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+                <div class="form-group input-group col-12">
+                    <span class="mr-3"> <i class="fa fa-paw" aria-hidden="true"></i>  Género del can  </span>
+                    <ng-select [searchable]="false" formControlName="genderSelected" class=" form-control rounded-0 " id="inputGroupSelect01" [clearable]="false" [ngClass]="{ 'is-invalid': submitted && i.genderSelected.errors }">
+                        <ng-option *ngFor="let item of bussinesType" [value]="item.Id">{{item.gender}}</ng-option>
+                    </ng-select>
+                    <div *ngIf="submitted && i.genderSelected.errors" class="invalid-feedback">
+                        <div *ngIf="i.genderSelected.errors.required">Tipo de género es requerido</div>
+                    </div>
+                  </div>
+                <div class="form-group input-group col-12">
+                    <span class="mr-3"> <i class="fa fa-paw" aria-hidden="true"></i>  Nombre del can  </span>
+                    <input type="text" formControlName="petName" class="form-control" placeholder="Nombre del can" [ngClass]="{ 'is-invalid': submitted && i.petName.errors }" />
+                    <div *ngIf="submitted && i.petName.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.petName.errors }">
+                        <div *ngIf="i.petName.errors.required">Nombre del can es requerido</div>
+                    </div>
+                </div>
+
+                <!-- <div class="form-group input-group col-12">
+                    <span class="mr-3"><i class="fa fa-envelope"></i> Correo </span>
+                    <input  type="text" formControlName="email" class="form-control" placeholder="Email del can" [ngClass]="{ 'is-invalid': submitted && i.email.errors }" />
+                    <div *ngIf="submitted && i.email.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.email.errors }">
+                        <div *ngIf="i.email.errors.required">Nombre del can es requerido</div>
+                    </div>
+                </div> -->
+
+                <div class="form-group input-group col-12">
+                    <span class="mr-3"><i class="fa fa-user" aria-hidden="true"></i> Nombre del Dueño </span>
+                    <input type="text" formControlName="ownerPetName" class="form-control" placeholder="Nombre del Dueño" [ngClass]="{ 'is-invalid': submitted && i.ownerPetName.errors }" />
+                    <div *ngIf="submitted && i.ownerPetName.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.ownerPetName.errors }">
+                        <div *ngIf="i.ownerPetName.errors.required">Dueño del can es requerido</div>
+                    </div>
+                </div>
+
+                <div class="form-group input-group col-12">
+                    <span class="mr-3"><i class="fa fa-phone fa-flip-horizontal"></i> Teléfono </span>
+                    <input formControlName="phone" pattern="\d*" class="form-control" placeholder="Telefono " maxlength="8" [ngClass]="{ 'is-invalid': submitted && i.phone.errors }" />
+                    <div *ngIf="submitted && i.phone.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.phone.errors }">
+                        <div *ngIf="i.phone.errors.required">Teléfono es requerido</div>
+                        <div *ngIf="i.phone.errors.minlength">Teléfono debe ser al menos 8 digitos</div>
+                        <div *ngIf="i.phone.errors.pattern">Solo se permiten numeros</div>
+                    </div>
+                </div> 
+
+                <div class="form-group input-group col-12">
+                    <span *ngIf="Media.IsMobile" class="mr-3"><i class="fa fa-calendar"></i> Nacimiento can </span>
+                    <span *ngIf="!Media.IsMobile" class="mr-3"><i class="fa fa-calendar"></i> Fecha de nacimiento del can </span>
+                    <input type="date" rel="txtTooltip" title="Fecha de nacimiento del can" data-toggle="tooltip" data-placement="top" formControlName="birthDate" min="today" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.birthDate.errors }" />
+                    <div *ngIf="submitted && i.birthDate.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.birthDate.errors }">
+                        <div *ngIf="i.birthDate.errors.required">Fecha de cumpleaños es requerido</div>
+                    </div>
+                </div>  
+
+                <div class="form-group input-group col-12">
+                    <span class="mr-3"><i class="fas fa-birthday-cake"></i> Edad del can </span>
+                    <input type="text" rel="txtTooltip" title="Edad del can" data-toggle="tooltip" data-placement="top" formControlName="age" class="form-control" placeholder="Edad del can" [ngClass]="{ 'is-invalid': submitted && i.age.errors }" />
+                    <div *ngIf="submitted && i.age.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.age.errors }">
+                        <div *ngIf="i.age.errors.required">Edad del can es requerido</div>
+                    </div>
+                </div>
+
+                <div class="form-group input-group col-12">
+                    <span class="mr-3"><i class="fas fa-address-book"></i> Nombre del veterinario o local </span>
+                    <input type="text" formControlName="veterinarianContact" placeholder="Nombre del veterinario o local" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.veterinarianContact.errors }" />
+                    <div *ngIf="submitted && i.veterinarianContact.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.veterinarianContact.errors }">
+                        <div *ngIf="i.veterinarianContact.errors.required">Nombre del veterinario o local es requerido</div>
+                    </div>
+                  </div>
+                <div class="form-group input-group col-12">
+                    <span class="mr-3"><i class="fa fa-phone fa-flip-horizontal"></i> Teléfono Veterinario </span>
+                    <input formControlName="phoneVeterinarian" pattern="\d*" class="form-control" placeholder="Teléfono Veterinario" maxlength="8" [ngClass]="{ 'is-invalid': submitted && i.phoneVeterinarian.errors }" />
+                    <div *ngIf="submitted && i.phoneVeterinarian.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.phoneVeterinarian.errors }">
+                        <div *ngIf="i.phoneVeterinarian.errors.required">Teléfono es requerido</div>
+                        <div *ngIf="i.phoneVeterinarian.errors.minlength">Teléfono debe ser al menos 8 digitos</div>
+                        <div *ngIf="i.phoneVeterinarian.errors.pattern">Solo se permiten numeros</div>
+                    </div>
+                </div> 
+
+                <!-- <div class="form-row">
+                    <div class="form-group input-group col-4">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text"> <i class="fab fa-twitter"></i> </span>
+                        </div>
+                        <input type="text" formControlName="linkTwitter" placeholder="Link de Twitter" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.linkTwitter.errors }" />
+                        <div *ngIf="submitted && i.linkTwitter.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.linkTwitter.errors }">
+                            <div *ngIf="i.linkTwitter.errors.required">Link de Twitter es requerido</div>
+                        </div>
+                      </div>
+                    <div class="form-group input-group col-4">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text"> <i class="fab fa-facebook-f"></i> </span>
+                        </div>
+                        <input type="text" formControlName="linkFacebook" placeholder="Link de Facebook" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.linkFacebook.errors }" />
+                        <div *ngIf="submitted && i.linkFacebook.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.linkFacebook.errors }">
+                            <div *ngIf="i.linkFacebook.errors.required">Link de Facebook es requerido</div>
+                        </div>
+                    </div> 
+                    <div class="form-group input-group col-4">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text"> <i class="fab fa-instagram"></i></span>
+                        </div>
+                        <input type="text" formControlName="linkInstagram" placeholder="Link de instagram" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.linkInstagram.errors }" />
+                        <div *ngIf="submitted && i.linkInstagram.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.linkInstagram.errors }">
+                            <div *ngIf="i.linkInstagram.errors.required">Link de instagram es requerido</div>
+                        </div>
+                    </div>  
+                </div> -->
+
+                <div class="form-group">
+                    <label for="exampleFormControlTextarea1">Dirección exacta</label>
+                    <textarea class="form-control" formControlName="address" placeholder="" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.address.errors }"></textarea>
+                    <div *ngIf="submitted && i.address.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.address.errors }">
+                        <div *ngIf="i.address.errors.required">Dirección exacta es requerido</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="exampleFormControlTextarea1">Necesidades y requisitos de salud y dieta</label>
+                    <textarea class="form-control" formControlName="healthAndRequirements" placeholder="" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.healthAndRequirements.errors }"></textarea>
+                    <div *ngIf="submitted && i.healthAndRequirements.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.healthAndRequirements.errors }">
+                        <div *ngIf="i.healthAndRequirements.errors.required">Contacto veterinario es requerido</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="exampleFormControlTextarea1">Actividades / juguetes / golosinas favoritas</label>
+                    <textarea class="form-control" formControlName="favoriteActivities" placeholder="" class="form-control" [ngClass]="{ 'is-invalid': submitted && i.favoriteActivities.errors }"></textarea>
+                    <div *ngIf="submitted && i.favoriteActivities.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && i.favoriteActivities.errors }">
+                        <div *ngIf="i.favoriteActivities.errors.required">Contacto veterinario es requerido</div>
+                    </div>
+                </div>
+               
+                 <div class="form-group mb-1 text-center">
+                   <label class="font-weight-bold">Foto:</label>
+                   <input #photoinput type="file" name="image" accept="image/*" class="d-none"
+                     (change)="processFile($event)">
+                   <img [src]="photoSelected || '../../../assets/upload.png'" alt="" style="height: 66px;" class="img-fluid" (click)="photoinput.click()" srcset="">
+                 </div>
+                   <div class="form-group mb-1">
+                       <div class="form-group text-center col">
+                           <label class="font-weight-bold ">Mostrar ubicación exacta de la vivienda del can</label>
+                           <div class="map" style="width:100%;height:35vh" #map>
+                               <agm-map [style.height.px]="map.offsetHeight" [latitude]="lat" [styles]="currentTimer" [longitude]="lng" [zoom]="zoom" [scrollwheel]="true" [zoomControl]="true" (mapClick)="mapClickedNewPet($event)" [disableDefaultUI]="false">
+                             
+                                 <agm-marker style="border-radius: 50%;" *ngFor="let m of markersNewPet; let i = index" [latitude]="m.lat" [longitude]="m.lng" [label]="m.label" [agmFitBounds]="true" [iconUrl]="{url:m.photo, scaledSize:{height:45, width:40, radius:5}}">
+                                     
+                                   <agm-info-window  #infowindow [isOpen]="showInfoNewPet" >
+                                     <h6>Es tu ubicación actual?</h6>
+                                     <p>Si no es la ubicación puedes cambiarla haciendo click</p>
+                                     <button class="btn btn-info btn-sm mr-1" (click)="changePositionNewPet(m)" >Cambiar</button>
+                                     <button class="btn btn-success btn-sm" (click)="savePositionNewPet()" >Guardar</button>
+                                   </agm-info-window>
+                                 </agm-marker>
+                               </agm-map>
+                             </div>
+                             <div class="container">
+                               <div class="text-center well">
+                                 <!-- <div class="pt-2 pr-0 pl-0"> <button class="btn btn-info btn-sm" (click)="setCurrentNewPosition()">Mi Ubicación Actual</button></div> -->
+                             </div>
+                           </div>
+                       </div>
+                   </div>
+                 <div class="form-group">
+                     <button type="submit" class="btn btn-yellow btn-block"> <i *ngIf="!loading" class="fas fa-plus-circle"></i>
+                       <svg *ngIf="loading" class="loader" viewBox="0 0 24 24">
+                         <circle class="loader__value" cx="12" cy="12" r="10" />
+                         <circle class="loader__value" cx="12" cy="12" r="10" />
+                         <circle class="loader__value" cx="12" cy="12" r="10" />
+                         <circle class="loader__value" cx="12" cy="12" r="10" />
+                         <circle class="loader__value" cx="12" cy="12" r="10" />
+                         <circle class="loader__value" cx="12" cy="12" r="10" />
+                       </svg>
+                       Crear Perfil
+                     </button>
+                 </div>                                                                
+               </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal fade" *ngIf="seeAllProfile" id="changeProfileModal" tabindex="-1" role="dialog" aria-labelledby="changeProfileModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="changeProfileModal">Cambiar de perfil</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <div class="container">
+                <div class="row">
+                  <div class="col-12 col-sm-12 card-wrapper">
+                    <div class="card border-0">
+                      <div class="position-relative rounded-circle overflow-hidden mx-auto custom-circle-image">
+                        <img class="w-100 h-100" src="{{photoPrincipalPet}}" alt="{{photoPrincipalPet}}">
+                      </div>
+                      <div class="card-body text-center mt-4">
+                        <a (click)="profileSelected(1)" class="btn btn-inverse btn-sm">Perfil principal
+                            <i class="fas fa-paw ml-2"></i>
+                        </a>  
+                      </div>
+                    </div>
+                  </div>
+            
+                  <div *ngFor="let item of seeAllProfile" class="col-6 col-sm-6 col-lg-6 col-xl-6 card-wrapper" style="width: 18rem;">
+                    <div class="card border-0">
+                      <div class="position-relative rounded-circle overflow-hidden mx-auto custom-circle-image">
+                        <img class="w-100 h-100" src="{{item.photo}}" alt="Card image cap">
+                      </div>
+                      <div class="card-body text-center mt-4">
+                        <a (click)="profileSelected(item)" class="btn btn-inverse btn-sm">{{item.petName}}
+                            <i class="fas fa-paw ml-2"></i>
+                        </a>
+                      </div>
+                    </div>
+                  </div>    
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+<div class="modal fade" *ngIf="seeAllProfile" id="deleteProfileModal" tabindex="-1" role="dialog" aria-labelledby="deleteProfileModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" id="deleteProfileModal">Eliminar perfil</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <div class="container">
+              <div class="row">
+                <div *ngFor="let item of seeAllProfile" class="col-6 col-sm-6 col-lg-6 col-xl-6 card-wrapper" style="width: 18rem;">
+                  <div class="card border-0">
+                    <div class="position-relative rounded-circle overflow-hidden mx-auto custom-circle-image">
+                      <img class="w-100 h-100" src="{{item.photo}}" alt="Card image cap">
+                    </div>
+                    <div class="card-body text-center mt-4">
+                      <a (click)="profileDeleteSelected(item)" class="btn btn-inverse btn-sm">Eliminar {{item.petName}}
+                          <i class="fas fa-trash ml-2"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>    
+              </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>

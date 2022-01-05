@@ -1,0 +1,27 @@
+<div class="row no-gutters p-2">
+    <div class="col-12 text-center">
+        <h4>Ubicación de vivienda</h4>
+    </div>
+    <div class="map col-12" style="width:100%;height:75vh" #map>
+      <agm-map [style.height.px]="map.offsetHeight" [latitude]="lat" [styles]="currentTimer" [longitude]="lng" [zoom]="zoom" [scrollwheel]="true" [zoomControl]="true" (mapClick)="mapClicked($event)" [disableDefaultUI]="false">
+    
+        <agm-marker style="border-radius: 50%;" *ngFor="let m of markers; let i = index" [latitude]="m.lat" [longitude]="m.lng" [label]="m.label" [agmFitBounds]="true" [iconUrl]="{url:m.photo, scaledSize:{height:45, width:40, radius:5}}">
+            
+          <agm-info-window *ngIf="showInfo" #infowindow [isOpen]="showInfo" >
+            <h5>Es tu vivienda actual?</h5>
+            <p>Si no es la vivienda puedes cambiarla haciendo click</p>
+            <button class="btn" (click)="changePosition(m)" >Cambiar vivienda</button>
+            <button class="btn btn-success" (click)="savePosition()" >Guardar vivienda</button>
+          </agm-info-window>
+          
+        </agm-marker>
+      
+        <agm-direction *ngIf="generate" [renderOptions]="renderOptions" [markerOptions]="markerOptions" [origin]="origin" [destination]="destination"></agm-direction>
+      </agm-map>
+    </div>
+    <div class="container">
+        <div class="btn-toolbar text-center well">
+            <div class="col-12 pt-2 pr-0 pl-0"> <button class="btn btn-info btn-sm" (click)="setCurrentPosition()"> Ubicación Actual</button></div>
+        </div>
+  </div>
+</div>

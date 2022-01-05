@@ -1,0 +1,146 @@
+<div *ngIf="eventsCalendar" class="userProfileContent text-center">
+    <h5 class="mt-3">Mis eventos</h5>
+    <div class="row no-gutters p-3">
+        <div *ngFor="let item of eventsCalendar" class="col-sm-4 col-md-4 col-lg-4 mt-4">
+            <div class="card box p-3">
+                <div class="card-block">
+                    <h6 class="card-title text-center col-12"><i class="fas fa-list"></i> {{ item.title }}</h6>
+                    <p class="card-text">Comienza: {{item.date}}</p>
+                    <p class="card-text"> Termina: {{item.enddate}} </p>
+                    <div class="card-text">
+                       Descripcion: {{item.description}}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-block btn-inverse btn-sm" (click)="editCalendar(item)" type="submit">Editar</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-5" *ngIf="eventsCalendar.length == 0">
+            <div class="card box p-5">
+                <div class="card-block">
+                    <h6 class="card-title text-center col-12"><i class="fas fa-list"></i> </h6>
+                    <div class="card-text">
+                        No hay eventos favor de ir a calendario para agregar uno
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a class="nav-link " [routerLink]="'/calendar-pets'" id="nav-about-tab" data-toggle="tab" href="#nav-about" role="tab" aria-controls="nav-about" aria-selected="true"><i class="fas fa-calendar-alt"></i> Calendario</a>
+                </div>
+            </div>
+        </div>
+    </div> 
+</div>
+
+<div class="modal fade" id="newCalendarEventModal" tabindex="-1" role="dialog" aria-labelledby="newCalendarEventModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 *ngIf="isNewEvent" class="modal-title" id="newCalendarEventModal">Nuevo Evento</h5>
+          <h5 *ngIf="!isNewEvent" class="modal-title" id="newCalendarEventModal">Editar Evento</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form *ngIf="isNewEvent" [formGroup]="newEventForm" (ngSubmit)="newEventCalendarSubmit()">
+            <div class="form-group input-group col-12">
+                <span class="mr-3"> <i class="fa fa-paw" aria-hidden="true"></i>  Nombre del evento  </span>
+                <input type="text" formControlName="title" class="form-control" placeholder="" [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
+                <div *ngIf="submitted && f.title.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.title.errors }">
+                    <div *ngIf="f.title.errors.required">Nuevo titulo es requerido</div>
+                </div>
+            </div>
+
+            <div class="form-group input-group col-12">
+                <span class="mr-3"><i class="fa fa-envelope"></i> Fecha de inicio </span>
+                <input type="date" formControlName="date" min="today" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.date.errors }" />
+                <div *ngIf="submitted && f.date.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.date.errors }">
+                    <div *ngIf="f.date.errors.required">Fecha de Inicio es requerido</div>
+                </div>
+            </div>
+
+            <div class="form-group input-group col-12">
+                <span class="mr-3"><i class="fa fa-envelope"></i> Fecha Final </span>
+                <input type="date" formControlName="enddate" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.enddate.errors }" />
+                <div *ngIf="submitted && f.enddate.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.enddate.errors }">
+                    <div *ngIf="f.enddate.errors.required">Fecha de Final es requerido</div>
+                </div>
+            </div>
+            
+            <div class="form-group input-group col-12">
+                <span class="mr-3"> <i class="fa fa-paw" aria-hidden="true"></i>  Descripción del evento  </span>
+                <textarea class="form-control" formControlName="description" placeholder="" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.description.errors }"></textarea>
+                <div *ngIf="submitted && f.description.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.description.errors }">
+                    <div *ngIf="f.description.errors.required">Descripcion es requerido</div>
+                </div>
+            </div>
+            <div class="modal-footer text-center">
+                <button type="button" class="btn btn-secondary float-left mr-auto" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary float-right">
+                  <i *ngIf="!loading" class="fas fa-plus-circle"></i>
+                  <svg *ngIf="loading" class="loader" viewBox="0 0 24 24">
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                    </svg>
+                  Agregar
+                </button>
+              </div>
+          </form>
+          <form *ngIf="!isNewEvent" [formGroup]="newEventForm" (ngSubmit)="updateEventCalendarSubmit()">
+            <div class="form-group input-group col-12">
+                <span class="mr-3"> <i class="fa fa-paw" aria-hidden="true"></i>  Nombre del evento  </span>
+                <input type="text" formControlName="title" class="form-control" placeholder="" [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
+                <div *ngIf="submitted && f.title.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.title.errors }">
+                    <div *ngIf="f.title.errors.required">Nuevo titulo es requerido</div>
+                </div>
+            </div>
+
+            <div class="form-group input-group col-12">
+                <span class="mr-3"><i class="fa fa-envelope"></i> Fecha de inicio </span>
+                <input type="date" formControlName="date" min="today" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.date.errors }" />
+                <div *ngIf="submitted && f.date.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.date.errors }">
+                    <div *ngIf="f.date.errors.required">Fecha de Inicio es requerido</div>
+                </div>
+            </div>
+
+            <div class="form-group input-group col-12">
+                <span class="mr-3"><i class="fa fa-envelope"></i> Fecha Final </span>
+                <input type="date" formControlName="enddate" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.enddate.errors }" />
+                <div *ngIf="submitted && f.enddate.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.enddate.errors }">
+                    <div *ngIf="f.enddate.errors.required">Fecha de Final es requerido</div>
+                </div>
+            </div>
+            
+            <div class="form-group input-group col-12">
+                <span class="mr-3"> <i class="fa fa-paw" aria-hidden="true"></i>  Descripción del evento  </span>
+                <textarea class="form-control" formControlName="description" placeholder="" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.description.errors }"></textarea>
+                <div *ngIf="submitted && f.description.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.description.errors }">
+                    <div *ngIf="f.description.errors.required">Descripcion es requerido</div>
+                </div>
+            </div>
+  
+              <div class="modal-footer text-center">
+                <button type="button" class="btn btn-secondary float-left mr-auto" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary float-right">
+                  <i *ngIf="!loading" class="fas fa-edit"></i>
+                  <svg *ngIf="loading" class="loader" viewBox="0 0 24 24">
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                    </svg>
+                  Actualizar
+                </button>
+              </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>

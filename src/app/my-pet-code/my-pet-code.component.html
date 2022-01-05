@@ -1,0 +1,297 @@
+<div *ngIf="profile" id="myPetProfile" class="scroll" [ngClass]="{'bg-red':profile.petStatus ==  'Perdido', 'bg-normal': profile.petStatus !=  'Perdido' }" (scroll)="divScroll($event, false)">
+      <nav *ngIf="!hideMenu" class="navbar fixed-top navbar-expand-lg navbar-dark mb-5" [ngClass]="{'scrolled': !isShow, 'scrolling-navbar': isShow, 'top-nav-collapse': isShow}">
+        <div class="container">
+      
+          <!-- Brand -->
+          <a class="navbar-brand" [routerLink]="'/home'">
+            <img height="50px" src="https://res.cloudinary.com/ensamble/image/upload/v1613153301/logopets_uyf4xq.png" alt="LocalPetsAndFamilyLogo">
+          </a>
+      
+          <!-- Collapse -->
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+      
+          <!-- Links -->
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      
+            <!-- Left -->
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item">
+                <a class="nav-link" [routerLink]="'/login-pets'">Iniciar sesión</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" [routerLink]="'/register-pets'">Registrarse</a>
+              </li>
+      
+              <li class="nav-item">
+                <a class="nav-link" (click)="customerServicePopup()">Servicio al cliente</a>
+              </li>
+            </ul>
+      
+            <!-- Right -->
+            <ul class="navbar-nav nav-flex-icons">
+              <li class="nav-item">
+                <a href="https://www.facebook.com/LocalPetsFamily-115795170546124" class="nav-link" target="_blank">
+                  <i class="fab fa-facebook-f"></i>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="https://wa.me/+50663050037?text=Estoy%20interesad@%20en%20sus%20productos%20necesito%20mas%20informacion" class="nav-link" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                  </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    <div class="container-fluid mx-auto test" [ngClass]="{'margin': !hideMenu}" id="myPetProfile">
+        <div *ngIf="profile">
+            <div class="row no-gutters ">
+                <div class="col-12 col-sm-4 col-md-4 col-lg-4 mb-4" [ngClass]="{'mt-4': Media.IsMobile, 'mt-2': !Media.IsMobile}">
+                    <div class="card hovercard">
+                        <div class="cardheader" [ngStyle]="{'background-image': ' url(' + imageUrl  + ')','background-size': 'cover', 'background-color':'rgba(0, 0, 0, 0.452)', 'background-blend-mode':'multiply',  'height': '335px'}"></div>
+                        <div class="avatar">
+                            <img style="object-fit: cover;" (click)="profileModal(profile.photo)" alt="{{profile.photo}}" src="{{profile.photo}}">
+                        </div>
+                        <div class="card-body">
+                            <h4 class="card-title mt-3">Hola, me llamo {{profile.petName}}</h4>
+                            <div *ngIf="profile.petStatus === 'No-Perdido'" class="meta card-text">
+                                <p class="card-text mb-2">Bienvenid@ a mi perfil</p>
+                            </div>
+                            <div *ngIf="profile.petStatus === 'Perdido'" class="meta card-text">
+                                <span>Creo que me he extraviado de mi hogar, ¿Me puedes ayudar a volver a casa? Mis datos personales son las siguientes:</span>
+                            </div>
+                            <div class="mt-2 mb-2" *ngIf="permissionData && (profile.linkTwitter != 'null' && profile.linkTwitter != 'null' && profile.linkTwitter != 'null')">
+                                <a *ngIf="profile.linkTwitter && permissionData.showLinkTwitter" target="_blank" href="{{profile.linkTwitter}}" class="btn mr-2 btn-twitter"> <i class="fab fa-twitter"></i> </a>
+                                <a *ngIf="profile.linkFacebook && permissionData.showLinkFacebook" target="_blank" href="{{profile.linkFacebook}}" class="btn mr-2 btn-facebook"> <i class="fab fa-facebook-f"></i> </a>
+                                <a *ngIf="profile.linkInstagram && permissionData.showLinkInstagram" target="_blank" href="{{profile.linkInstagram}}" class="btn  btn-instagram"> <i class="fab fa-instagram"></i> </a>
+                            </div> 
+                        </div>
+                        <!-- <div *ngIf="hideMenu" class="card-footer">
+                            <button class="btn btn-danger"><img style="height: 30px; width: 30px;" alt="{{profile.photo}}" src="https://cdn2.iconfinder.com/data/icons/cute-husky-emoticon/512/husky_emoji_sad-512.png"> Reportar perfil de {{profile.petName}} </button>
+                        </div> -->
+                    </div>
+                </div>
+                <div class="col-12 col-sm-8 col-md-8 col-lg-8" *ngIf="permissionData" [ngClass]="{'pt-0 pl-5 pr-5': Media.IsLandscape}">
+                    <div class="card-deck m-2" >
+                        <div *ngIf="profile.ownerPetName" class="card">
+                            <div *ngIf="permissionData.showOwnerPetName">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fa fa-user"></i> Propietari@</h6>
+                                    <p class="card-text">{{profile.ownerPetName}}</p>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <div *ngIf="permissionData.showPhoneInfo && profile.phone" class="card">
+                            <div *ngIf="permissionData.showPhoneInfo">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fa fa-phone fa-flip-horizontal"></i> Teléfono</h6>
+                                    <p class="card-text">{{profile.phone}}</p>
+                                </div>
+                                <div *ngIf="profile.petStatus === 'Perdido'" class="card-footer">
+                                    <p class="card-text"><button (click)="copyInputMessage(profile.phone)" class="btn btn-info btn-sm">Copiar</button>
+                                    </p>
+                                </div>
+                            </div>
+                           
+                        </div>
+                        <div *ngIf="permissionData.showEmailInfo && profile.email" class="card">
+                            <div *ngIf="permissionData.showEmailInfo">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fa fa-envelope"></i> Email</h6>
+                                    <p class="card-text">{{profile.email}}</p>
+                                </div>
+                                <div *ngIf="profile.petStatus === 'Perdido'" class="card-footer">
+                                    <p class="card-text"><button (click)="copyInputMessage(profile.email)" class="btn btn-info btn-sm">Copiar</button>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div> 
+                    <div class="card-deck m-2" >
+                        <div *ngIf="permissionData.showAgeInfo && profile.age" class="card">
+                            <div *ngIf="permissionData.showAgeInfo">
+                                <div class="card-body">
+                                    <h6 class="card-title"> Edad</h6>
+                                </div>
+                                <div class="card-footer">
+                                    <p class="card-text">{{profile.age}} años</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf=" permissionData.showAddressInfo && profile.address" class="card">
+                            <div *ngIf="permissionData.showAddressInfo">
+                                <div class="card-body">
+                                    <h6 class="card-title">Direción de habitación</h6>
+                                    
+                                </div>
+                                <div class="card-footer">
+                                    <p class="card-text">{{profile.address}}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="permissionData.showFavoriteActivities && profile.favoriteActivities" class="card">
+                            <div *ngIf="permissionData.showFavoriteActivities">
+                                <div class="card-body">
+                                    <h6 class="card-title"> Actividades Favoritas</h6>
+                                </div>
+                                <div class="card-footer">
+                                    <p class="card-text">{{profile.favoriteActivities}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-deck m-2" >
+                        <div *ngIf="permissionData.showHealthAndRequirements && profile.healthAndRequirements" class="card">
+                            <div *ngIf="permissionData.showHealthAndRequirements">
+                                <div class="card-body">
+                                    <h6 class="card-title">Salud y Cuidados</h6>
+                                   
+                                </div>
+                                <div class="card-footer">
+                                    <p class="card-text" >{{profile.healthAndRequirements}}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="permissionData.showVeterinarianContact && profile.veterinarianContact" class="card">
+                            <div *ngIf="permissionData.showVeterinarianContact">
+                                <div class="card-body">
+                                    <h6 class="card-title"> Nombre Veterinario</h6>
+                                    
+                                </div>
+                                <div class="card-footer">
+                                    <p class="card-text">{{profile.veterinarianContact}}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="permissionData.showPhoneVeterinarian && profile.phoneVeterinarian" class="card">
+                            <div *ngIf="permissionData.showPhoneVeterinarian">
+                                <div class="card-body">
+                                    <h6 class="card-title"> Teléfono Veterinario</h6>
+                                    <p class="card-text">{{profile.phoneVeterinarian}}</p>
+                                </div>
+                                <div *ngIf="profile.petStatus === 'Perdido'" class="card-footer">
+                                    <p class="card-text"><button (click)="copyInputMessage(profile.phoneVeterinarian)" class="btn btn-info btn-sm">Copiar</button></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-deck m-2" >
+                        <div *ngIf="permissionData.showLocationInfo" class="card">
+                            <div  *ngIf="profile.petStatus === 'No-Perdido'" class="card-body">
+                                <h6 class="card-title"><i class="fas fa-map-marker-alt"></i>  Mi ubicación</h6>
+                                <div class="map" style="width:100%;height:35vh" #map>
+                                    <agm-map [style.height.px]="map.offsetHeight" [latitude]="lat" [styles]="currentTimer" [longitude]="lng" [zoom]="zoom" [scrollwheel]="true" [zoomControl]="true" [disableDefaultUI]="false">
+                                  
+                                      <agm-marker style="border-radius: 50%;" *ngFor="let m of markers; let i = index" [latitude]="m.lat" [longitude]="m.lng" [label]="m.label" [agmFitBounds]="true" [iconUrl]="{url:m.photo, scaledSize:{height:45, width:40, radius:5}}">
+                                          
+                                        <agm-info-window *ngIf="showInfo" #infowindow [isOpen]="showInfo" >
+                                          <h5>Esta es la ubicación de {{profile.petName}}</h5>
+                                        </agm-info-window>
+                                        
+                                      </agm-marker>
+                                    </agm-map>
+                                </div>
+                            </div>
+
+                            <div *ngIf="profile.petStatus === 'Perdido'" class="card-body">
+                                <h6 class="card-title"><i class="fas fa-map-marker-alt"></i>  Mi ubicación</h6>
+                                <div class="map" style="width:100%;height:35vh" #map>
+                                    <agm-map [style.height.px]="map.offsetHeight" [latitude]="lat" [styles]="currentTimer" [longitude]="lng" [zoom]="zoom" [scrollwheel]="true" [zoomControl]="true" [disableDefaultUI]="false">
+                                  
+                                      <agm-marker style="border-radius: 50%;" *ngFor="let m of markers; let i = index" [latitude]="m.lat" [longitude]="m.lng" [label]="m.label" [agmFitBounds]="true" [iconUrl]="{url:m.photo, scaledSize:{height:45, width:40, radius:5}}">
+                                          
+                                        <agm-info-window *ngIf="showInfo" #infowindow [isOpen]="showInfo" >
+                                          <h6>Casita de {{profile.petName}}</h6>
+                                          <button (click)="showPopupMapPetHome()" class="btn btn-info btn-sm">Ir a la casa de {{profile.petName}}</button>
+                                        </agm-info-window>
+                                        
+                                      </agm-marker>
+                                    </agm-map>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="visualization" tabindex="-1" role="dialog" aria-labelledby="visualization" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-body p-1 text-center">
+            <div class="image">
+              <img style="height: 600px; width: 100%; object-fit: cover;" class="img-thumbnail" alt="{{profileUrl}}" src="{{profileUrl}}">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 
+</div>
+
+
+<div class="modal fade" id="showPopupMapPetHome" tabindex="-1" role="dialog" aria-labelledby="showPopupMapPetHome" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="showPopupMapPetHome">Ir a casa</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <div class="row no-gutters">
+                <div class="map col-12" style="width:100%;height:65vh" #map>
+                  <agm-map [style.height.px]="map.offsetHeight" [latitude]="lat" [styles]="currentTimer" [longitude]="lng" [zoom]="zoom" [scrollwheel]="true" [zoomControl]="true" (mapClick)="mapClicked($event)" [disableDefaultUI]="false">
+                
+                    <agm-marker style="border-radius: 50%;" *ngFor="let m of gomarkers; let i = index" [latitude]="m.lat" [longitude]="m.lng" [label]="m.label" [agmFitBounds]="true" [iconUrl]="{url:m.photo, scaledSize:{height:45, width:40, radius:5}}">
+                  
+                      <agm-info-window *ngIf="!m.isDestination" #infowindow [isOpen]="showInfo" >
+                        <h5>Es tu punto Inicial?</h5>
+                        <p>Si no es la Ubicación puedes cambiarla haciendo click</p>
+                        <button class="btn" (click)="changePosition(m)" >Cambiar ubicación</button>
+                        <button class="btn btn-success" (click)="createRoute()" >Ir ahora</button>
+                      </agm-info-window>
+                      
+                    </agm-marker>
+                  
+                    <agm-direction *ngIf="generate" [renderOptions]="renderOptions" [markerOptions]="markerOptions" [origin]="origin" [destination]="destination"></agm-direction>
+                  </agm-map>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="customerServiceModal" tabindex="-1" role="dialog" aria-labelledby="customerServiceModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">Servicio al cliente</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-3 text-center">
+          <p>
+            <i class="fas fa-envelope"></i> Correo: <a>soporte@localpetsandfamily.com</a>
+          </p>
+          <p><i class="fas fa-phone"></i> Telefono: +506 6305 0037</p>
+          <p>
+            <a href="https://wa.me/+50663050037?text=Estoy%20interesad@%20en%20sus%20productos%20necesito%20mas%20informacion" class="nav-link" target="_blank">
+              <i class="fab fa-whatsapp"></i> WhatsApp: +506 6305 0037
+            </a>
+          </p>
+          <p>
+            <a href="https://www.facebook.com/LocalPetsFamily-115795170546124" class="nav-link" target="_blank">
+              <i class="fab fa-facebook-f"></i> LocalPets&Family 
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div> 

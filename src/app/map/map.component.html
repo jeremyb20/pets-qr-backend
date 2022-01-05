@@ -1,0 +1,41 @@
+<!-- Pedir Yummy viaje -->
+
+<div class="row no-gutters">
+    <button class="btn btn-primary float-right mb-2 mt-3 ml-2" type="button" (click)="goBack()"><i class="fas fa-arrow-left"></i> Volver </button>
+    <div class="form-group col-12">
+      <input placeholder="¿A donde vás ?" autocorrect="off" autocapitalize="off" spellcheck="off" type="text" class="form-control" #search [formControl]="searchControl">
+    </div>
+    <div class="map col-12" style="width:100%;height:65vh" #map>
+      <agm-map [style.height.px]="map.offsetHeight" [latitude]="lat" [styles]="currentTimer" [longitude]="lng" [zoom]="zoom" [scrollwheel]="true" [zoomControl]="true" (mapClick)="mapClicked($event)" [disableDefaultUI]="false">
+    
+        <agm-marker style="border-radius: 50%;" *ngFor="let m of markers; let i = index" [latitude]="m.lat" [longitude]="m.lng" [label]="m.label" [agmFitBounds]="true" [iconUrl]="{url:m.photo, scaledSize:{height:45, width:40, radius:5}}">
+            
+          <agm-info-window *ngIf="!m.isDestination" #infowindow [isOpen]="showInfo" >
+            <h5>Es tu ubicación actual?</h5>
+            <p>Si no es la Ubicacion puedes cambiarla haciendo click</p>
+            <button class="btn" (click)="changePosition(m)" >Cambiar ubicación</button>
+            <button class="btn btn-success" (click)="savePosition()" >Guardar ubicación</button>
+          </agm-info-window>
+      
+          <agm-info-window *ngIf="m.isDestination" #infowindow [isOpen]="showInfoFinal" >
+            <h5>Es tu destino final?</h5>
+            <p>Si no es la Ubicación puedes cambiarla haciendo click</p>
+            <p><b>Distancia:</b>{{distance}} <strong>Km</strong></p>
+            <button class="btn" (click)="changePosition(m)" >Cambiar ubicación</button>
+            <button class="btn btn-success" (click)="createRoute()" >Ir ahora</button>
+          </agm-info-window>
+          
+        </agm-marker>
+      
+        <agm-direction *ngIf="generate" [renderOptions]="renderOptions" [markerOptions]="markerOptions" [origin]="origin" [destination]="destination"></agm-direction>
+      </agm-map>
+    </div>
+
+    <div class="container">
+        <div class="btn-toolbar text-center well">
+        <div class="col-6 pt-2 pr-0 pl-0"> <button class="btn btn-info btn-sm" [disabled]="getTrack" (click)="setCurrentPosition()">Mi Ubicación Actual</button></div>
+        <div class="col-6 pt-2 pr-0 pl-0"><button class="btn btn-info btn-sm" [disabled]="getTrack" (click)="getDirection()">Seleccionar destino</button></div>
+    </div>
+    
+    </div>
+  </div>

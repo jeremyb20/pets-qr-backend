@@ -1,0 +1,40 @@
+.panelProfileContent {
+    background-color: rgb(238, 234, 234);
+    padding: 10px;
+
+    .card{
+        border-radius: 4px;
+        background: #fff;
+        box-shadow: 0 10px 20px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06);
+        transition: .3s transform cubic-bezier(.155,1.105,.295,1.12),.3s box-shadow,.3s -webkit-transform cubic-bezier(.155,1.105,.295,1.12);
+        cursor: pointer;
+    }
+    
+    .card:hover{
+        transform: scale(1.05);
+        box-shadow: 0 6px 10px #1976D2, 0 0 6px rgba(0,0,0,.05);
+    }
+    .card {
+        font-size: 1em;
+        overflow: hidden;
+        padding: 0;
+        margin-bottom: 10px;
+        // width: 20rem;
+    }
+    
+    .btn-facebook {
+        background-color: #405D9D;
+        color: #fff;
+    }
+    .btn-twitter {
+        background-color: #42AEEC;
+        color: #fff;
+    }
+    
+    .btn-instagram {
+        color: #fff;
+        background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%);
+        background-color:rgba(0, 0, 0, 0.452);
+        background-blend-mode : multiply;
+    }
+}

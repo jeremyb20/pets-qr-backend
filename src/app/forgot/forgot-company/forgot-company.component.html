@@ -1,0 +1,45 @@
+<div id="forgot-company" class="forgot">
+    <div class="container-fluid">
+      <div class="pt-4">
+         <div class="card bg-light">
+          <article class="card-body mx-auto pt-1" style="max-width: 400px;">
+            <div class="text-center pt-2">
+                <h3><i class="fa fa-lock fa-4x"></i></h3>
+                <h2 class="text-center">Olvido Contraseña?</h2>
+                <p>Puedes cambiar tu Contraseña aqui.</p>
+            </div>
+            <form [formGroup]="forgotCompanyForm" (ngSubmit)="onForgotPasswordCompanySubmit()">
+              <div class="form-group input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text"> <i class="fa fa-envelope"></i> </span>
+                </div>
+                <input type="text" formControlName="email" placeholder="Correo electronico" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
+                <div *ngIf="submitted && f.email.errors" class="invalid-feedback" [ngClass]="{ 'remove-margin text-center': submitted && f.email.errors }">
+                    <div *ngIf="f.email.errors.required">Email es requerido</div>
+                    <div *ngIf="f.email.errors.email">Email debe tener un correo valido</div>
+                </div>
+              </div> 
+                                                
+              <div class="form-group">
+                  <button type="submit" class="btn btn-yellow btn-block"> <i *ngIf="!loading" class="fas fa-plus-circle"></i>
+                    <svg *ngIf="loading" class="loader" viewBox="0 0 24 24">
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                      <circle class="loader__value" cx="12" cy="12" r="10" />
+                    </svg>
+                    Enviar correo
+                  </button>
+              </div>       
+              <p class="text-center">Tiene una cuenta? <a [routerLink]="['/login-pets']">Iniciar sesión</a> </p>  
+              <div *ngIf="hideMsg" class="row no-gutters alert alert-warning error-message text-center mt-2" role="alert">
+                <i class="fas fa-times-circle mt-1 mr-3"></i> <strong class="text-center">{{ ShowMsg }}</strong>
+              </div>                                                               
+            </form>
+          </article>
+        </div> 
+      </div>
+    </div> 
+  </div>

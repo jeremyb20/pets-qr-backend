@@ -1,0 +1,90 @@
+<div id="admin-master" class="p-1 no-gutters justify-content-between mb-4 align-items-center mt-3">
+    <div class="row no-gutters" *ngIf="users">
+      <p>Total de perritos registrados: {{users.length}}</p>
+        <div class="map col-12" [ngClass]="{'IsMobile': Media.IsMobile, 'IsDesktop': !Media.IsMobile}" #map>
+            <agm-map [style.height.px]="map.offsetHeight" [latitude]="lat" [longitude]="lng" [zoom]="zoom" [scrollwheel]="true" [fitBounds]="true" [zoomControl]="true" [disableDefaultUI]="false">
+    
+                <agm-marker style="border-radius: 50%;" *ngFor="let m of users; let i = index" [latitude]="m.lat" [longitude]="m.lng" [agmFitBounds]="true" [iconUrl]="{url:m.photo, scaledSize:{height:45, width:40, radius:5}}">
+                    <agm-info-window>
+                        <div class="row">
+                            <div class="col-12 col-sm-6">
+                                <h3> <i class="fa fa-paw" aria-hidden="true"></i> {{m.petName}}</h3>
+                                <p><span class="font-weight-bold">Estatus:</span> {{m.petStatus}}</p>
+                                <div class="mb-3">
+                                    <img style="height: 200px;" src="{{m.photo}}" alt="m.photo">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <p class="font-weight-bold" *ngIf="m.newPetProfile">
+                                    <span>Hermanos: {{m.newPetProfile.length}}</span>
+                                </p>
+                                <div *ngFor="let n of m.newPetProfile; let i = index" class="mb-2">
+                                    <div id="accordion">
+                                        <div class="card">
+        
+                                            <div class="card-header" (click)="showPanel(n)" role="tab" id="headingTwo">
+                                                <h5 class="mb-0">
+                                                    <a aria-expanded="false">
+                                                        <div style="font-size: 13px;">
+                                                            <span><i class="fas fa-paw"></i> {{n.petName}}</span>
+                                                        </div>
+                                                    </a>
+                                                </h5>
+                                            </div>
+                                            <div id="{{n._id}}" class="collapsible" [@collapse]="n.showPanel" role="tabpanel" aria-labelledby="headingTwo" data-parent="#accordion">
+                                                <div class="card-body">
+                                                    <p><span class="font-weight-bold">Estatus:</span> {{n.petStatus}}</p>
+                                                    <div>
+                                                        <img style="width: 100%;" src="{{n.photo}}" alt="{{n.photo}}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                      </div>
+                                </div>
+                            </div>
+                        </div>
+                    </agm-info-window>
+                </agm-marker>
+              
+              </agm-map>
+        </div>
+
+
+      <!-- <div class="col-xl-9 mt-3 mt-xl-0 mb-3">
+        <div class="card mb-0">
+            <div class="card-body p-2">
+                <h5 class="card-title">Nuevas Ordenes</h5>
+                <div class="row no-gutters">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="ORDER-84534598">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="button">Tomar Orden</button>
+                            </div>
+                        </div>
+                        <span *ngIf="id ===1" class="d-block mt-1">Tu pedido se está Ordenando ahora</span>
+                        <span *ngIf="id ===2" class="d-block mt-1">Tu pedido está Pendiente ahora</span>
+                        <span *ngIf="id ===3" class="d-block mt-1">Tu pedido se está Preparando ahora</span>
+                        <span *ngIf="id ===4" class="d-block mt-1">Tu pedido se está Entregando ahora</span>
+                        <span *ngIf="id ===5" class="d-block mt-1">Tu pedido está Recibido</span>
+                    </div>
+                    <div class="col-md-7 p-0 mt-3 mt-md-0">
+                        <div class="steps">
+                            <ul class="list-unstyled multi-steps">
+                                <li [ngClass]="{'is-active': id === 1, 'position-relative':id ===1 }" (click)="stepTrackOrder(1)"><p><small>Ordenando</small></p></li>
+                                <li [ngClass]="{'is-active': id === 2, 'position-relative':id ===2 }" (click)="stepTrackOrder(2)"><p><small>Pendiente</small></p></li>
+                                <li [ngClass]="{'is-active': id === 3, 'position-relative':id ===3 }" (click)="stepTrackOrder(3)"><p><small>Preparando</small></p></li>
+                                <li [ngClass]="{'is-active': id === 4, 'position-relative':id ===4 }" (click)="stepTrackOrder(4)"><p><small>Entrega</small></p></li>
+                                <li [ngClass]="{'is-active': id === 5, 'position-relative':id ===5 }" (click)="stepTrackOrder(5)"><p><small>Recibido</small></p></li>
+                            </ul>
+                        </div> 
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>  -->
+     
+
+    </div>
+</div>

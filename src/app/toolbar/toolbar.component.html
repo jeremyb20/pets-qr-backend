@@ -1,0 +1,122 @@
+<div class=" toolbar">
+    <nav class="navbar navbar-expand navbar-dark p-0">
+        <a id="menu-toggle" class="navbar-brand">
+            <span class="navbar-toggler-icon"></span>
+        </a>
+        <div *ngIf="!Media.IsMobile" class="button mail" (click)="goHome()" [routerLink]="['/dashboard-pet']" ><i class="fas fa-home"></i></div>
+        <button *ngIf="Media.IsMobile" class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExample02" aria-controls="navbarsExample02" aria-expanded="false" aria-label="Toggle navigation"> 
+            <span class="navbar-toggler-icon"></span> 
+        </button>
+      
+            <!-- Links -->
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul *ngIf="!Media.IsMobile && user.userState != 0" class="navbar-nav mr-auto">
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/profile-pets'"> <i class="fas fa-paw"></i> Perfil</a> </li>
+                    <!-- <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/events-pets'"> <i class="fas fa-calendar-alt"></i> Eventos</a> </li>
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/calendar-pets'"> <i class="fas fa-calendar"></i> Calendario</a> </li> -->
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/location-pets'"> <i class="fas fa-location-arrow"></i> Ubicacion</a> </li>
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/permissions-pets'"><i class="fas fa-lock"></i> Permisos</a> </li>
+                    <!-- <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/shopping-cart'"> <i class="fas fa-cart-plus"></i> Carrito Compras</a> </li> -->
+                </ul>
+
+                <ul *ngIf="!Media.IsMobile && user.userState === 0" class="navbar-nav mr-auto">
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/pets-orders'"> <i class="fas fa-shopping-cart"></i> Ordenes</a> </li>
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/pets-products'"> <i class="fas fa-shopping-bag"></i> Productos</a> </li>
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/events-pets'"> <i class="fas fa-calendar-alt"></i> Eventos</a> </li>
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/calendar-pets'"> <i class="fas fa-calendar"></i> Calendario</a> </li>
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/pets-registered'"> <i class="fas fa-paw"></i> Pets Registrados</a> </li>
+                    <li class="nav-item"> <a class="nav-link-test" [routerLink]="'/pets-qrgenerator'"> <i class="fas fa-qrcode"></i> Generar códigos</a> </li>
+                </ul>
+                <!-- Right -->
+                <ul class="navbar-nav nav-flex-icons">
+                  <li class="nav-item">
+                    <a (click)="isFoo = !isFoo" class="nav-link" target="_blank">
+                        <span *ngIf="isNewMsg > 0"  class="badge badge-danger">{{isNewMsg}}</span>
+                        <i class="fas fa-bell"></i>
+                    </a>
+                  </li>
+                    <!--<li class="nav-item">
+                            <div class="button mail d-none d-lg-block" *ngIf="AllowMailbox" (click)="goMailbox()"><i class="fas fa-envelope"></i><span *ngIf="unreadMails > 0" class="badge">{{unreadMails}}</span></div>
+                        </li> -->
+                  <li class="nav-item">
+                    <a (click)="logout()" class="nav-link" target="_blank">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                  </li>
+                </ul>
+          
+              </div>
+    </nav>
+    <div *ngIf="isFoo" class="dropdown-menu p-0 dropdown-menu-right dropdown-menu-animated dropdown-lg show" style="overflow-y: scroll;">
+
+        <!-- item-->
+        <div class="sticky-top dropdown-item noti-title bg-dark text-white">
+            <h5 class="m-0">
+                <span class="float-right">
+                </span>Notificaciones ({{notificationsData.length}})
+            </h5>
+        </div>
+
+        <div class="notifications" [ngClass]="{'showNotify': notificationsData.length > 0, 'hideNotify': notificationsData.length == 0}" >
+            <div *ngFor="let item of notificationsData.slice().reverse()" class="row no-gutters" style=" border-bottom: 1px solid #cbd1d7;" [ngClass]="{'isNewMsg': item.isNewMsg}">
+                <div class="notify-icon col-3 p-1 text-center">
+                    <img src="{{item.photo}}" style="height: 50px; width: 50px;" class="img-fluid rounded-circle" alt="{{item.photo}}">
+                </div>
+                <div class="col-4">
+                    <div class="row no-gutters">
+                        <p class="mb-0 mt-2 mr-1"><small>{{item.message}}</small></p>
+                        <div class="col-6">
+                            <small>{{this.getDate(item.dateMsg)}}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3 d-flex align-items-center text-center">
+                    <button *ngIf="item.isNewMsg" (click)="updateNotification(item)" class="btn btn-info btn-sm ml-3">Entendido</button>
+                </div>
+                <div class="col-2 align-items-center text-center mt-4">
+                    <a data-toggle="tooltip"  class="mt-0" data-placement="top" title="Delete" (click)="deleteNotification(item)" data-original-title="Close"><i class="fas fa-trash color-danger"></i></a>
+                </div>
+            </div>
+            <!-- All-->
+            <a *ngIf="notificationsData.length > 0" (click)="showAllNotificationsModal()" class="dropdown-item text-center text-primary notify-item view-all">
+                Ver todos
+            </a>
+            <div *ngIf="notificationsData.length == 0" class="text-center mt-5">
+                <p><i class="fas fa-bell"></i> No tienes niguna notificación</p>
+            </div>
+        </div>
+    </div>
+    <div class="modal modal-qr fade" tabindex="-1" role="dialog" id="showAllnotificationsModal">
+        <div *ngIf="showAllNotifications" class="modal-dialog modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white text-center header-modal" id="exampleModalLabel">
+                    <h5 class="text-center modal-title"><i class="fas fa-paw"></i> Notificaciones totales: ({{showAllNotifications.length}})</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-0">
+                    <div *ngFor="let item of showAllNotifications.slice().reverse()" class="row no-gutters" style=" border-bottom: 1px solid #cbd1d7;" [ngClass]="{'isNewMsg': item.isNewMsg}">
+                        <div class="notify-icon col-3 p-1 text-center">
+                            <img src="{{item.photo}}" style="height: 50px; width: 50px;" class="img-fluid rounded-circle" alt="{{item.photo}}">
+                        </div>
+                        <div class="col-4">
+                            <div class="row no-gutters">
+                                <p class="mb-0 mt-2 mr-1"><small>{{item.message}}</small></p>
+                                <div class="col-6">
+                                    <small>{{this.getDate(item.dateMsg)}}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-3 d-flex align-items-center text-center">
+                            <button *ngIf="item.isNewMsg" (click)="updateNotification(item)" class="btn btn-info btn-sm ml-3">Entendido</button>
+                        </div>
+                        <div class="col-2 align-items-center text-center mt-4">
+                            <a data-toggle="tooltip"  class="mt-0" data-placement="top" title="Delete" (click)="deleteNotification(item)" data-original-title="Close"><i class="fas fa-trash color-danger"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

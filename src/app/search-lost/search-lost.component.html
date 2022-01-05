@@ -1,0 +1,201 @@
+<div class="homeBody homeInitLanding scroll" (scroll)="divScroll($event, false)" id="SearchComponent">
+    <nav class="navbar fixed-top navbar-expand-lg navbar-dark" [ngClass]="{'scrolled': !isShow, 'scrolling-navbar': isShow, 'top-nav-collapse': isShow}">
+        <div class="container">
+      
+          <!-- Brand -->
+          <a class="navbar-brand" [routerLink]="'/home'">
+            <img height="50px" src="https://res.cloudinary.com/ensamble/image/upload/v1613153301/logopets_uyf4xq.png" alt="LocalPetsAndFamilyLogo">
+          </a>
+      
+          <!-- Collapse -->
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+      
+          <!-- Links -->
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      
+            <!-- Left -->
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item">
+                <a class="nav-link" [routerLink]="'/login-pets'">Iniciar sesión</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" [routerLink]="'/register-pets'">Registrarse</a>
+              </li>
+      
+              <li class="nav-item">
+                <a class="nav-link" href="https://mdbootstrap.com/bootstrap-tutorial/">Servicio al cliente</a>
+              </li>
+            </ul>
+      
+            <!-- Right -->
+            <ul class="navbar-nav nav-flex-icons">
+              <li class="nav-item">
+                <a href="https://www.facebook.com/mdbootstrap" class="nav-link" target="_blank">
+                  <i class="fab fa-facebook-f"></i>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="https://twitter.com/MDBootstrap" class="nav-link" target="_blank">
+                  <i class="fab fa-twitter"></i>
+                </a>
+              </li>
+            </ul>
+      
+          </div>
+      
+        </div>
+      </nav>
+    <main class="login-block" style="margin-top: 95px;">
+        <div *ngIf="showSelect" class="container test text-center">
+            <h5 class="mb-4">Seleccione el tipo de busqueda</h5>
+            <div class="card-deck">
+                <div class="card pt-0" [ngClass]="{'mobileHeight': Media.IsMobile, 'landscapeHeight' : !Media.IsMobile}" style="background-image: url('https://res.cloudinary.com/ensamble/image/upload/v1613162479/petbg-03-min_t89guj.jpg'); background-color:rgba(1, 7, 41, 0.452); background-blend-mode:multiply; background-repeat: no-repeat; background-size: cover;">
+                    <div class="card-img-caption">
+                      <p class="card-text">
+                        <a (click)="selectSeach(1)" class="btn btn-inverse btn-lg">Personas
+                            <i class="fas fa-user ml-2"></i>
+                        </a>  
+                      </p>  
+                    </div>
+                </div>
+                <div class="card pt-0" [ngClass]="{'mobileHeight': Media.IsMobile, 'landscapeHeight' : !Media.IsMobile}" style="background-image: url('https://res.cloudinary.com/ensamble/image/upload/v1615497696/second_usjeck.jpg'); background-color:rgba(1, 7, 41, 0.452); background-blend-mode:multiply; background-repeat: no-repeat; background-size: cover;">
+                    <div class="card-img-caption">
+                      <p class="card-text">
+                        <a (click)="selectSeach(2)" class="btn btn-inverse btn-lg">Perritos
+                            <i class="fas fa-paw ml-2"></i>
+                        </a> 
+                      </p>
+                      <!-- <img class="card-img-top" src="https://res.cloudinary.com/ensamble/image/upload/v1613162619/petbg-02-min_kulbpc.jpg" alt="Card image cap"> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="showPetLost" class="container-fluid">
+            <div class="form-row">
+                <div class="form-group input-group row justify-content-center">
+                    <div class="col-4 col-sm-6 text-left">
+                        <button class="btn btn-info btn-sm" (click)="selectSeach(3)"><i class="fas fa-arrow-circle-left"></i> Atrás</button>
+                    </div>
+                    <div class="col-8 col-sm-6 text-left">
+                        <h5 class="card-title">Perritos desaparecidos</h5>
+                    </div>
+                </div>
+
+                <div class="form-group input-group col-12">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon3"><i class="fas fa-search"></i></span>
+                        </div>
+                        <input class="form-control input-search" type="text" name="search" [(ngModel)]="query" autocomplete="off" placeholder="Buscar Perrito">
+                    </div>
+                </div>
+            </div>
+            <div class="row test">
+                <div class="col-6 col-sm-3 col-lg-3 col-xl-3 mb-2" *ngFor="let item of filterData(query)">
+                  <div *ngIf="item.petName != 'Admin'">
+                    <div class="card hovercard ">
+                        <div class="cardheader"
+                            [ngStyle]="{'background-image': ' url(' + item.photo  + ')','background-size': 'cover', 'background-color':'rgba(0, 0, 0, 0.452)', 'background-blend-mode':'multiply',  'height': '155px'}">
+                        </div>
+                        <div (click)="showMoreInfo(item)" class="avatar">
+                            <img alt="{{item.photo}}" src="{{item.photo}}">
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title mt-3">Hola, me llamo {{item.petName}}</h6>
+                        </div>
+                        <div class="card-footer">
+                            <a class="btn btn-inverse" target="_blank" href="{{item.link}}" type="submit"><span *ngIf="!Media.IsMobile">Ver perfil de {{item.petName}}</span> <span *ngIf="Media.IsMobile">Ir al perfil</span> </a>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 text-center" *ngIf="filteredData">
+                    <p *ngIf="filteredData.length == 0">No se ha encontrado lo que buscas</p>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="showFamilyLost" class="container">
+            <div class="form-row">
+                <div class="form-group input-group row justify-content-center">
+                    <div class="col-6 text-left">
+                        <button class="btn btn-info btn-sm" (click)="selectSeach(3)"><i class="fas fa-arrow-circle-left"></i> Atrás</button>
+                    </div>
+                    <div class="col-6 text-left">
+                        <h4 class="card-title">Personas desaparecidas</h4>
+                    </div>
+                </div>
+
+                <div class="form-group input-group col-12">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon3"><i class="fas fa-search"></i></span>
+                        </div>
+                        <input class="form-control input-search" type="text" name="search" [(ngModel)]="query" autocomplete="off" placeholder="Buscar Persona">
+                    </div>
+                </div>
+            </div>
+            <div class="row test justify-content-center">
+                <!-- <div class="col-12 col-sm-4 col-lg-4 col-xl-4 mb-2" *ngFor="let item of filterData(query)">
+                    <div class="card hovercard ">
+                        <div class="cardheader"
+                            [ngStyle]="{'background-image': ' url(' + item.photo  + ')','background-size': 'cover', 'background-color':'rgba(0, 0, 0, 0.452)', 'background-blend-mode':'multiply',  'height': '235px'}">
+                        </div>
+                        <div class="avatar">
+                            <img alt="{{item.photo}}" src="{{item.photo}}">
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title mt-3">Hola, me llamo {{item.petName}}</h6>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="filteredData">
+                    <p *ngIf="filteredData.length == 0">No se ha encontrado lo que buscas</p>
+                </div> -->
+            </div>
+        </div>
+        <div class="modal fade" *ngIf="infoPet" id="showDataProfile" tabindex="-1" role="dialog" aria-labelledby="showDataProfile" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="showDataProfile">{{infoPet.petName}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+
+                  <div class="test" *ngFor="let item of infoPet.petStatusReport">
+                    <div *ngIf="item.petName != 'Admin'">
+                      <div class="card hovercard ">
+                          <div class="cardheader"
+                              [ngStyle]="{'background-image': ' url(' + infoPet.photo  + ')','background-size': 'cover', 'background-color':'rgba(0, 0, 0, 0.452)', 'background-blend-mode':'multiply',  'height': '155px'}">
+                          </div>
+                          <div class="avatar" style="margin-bottom: -81px;">
+                              <img alt="{{infoPet.photo}}" src="{{infoPet.photo}}">
+                          </div>
+                          <div  class="card-body">
+                            <p>Dia que se perdio: {{item.date}}</p>
+                            <p>Ultimo lugar visto: {{item.lastPlaceLost}}</p>
+                            <p>Extras: {{item.descriptionLost}}</p> 
+                          </div>
+                          <div class="card-footer">
+                              <a class="btn btn-inverse" target="_blank" href="{{infoPet.link}}" type="submit"><span *ngIf="!Media.IsMobile">Ver perfil de {{infoPet.petName}}</span> <span *ngIf="Media.IsMobile">Ir al perfil</span> </a>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+              <div class="modal-body text-center" *ngIf="infoPet.petStatusReport.length == 0">
+                No hay mas datos para mostrar
+              </div>
+            </div>
+          </div>
+        </div>
+    </main>
+    <div id="back-to-top" class="btn btn-inverse isShow scroll" *ngIf="isShow" (click)="gotoTop()" (scroll)="divScroll($event, true)"> 👆</div>
+</div>

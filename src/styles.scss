@@ -1,0 +1,379 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import "scss/partials/bootstrap-breakpoints";
+@import 'scss/custom-variables.scss';
+@import 'scss/fontawesome5/fontawesome';
+@import 'scss/fontawesome5/regular';
+@import 'scss/fontawesome5/solid';
+@import 'scss/fontawesome5/brands';
+:root {
+	--bg: #fffdf2;
+	--tst: #d1e8ff;
+	--radius: 10px;
+	--icolor1: #c4e85a;
+	--icolor2: #ffb370;
+	--icolor3: #d65ae8;
+	--icolor4: #63c8ff;
+}
+body {
+    // Main toolbar
+    --bgcolor-toolbar-main: var(--color-primary-1000);
+    --bgimage-toolbar-main: linear-gradient(to bottom, var(--color-primary-900) 0%, var(--color-primary-1000) 100%);
+
+    // Cards
+    --color-card: var(--dark-custom-400);
+    --bgcolor-card: #fff;
+    --color-card-header: rgba(255, 255, 255, 0.75);
+    --bgcolor-card-header: var(--color-primary-800);
+    --bgimage-card-header: linear-gradient(to right, var(--color-primary-1000) 0, var(--color-primary-900) 50%, var(--color-primary-1000) 100%);
+    --bgcolor-card-subheader: var(--color-primary-700);
+    --bgcolor-card-footer: var(--color-primary-200);
+    --bgimage-card-footer: linear-gradient(to right, var(--color-primary-200) 0, var(--color-primary-100) 50%, var(--color-primary-200) 100%);
+
+    // Subcards
+    --color-subcard: var(--color-card);
+    --bgcolor-subcard: var(--bgcolor-card);
+    --bordercolor-subcard: var(--color-primary-100);
+    --color-subcard-header: inherit;
+    --bgcolor-subcard-header: var(--color-primary-50);
+    --bordercolor-subcard-header: var(--bordercolor-subcard);
+
+    // Buttons
+    --color-button-secondary: rgba(255, 255, 255, 0.875);
+    --bgcolor-button-secondary: var(--color-secondary-500);
+    --bordercolor-button-secondary: rgba(0, 0, 0, 0.125);
+    --color-button-secondary-hover: #000;
+    --bgcolor-button-secondary-hover: var(--color-secondary-400);
+    --transition-button: color 0.33s ease, background-color 0.33s ease;
+
+    // Accordions
+    --bgcolor-accordion: var(--color-primary-75);
+    --bordercolor-accordion: rgba(0, 0, 0, 0.25);
+
+    // Modals
+    --color-modal-header: var(--color-card-header);
+    --bgcolor-modal-header: var(--bgcolor-card-header);
+    --color-modal-content: var(--color-card);
+    --bgcolor-modal-content: var(--bgcolor-card);
+
+    // Sidebar
+    --color-sidebar: inherit;
+    --bgcolor-sidebar: #e3e3e3;
+    --color-sidebar-header: var(--color-card-header);
+    --bgcolor-sidebar-header: var(--bgcolor-card-header);
+
+    // League items
+    --color-league-item-header: rgba(255, 255, 255, 0.875);
+    --bgcolor-league-item-header: var(--color-primary-700);
+
+    // New Events
+    --bgcolor-new-item: var(--color-secondary-50);
+}
+.homeInit{
+  background: -webkit-linear-gradient(left, #3931af, #00c6ff);
+
+}
+
+.homeInitLanding {
+  background-color: #ffffff;
+}
+
+$loader-colors: dodgerblue, mediumspringgreen, crimson, peachpuff, chocolate, pink;
+$loader-dash: 63;
+$loader-duration: length($loader-colors) * 1s;
+$loader-duration-alt: $loader-duration / length($loader-colors);
+$loader-keyframe: 1 / (length($loader-colors) * 2) * 100;
+
+.loader {
+  animation: loader-turn $loader-duration-alt linear infinite;
+  max-width: 25px;
+  width: 100%;
+
+  @keyframes loader-turn {
+    50% { transform: rotate(180deg) }
+    100% { transform: rotate(720deg) }
+  }
+}
+
+.loader__value {
+  animation: loader-stroke $loader-duration linear infinite; 
+  fill: none;
+  stroke-dasharray: $loader-dash;
+  stroke-dashoffset: $loader-dash;
+  stroke-linecap: round;
+  stroke-width: 4;
+
+  @for $i from 1 through length($loader-colors) {
+    &:nth-child(#{$i}) {
+      stroke: nth($loader-colors, $i);
+      
+      @if $i > 1 {
+        animation-delay: ($i - 1) * $loader-duration-alt;
+      }
+    }
+  }
+  
+  @keyframes loader-stroke {
+    #{$loader-keyframe * 1%} { stroke-dashoffset: 0 }
+    #{$loader-keyframe * 2%}, 100% { stroke-dashoffset: $loader-dash }
+  }
+}
+
+.input-group-text {
+  height: 38px;
+}
+
+.ng-select {
+  padding: 0px;
+}
+
+.modal-backdrop {
+  z-index: auto !important;
+}
+
+.ng-select .ng-select-container {
+  color: #333;
+  background-color: #bbbbbb;
+  border-radius: 4px;
+  border:none !important;
+  min-height: 0px !important;
+  align-items: center !important;      
+}
+
+.fc .fc-toolbar-title {
+  text-transform: capitalize !important;
+  @include media-breakpoint-down(md) {
+    font-size: 11px !important;
+  }
+}
+
+.reset,
+.forgot {
+  @include media-breakpoint-down(sm) {
+    background: -webkit-linear-gradient(top, #007dff, #ffffff);
+  }
+  background: -webkit-linear-gradient(left, #3931af, #00c6ff);
+    overflow-x: hidden;
+    @include media-breakpoint-down(sm) {
+      // height: 130vh !important;
+    }
+    @include media-breakpoint-up(lg) {
+      .card{
+        width: 30rem;
+        margin: auto;
+      }
+    }
+    .card{
+      margin: auto;
+      box-shadow: 0px 8px 16px 0px #1976D2;
+    }
+    .btn-yellow {
+        border: 2px solid #F9A825;
+        background-color: #F9A825;
+        color: #fff;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    
+    .btn-yellow:hover {
+        background-color: #F57F17;
+        border: 2px solid #F57F17;
+    }
+    
+    .btn-inverse {
+        border: 2px solid #F9A825;
+        background-color: transparent;
+        color: #F9A825;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    
+    .btn-inverse:hover {
+        background-color: #F57F17;
+        color: #fff;
+        border: 2px solid #F57F17;
+    }
+    .bg-transparent {
+      background-color: transparent;
+    }
+    
+    :host {
+      height: 100%;
+    }
+    
+    .photo {
+      object-fit: contain;
+    }
+  
+    .icon {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+  
+    .remove-margin {
+      margin-bottom: -10px;
+    }
+}
+
+.homeBody {
+    color: #000;
+    @include media-breakpoint-up(md) {
+      overflow-x: hidden;
+    }
+    height: 100vh;
+    // background-color: #81D4FA;
+    background-repeat: no-repeat;
+
+    .card {
+        padding: 30px;
+        box-shadow: 0px 8px 16px 0px #1976D2;
+        max-width: 511px;
+    }
+    
+    .card0 {
+        width: 100%;
+        padding-right: 30px;
+        box-shadow: none;
+    }
+    
+    // .card1 {
+    //     background: linear-gradient(rgba(255, 255, 255, .2), rgba(255, 255, 255, .2)), url(./assets/empresarial-account.jpg);
+    //     background-position: center center;
+    //     background-repeat: no-repeat;
+    //     min-height: 600px;
+    // }
+    
+    .btn-yellow {
+        border: 2px solid #F9A825;
+        background-color: #F9A825;
+        color: #fff;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    
+    .btn-yellow:hover {
+        background-color: #F57F17;
+        border: 2px solid #F57F17;
+    }
+    
+    .btn-inverse {
+        border: 2px solid #F9A825;
+        background-color: transparent;
+        color: #F9A825;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    
+    .btn-inverse:hover {
+        background-color: #F57F17;
+        color: #fff;
+        border: 2px solid #F57F17;
+        -webkit-box-shadow: 0 5px 11px 0 rgba(0,0,0,0.18), 0 4px 15px 0 rgba(0,0,0,0.15);
+        box-shadow: 0 5px 11px 0 rgba(0,0,0,0.18), 0 4px 15px 0 rgba(0,0,0,0.15);
+    }
+    
+    button:focus {
+        -moz-box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        box-shadow: none !important;
+        outline-width: 0;
+    }
+    
+    a:hover {
+        color: inherit;
+    }
+    
+    .text-sm {
+        font-size: 14px;
+    }
+    
+    .text-dim {
+        color: #BDBDBD;
+    }
+    
+    .icon {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+    
+    @media screen and (max-width: 1056px) {
+        .card {
+            width: 100%;
+        }
+    
+        .align {
+            justify-content: center !important;
+        }
+    }
+}
+.btn-yellow {
+  border: 2px solid #F9A825;
+  background-color: #F9A825;
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.btn-yellow:hover {
+  background-color: #F57F17;
+  border: 2px solid #F57F17;
+}
+
+.btn-inverse {
+  border: 2px solid #F9A825;
+  background-color: transparent;
+  color: #F9A825;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.btn-inverse:hover {
+  background-color: #F57F17;
+  color: #fff;
+  border: 2px solid #F57F17;
+}
+
+.swal2-title {
+  font-size: 22px !important;
+  text-align: left;
+  margin: 0;
+}
+
+.swal2-content {
+  padding: 10px !important;
+  font-size: 16px !important;
+}
+
+.swal2-container.sw-leave-container {
+  .swal2-header {
+      background-color: var(--color-primary-800);
+      padding: 8px;
+      align-items: flex-start;
+  }
+  .swal2-title {
+    font-size: 0.875em !important;
+    text-align: left;
+    color: transparentize(#fff, 0.125);
+    margin: 0;
+  }
+  .swal2-content {
+      padding: 15px;
+      font-size: 16px;
+  }
+  .swal2-actions {
+      padding: 0 8px 8px 8px;
+      margin: 0;
+      align-items: flex-end;
+  }
+}
+.swal2-popup {
+  margin-top: 2em;
+}
+
+.sticky {
+  position: fixed;
+  top: 0;
+  width: 100%;
+}

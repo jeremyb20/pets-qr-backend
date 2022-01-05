@@ -1,0 +1,85 @@
+<div class="container-fluid" style="padding-left: 0px; padding-right: 0px;">
+    <div *ngIf="user" class="sticky-top">
+        <div [hidden]="hideMsg" class="alert alert-danger error-message" role="alert">
+            <div class="d-flex flex-row align-items-center">
+                <div><i class="fas fa-arrow-circle-down"></i></div>
+                <div><strong>{{ errMsg }}</strong></div>
+            </div>
+        </div>
+        <app-toolbar></app-toolbar>
+    </div>
+    <div class="progress" style="height: 6px;" *ngIf="loading">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="95" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+    </div>
+    <div id="wrapper" >
+        <!-- Sidebar -->
+
+        <div *ngIf="user" id="sidebar-wrapper" class="col-sm-3 col-md-4 sidebar-nav">
+            <ul *ngIf="user.userState === 1" class="sidebar-nav">
+                <li class="sidebar-brand"> <a (click)="goHome()">ID: {{petNameLogged}} </a> </li>
+                <li> <a [routerLink]="['/menu-registered']">Comprar comida</a> </li>
+                <li> <a href="#">Mis Compras</a> </li>
+                <li> <a href="#">Eventos</a> </li>
+                <li> <a href="#">Configuracion</a> </li>
+                <li> <a href="#">Servicio al cliente</a> </li>
+                <li> <a href="#">Acerca</a> </li>
+              
+                
+            </ul>
+
+            <ul *ngIf="user.userState === 3" class="sidebar-nav">
+                <li class="sidebar-brand"> <a (click)="goHome()">ID: {{petNameLogged}} </a> </li>
+                <li> <a *ngIf="Media.IsMobile" (click)="goHome()"><i class="fas fa-home"></i> Inicio </a> </li>
+                <li> <a (click)="gotoSomewhere(3)" [routerLink]="'/profile-pets'"><i class="fas fa-paw"></i> Perfil</a> </li>
+                <!-- <li> <a (click)="gotoSomewhere(4)" [routerLink]="'/events-pets'"><i class="fas fa-calendar-alt"></i> Eventos</a> </li>
+                <li> <a (click)="gotoSomewhere(4)" [routerLink]="'/calendar-pets'"><i class="fas fa-calendar"></i> Calendario</a> </li> -->
+                <li> <a (click)="gotoSomewhere(4)" [routerLink]="'/location-pets'"><i class="fas fa-location-arrow"></i> Ubicación</a> </li>
+                <li> <a (click)="gotoSomewhere(5)" [routerLink]="'/permissions-pets'"><i class="fas fa-lock"></i> Permisos</a> </li>
+                <!-- <li> <a (click)="gotoSomewhere(6)" [routerLink]="'/shopping-cart'"><i class="fas fa-cart-plus"></i> Carrito Compras</a> </li> -->
+                <li><a href="https://m.me/115795170546124" (click)="hide()" target="_blank"><i class="fab fa-facebook-messenger"></i> <span *ngIf="Media.IsMobile">  Messenger</span></a></li>
+                <li> <a href="https://wa.me/+50663050037?text=Quiero%20reportar%20un%20problema%20en%20la%20aplicacion" (click)="hide()" target="_blank"><i class="fab fa-whatsapp"></i> Reportar un problema</a> </li>
+            </ul>
+
+            <ul *ngIf="user.userState === 0" class="sidebar-nav">
+                <li class="sidebar-brand"> <a (click)="hide()" [routerLink]="'/admin'">ID: {{petNameLogged}} </a> </li>
+                <li class="nav-item"> <a (click)="hide()" class="nav-link-test" [routerLink]="'/pets-orders'"> <i class="fas fa-shopping-cart"></i> Ordenes</a> </li>
+                <li class="nav-item"> <a (click)="hide()" class="nav-link-test" [routerLink]="'/pets-products'"> <i class="fas fa-shopping-bag"></i> Productos</a> </li>
+                <li class="nav-item"> <a (click)="hide()" class="nav-link-test" [routerLink]="'/events-pets'"><i class="fas fa-calendar-alt"></i> Eventos</a> </li>
+                <li class="nav-item"> <a (click)="hide()" class="nav-link-test" [routerLink]="'/calendar-pets'"><i class="fas fa-calendar"></i> Calendario</a> </li>
+                <li class="nav-item"> <a (click)="hide()" class="nav-link-test" [routerLink]="'/pets-registered'"> <i class="fas fa-paw"></i> Pets Registrados</a> </li>
+                <li class="nav-item"> <a (click)="hide()" class="nav-link-test" [routerLink]="'/pets-qrgenerator'"> <i class="fas fa-qrcode"></i> Generar códigos</a> </li>
+               
+            </ul>
+            <ul id="logout_sidebar_button" class="nav nav-sidebar">
+                <div class="sidebar-body d-flex flex-column flex-grow-1">
+                    <div class="mt-auto"><button type="button" (click)="logout()" class="btn btn-danger btn-block"><i class="fas fa-sign-out-alt"></i> Salir</button></div>
+                </div>
+            </ul>
+         </div>
+        <!-- /#sidebar-wrapper -->
+        <!-- Page Content -->
+        <div [ngClass]="{ 'page-content-wrapper': userLogged }">
+            <router-outlet></router-outlet>
+            <app-notification></app-notification>
+        </div> <!-- /#page-content-wrapper -->
+    </div> <!-- /#wrapper -->
+</div>
+
+<div class="modal fade" tabindex="-1" role="dialog" id="TimeOut-Modal">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-center d-block">
+                <h6 class="modal-title font-weight-bold">Tu sesión está apunto de terminar!</h6>
+            </div>
+            <div class="modal-body ml-1 mr-1">
+                <div class="text-center">Se cerrará la sesión {{ countdown }} seg(s)...</div>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-danger" role="progressbar" [ngStyle]="{ 'width' : this.countPct + '%' }" [attr.aria-valuenow]="this.countPct" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-info mr-auto" data-dismiss="modal">Permanecer conectado</button>
+            </div>
+        </div>
+    </div>
+</div>

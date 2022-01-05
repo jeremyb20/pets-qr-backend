@@ -1,0 +1,33 @@
+::placeholder {
+    color: #E0E0E0;
+    opacity: 1;
+}
+
+:-ms-input-placeholder {
+    color: #E0E0E0;
+}
+
+::-ms-input-placeholder {
+    color: #E0E0E0;
+}
+
+input {
+    padding: 1px 0px 3px 0px;
+    border: none;
+    border-bottom: 1px solid lightgrey;
+    margin-bottom: 3px;
+    margin-top: 2px;
+    box-sizing: border-box;
+    color: #000;
+    font-size: 16px;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+input:focus {
+    -moz-box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid #EF5350;
+    outline-width: 0;
+}

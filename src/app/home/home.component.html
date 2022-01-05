@@ -1,0 +1,899 @@
+<div class="homeBody homeInitLanding scroll" (scroll)="divScroll($event, false)" id="HomeComponent">
+<nav class="navbar fixed-top navbar-expand-lg navbar-dark" [ngClass]="{'scrolled': !isShow, 'scrolling-navbar': isShow, 'top-nav-collapse': isShow}">
+  <div class="container">
+
+    <!-- Brand -->
+    <a class="navbar-brand" (click)="gotoTop()">
+      <img height="50px" src="https://res.cloudinary.com/ensamble/image/upload/v1613153301/logopets_uyf4xq.png" alt="LocalPetsAndFamilyLogo">
+    </a>
+
+    <!-- Collapse -->
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Links -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+
+      <!-- Left -->
+      <ul class="navbar-nav mr-auto">
+        <!-- <li class="nav-item active">
+          <a class="nav-link" [routerLink]="'/home'">Home
+            <span class="sr-only">(current)</span>
+          </a>
+        </li> -->
+        <li class="nav-item">
+          <a class="nav-link" [routerLink]="'/login-pets'">Iniciar sesión</a>
+        </li>
+        <!-- <li class="nav-item">
+          <a class="nav-link" [routerLink]="'/register-pets'">Registrarse</a>
+        </li> -->
+
+        <li class="nav-item">
+          <a class="nav-link" (click)="customerServicePopup()">Servicio al cliente</a>
+        </li>
+      </ul>
+
+      <!-- Right -->
+      <ul class="navbar-nav nav-flex-icons">
+        <li class="nav-item">
+          <a href="https://www.facebook.com/LocalPetsFamily-115795170546124" class="nav-link" target="_blank">
+            <i class="fab fa-facebook-f"></i> <span *ngIf="Media.IsMobile">  LocalPets&Family</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="https://wa.me/+50663050037?text=Estoy%20interesad@%20en%20sus%20productos%20necesito%20mas%20informacion" class="nav-link" target="_blank">
+            <i class="fab fa-whatsapp"></i> <span *ngIf="Media.IsMobile">  Whatsapp</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="https://m.me/115795170546124" class="nav-link" target="_blank">
+            <i class="fab fa-facebook-messenger"></i> <span *ngIf="Media.IsMobile">  Messenger</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a  [routerLink]="'/search-lost'" class="btn btn-inverse rounded">
+            <i class="fa fa-search"></i> Se busca
+          </a>
+        </li>
+      </ul>
+
+    </div>
+
+  </div>
+</nav>
+<!-- Navbar -->
+
+<!--Carousel Wrapper-->
+<div id="carousel-example-1z" class="carousel slide carousel-fade" data-ride="carousel">
+
+  <!--Indicators-->
+  <ol class="carousel-indicators">
+    <li data-target="#carousel-example-1z" data-slide-to="0" class="active"></li>
+    <li data-target="#carousel-example-1z" data-slide-to="1"></li>
+    <li data-target="#carousel-example-1z" data-slide-to="2"></li>
+  </ol>
+  <!--/.Indicators-->
+
+  <!--Slides-->
+  <div class="carousel-inner" role="listbox">
+
+    <!--First slide-->
+    <div class="carousel-item active">
+      <div class="view" [ngClass]="{'background': Media.IsSmallScreen, 'test': Media.IsLandscape }" style="background-image: url('https://res.cloudinary.com/ensamble/image/upload/v1615498557/petbg-01-min_ksil2y_1_50_wta6aw.jpg'); background-color:rgba(0, 8, 54, 0.452); background-blend-mode:multiply; background-repeat: no-repeat; background-size: cover;">
+
+        <!-- Mask & flexbox options-->
+        <div class="carousel-caption d-none d-md-block mask rgba-black-light d-flex justify-content-center align-items-center">
+
+          <!-- Content -->
+          <div class="text-center text-white wow fadeIn">
+            <h1 class="mb-4">
+              <strong>Más que un sitio web, somos familia</strong>
+            </h1>
+
+            <p>
+              <strong>La identificación portátil canino es una necesidad.</strong>
+            </p>
+
+            <!-- <p class="mb-4 d-none d-md-block">
+              <strong>Registrarse es muy fácil y sencillo, haz click al botón de abajo para registrarse.</strong>
+            </p>
+
+            <a [routerLink]="'/register-pets'" class="btn btn-inverse btn-lg">Registrarse
+              <i class="fas fa-paw ml-2"></i>
+            </a> -->
+          </div>
+          <!-- Content -->
+
+        </div>
+        <!-- Mask & flexbox options-->
+
+      </div>
+    </div>
+    <!--/First slide-->
+
+    <!--Second slide-->
+    <div class="carousel-item">
+      <div class="view" style="background-image: url('https://res.cloudinary.com/ensamble/image/upload/v1615497696/second_usjeck.jpg'); background-color:rgba(0, 8, 54, 0.452); background-blend-mode:multiply; background-repeat: no-repeat; background-position: center; background-size: cover;">
+
+        <!-- Mask & flexbox options-->
+        <div class="carousel-caption d-none d-md-block mask rgba-black-light d-flex justify-content-center align-items-center">
+
+          <!-- Content -->
+          <div class="text-center text-white wow fadeIn">
+            <h1 class="mb-4">
+              <strong>LocalPets&Family</strong>
+            </h1>
+
+            <p>
+              <strong>Diseñado con la más alta calidad</strong>
+            </p>
+
+            <p class="mb-4 d-none d-md-block">
+              <strong>Puedes iniciar sesión haciendo click abajo.</strong>
+            </p>
+
+            <a [routerLink]="'/login-pets'" class="btn btn-inverse btn-lg">Iniciar Sesión
+              <i class="fas fa-graduation-cap ml-2"></i>
+            </a>
+          </div>
+          <!-- Content -->
+
+        </div>
+        <!-- Mask & flexbox options-->
+
+      </div>
+    </div>
+    <!--/Second slide-->
+
+    <!--Third slide-->
+    <div class="carousel-item">
+      <div class="view" [ngClass]="{'background-familiar': Media.IsSmallScreen, 'test': Media.IsLandscape }" style="background-image: url('https://res.cloudinary.com/ensamble/image/upload/v1613162479/petbg-03-min_t89guj.jpg'); background-color:rgba(1, 7, 41, 0.452); background-blend-mode:multiply; background-repeat: no-repeat; background-size: cover;">
+
+        <!-- Mask & flexbox options-->
+        <div class="carousel-caption d-none d-md-block mask rgba-black-light d-flex justify-content-center align-items-center">
+
+          <!-- Content -->
+          <div class="text-center text-white wow fadeIn">
+            <h1 class="mb-4">
+              <strong>Porque también ellos lo necesitan</strong>
+            </h1>
+
+            <p>
+              <strong> También proveemos placas de identificación para personas</strong>
+            </p>
+
+            <p class="mb-4 d-none d-md-block">
+              <strong>LocalPets&Family también se ha diversificado con la incorporación de la plaquita personal para advertir a otros de algún padecimiento en caso de emergencias.</strong>
+            </p>
+
+            <button class="m-1 btn-lg btn btn-inverse" [disabled]="true" role="button">Registrar Familiar
+              <i *ngIf="!Media.IsMobile" class="fas fa-user ml-2"></i>
+            </button>
+          </div>
+          <!-- Content -->
+
+        </div>
+        <!-- Mask & flexbox options-->
+
+      </div>
+    </div>
+    <!--/Third slide-->
+
+  </div>
+  <!--/.Slides-->
+
+  <!--Controls-->
+  <a class="carousel-control-prev" href="#carousel-example-1z" role="button" data-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="sr-only">Previous</span>
+  </a>
+  <a class="carousel-control-next" href="#carousel-example-1z" role="button" data-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="sr-only">Next</span>
+  </a>
+  <!--/.Controls-->
+
+</div>
+<!--/.Carousel Wrapper-->
+
+<!--Main layout-->
+<main>
+  <div class="container">
+
+    <!--Section: Main info-->
+    <section class="mt-5 wow fadeIn">
+
+      <!--Grid row-->
+      <div class="row">
+
+        <!--Grid column-->
+        <div class="col-md-6 mb-4">
+
+          <img src="https://i.pinimg.com/564x/08/71/66/087166ec928cb1e2fec2947044cb75ca.jpg" class="img-fluid z-depth-1-half"
+            alt="resinad22">
+
+        </div>
+        <!--Grid column-->
+
+        <!--Grid column-->
+        <div class="col-md-6 mb-4">
+
+          <!-- Main heading -->
+          <h3 class="h3 mb-3">Material diseñado a gusto</h3>
+          <p>Materiales creado de apartir de la resina para mayor durabilidad (
+            <strong>Placa resina D22</strong> ).</p>
+          <p>Puedes ver más detalles en nuestra tienda.</p>
+          <!-- Main heading -->
+
+          <hr>
+
+          <p>
+            <strong>74</strong> Horas después del pedido se hace la entrega de su producto.
+            <strong>Uso comercial y personal.</strong>
+          </p>
+
+        <div class="row no-gutters">
+          <div class="col-6">
+            <!-- CTA -->
+            <a [routerLink]="'/login-pets'" class="btn btn-sm btn-inverse btn-md">Ver tienda
+              	<i class="fas fa-shopping-cart"></i>
+            </a>
+          </div>
+          <div class="col-6">
+            <a [routerLink]="'/login-pets'" class="btn btn-sm btn-inverse btn-md">Iniciar sesión
+              <i class="fas fa-sign-in-alt"></i>
+            </a>
+          </div>
+        </div>
+
+        </div>
+        <!--Grid column-->
+
+      </div>
+      <!--Grid row-->
+
+    </section>
+    <!--Section: Main info-->
+
+    <hr class="my-5">
+
+    <!--Section: Main features & Quick Start-->
+    <section>
+
+      <h3 class="h3 text-center mb-5"> <img height="150px" src="https://res.cloudinary.com/ensamble/image/upload/v1613171537/localpetsandfamilylogo_alxxjo.png" alt="LocalPetsAndFamilyLogo"> </h3>
+
+      <!--Grid row-->
+      <div class="row wow fadeIn">
+
+        <!--Grid column-->
+        <div class="col-lg-6 col-md-12 px-4">
+
+          <!--First row-->
+          <div class="row">
+            <div class="col-1 mr-3">
+              <i class="fas fa-building fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h5 class="feature-title">LocalPetsandFamily</h5>
+              <p class="grey-text">Es una empresa nacional, fundada en el año 2020. Nace de la necesidad de proveer un producto que no había en nuestro mercado, ya que, lejos de ser un lujo, la identificación portátil es una necesidad..</p>
+            </div>
+          </div>
+          <!--/First row-->
+
+          <div style="height:30px"></div>
+
+          <!--Second row-->
+          <div class="row">
+            <div class="col-1 mr-3">
+              <i class="fas fa-truck fa-2x blue-text"></i>
+            </div>
+            <div class="col-10">
+              <h5 class="feature-title">Entrega a domicilio</h5>
+              <p class="grey-text">Brindamos facilidad de entrega hasta la puerta de su casa.</p>
+            </div>
+          </div>
+          <!--/Second row-->
+
+          <div style="height:30px"></div>
+
+          <!--Third row-->
+          <div class="row">
+            <div class="col-1 mr-3">
+              <i class="fas fa-credit-card fa-2x cyan-text"></i>
+            </div>
+            <div class="col-10">
+              <h5 class="feature-title">Pague de distintas formas.</h5>
+              <p class="grey-text">Mediante transferencia, Paypal o SINPE Móvil.</p>
+            </div>
+          </div>
+          <!--/Third row-->
+
+        </div>
+        <!--/Grid column-->
+
+        <!--Grid column-->
+        <div class="col-lg-6 col-md-12">
+
+          <div class="row">
+            <div class="col-1 mr-3">
+              <i class="fas fa-headphones fa-2x cyan-text"></i>
+            </div>
+            <div class="col-10">
+              <h5 class="feature-title">Atención al cliente</h5>
+              <p class="grey-text">Contáctenos, con gusto le atenderemos. ya sea por redes sociales o personal.</p>
+            </div>
+          </div>
+          <!-- <div class="embed-responsive embed-responsive-16by9">
+            <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/cXTThxoywNQ" allowfullscreen></iframe>
+          </div> -->
+        </div>
+        <!--/Grid column-->
+
+      </div>
+      <!--/Grid row-->
+
+    </section>
+    <!--Section: Main features & Quick Start-->
+
+    <hr class="my-5">
+
+    <!--Section: Not enough-->
+    <section>
+
+      <h2 class="my-5 h3 text-center">No es suficiente?</h2>
+
+      <!--First row-->
+      <div class="row features-small mb-5 mt-3 wow fadeIn">
+
+        <!--First column-->
+        <div class="col-md-4">
+          <!--First row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">Gratis para uso personal y comercial</h6>
+              <p class="grey-text">Nuestro sitio es fácil de usar. Con registro gratuito sin subscripción.
+              </p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/First row-->
+
+          <!--Second row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">Carrito de compras</h6>
+              <p class="grey-text">
+                Una impresionante colección de productos con la mayor calidad y durabilidad para el can o familiar.
+              </p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/Second row-->
+
+          <!--Third row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">Añada permisos</h6>
+              <p class="grey-text">Al registrar tu can o familiar podrás administrar tu información personal.</p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/Third row-->
+
+          <!--Fourth row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">Completamente responsivo</h6>
+              <p class="grey-text">No importa si el sitio se mostrará en una computadora de escritorio, computadora portátil o tableta
+                o teléfono móvil. Localpets&family
+                se ve muy bien en cada pantalla.
+              <p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/Fourth row-->
+        </div>
+        <!--/First column-->
+
+        <!--Second column-->
+        <div class="col-md-4 flex-center">
+          <img src="https://res.cloudinary.com/ensamble/image/upload/v1613506441/productslpf_wfg2wi.jpg" alt="MDB Magazine Template displayed on iPhone"
+            class="z-depth-0 mb-5 img-fluid">
+        </div>
+        <!--/Second column-->
+
+        <!--Third column-->
+        <div class="col-md-4 mt-2">
+          <!--First row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">No necesitas descargar ninguna aplicación</h6>
+              <p class="grey-text">
+                La idea principal es no tener que utilizar almacenamiento de las distintas tiendas (App Store, Play Store)
+              </p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/First row-->
+
+          <!--Second row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">Que necesitas?</h6>
+              <p class="grey-text">Lector de QR, son gratuitas y fácil de usar</p>
+              <p class="grey-text">Algunas cámaras de tu celular tienen lector de QR</p>
+              <p class="grey-text">Si no tienes puedes descargar uno por medio de la tienda de tu celular</p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/Second row-->
+
+          <!--Third row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">Como ubicar mi can si se pierde?</h6>
+              <p class="grey-text">
+                Cuando la persona se encuentra al can por medio del lector QR enviará un link en el cual verá toda la información del can o familiar.
+              </p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/Third row-->
+
+          <!--Fourth row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-check-circle fa-2x indigo-text"></i>
+            </div>
+            <div class="col-10">
+              <h6 class="feature-title">Navegadores de mapas disponibles</h6>
+              <p class="grey-text">Tienes la opción de usar Google Maps o Waze, si deseas ir a la vivienda del can.</p>
+              <div style="height:15px"></div>
+            </div>
+          </div>
+          <!--/Fourth row-->
+        </div>
+        <!--/Third column-->
+
+      </div>
+      <!--/First row-->
+
+    </section>
+    <!--Section: Not enough-->
+
+    <hr class="mb-5">
+
+    <!--Section: More-->
+    <section>
+
+      <h2 class="my-5 h3 text-center">...y aun más</h2>
+
+      <!--First row-->
+      <div class="row features-small mt-5 wow fadeIn">
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fab fa-firefox fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2 pl-3">
+              <h5 class="feature-title font-bold mb-1">Compatibilidad entre navegadores</h5>
+              <p class="grey-text mt-2">Chrome, Firefox, IE, Safari, Opera, Microsoft Edge - Localpets&family ama todos los navegadores;
+              </p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-level-up-alt fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2">
+              <h5 class="feature-title font-bold mb-1">Actualizaciones frecuentes</h5>
+              <p class="grey-text mt-2">Localpets&family mejora cada mes. Nos encanta el proyecto y lo mejoramos tanto como
+                sea posible.
+              </p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="far fa-comments fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2">
+              <h5 class="feature-title font-bold mb-1">Comunidad activa</h5>
+              <p class="grey-text mt-2">Nuestra sociedad crece día a día. Visita nuestro foro y comprueba cómo es ser parte
+                de nuestra familia.
+              </p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-code fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2">
+              <h5 class="feature-title font-bold mb-1">Tecnología Angular</h5>
+              <p class="grey-text mt-2">Localpets&family está integrado con el Angular más nuevo. Por lo tanto, puede utilizar las últimas
+                características que vienen junto con
+                eso.
+              </p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+      </div>
+      <!--/First row-->
+
+      <!--Second row-->
+      <div class="row features-small mt-4 wow fadeIn">
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-cubes fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2">
+              <h5 class="feature-title font-bold mb-1"></h5>
+              <p class="grey-text mt-2">
+                Aceptamos Sinpe Movil para los depósitos
+              </p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-phone fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2">
+              <h5 class="feature-title font-bold mb-1">Soporte Técnico</h5>
+              <p class="grey-text mt-2">Nos preocupamos por la confiabilidad. Si tiene alguna pregunta, no dude en
+                Contáctarnos.
+              </p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="fas fa-th fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2">
+              <h5 class="feature-title font-bold mb-1">Códigos de descuentos</h5>
+              <p class="grey-text mt-2">Activá los códigos de promociones y así obtener descuentos .</p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+        <!--Grid column-->
+        <div class="col-xl-3 col-lg-6">
+          <!--Grid row-->
+          <div class="row">
+            <div class="col-2">
+              <i class="far fa-file-code fa-2x mb-1 indigo-text" aria-hidden="true"></i>
+            </div>
+            <div class="col-10 mb-2">
+              <h5 class="feature-title font-bold mb-1">Sistema amigable</h5>
+              <p class="grey-text mt-2">Desarrollado con lo más moderno en códigos.</p>
+            </div>
+          </div>
+          <!--/Grid row-->
+        </div>
+        <!--/Grid column-->
+
+      </div>
+      <!--/Second row-->
+
+    </section>
+    <!--Section: More-->
+
+  </div>
+</main>
+<!--Main layout-->
+
+<!--Footer-->
+<footer class="page-footer text-center font-small mt-4 fadeIn">
+
+  <!--Call to action-->
+  <div class="container pt-4">
+    <div class="row">
+      <div class="col-6 text-right">
+        <a class="m-1 btn-sm  btn btn-inverse" [routerLink]="'/register-pets'" role="button">Registrar Can
+          <!-- <i class="fas fa-download ml-2"></i> -->
+          <i class="fas fa-paw ml-2"></i>
+        </a>
+      </div>
+      <div class="col-6 text-left"> 
+        <button class="m-1 btn-sm btn btn-inverse" [disabled]="true" role="button">Registrar Familiar
+          <i *ngIf="!Media.IsMobile" class="fas fa-user ml-2"></i>
+        </button>
+      </div>
+      
+     
+    </div>
+    
+  </div>
+  <!--/.Call to action-->
+
+  <hr class="my-4">
+
+  <!-- Social icons -->
+  <div class="pb-4 social">
+    <a href="https://www.facebook.com/LocalPetsFamily-115795170546124" target="_blank">
+      <i class="fab fa-facebook-f mr-3"></i>
+    </a>
+
+    <a href="https://m.me/115795170546124" target="_blank">
+      <i class="fab fa-facebook-messenger mr-3"></i>
+    </a>
+
+    <a href="https://wa.me/+50663050037?text=Estoy%20interesad@%20en%20sus%20productos%20necesito%20mas%20informacion" target="_blank">
+      <i class="fab fa-whatsapp"></i>
+    </a>
+  </div>
+  <!-- Social icons -->
+
+  <!--Copyright-->
+  <div class="footer-copyright text-white py-3">
+    <a (click)="showPoliticPrivacy(1)" class="mr-4" rel="noopener noreferrer">Términos y condiciones de uso</a>
+    <a (click)="showPoliticPrivacy(2)" class="mr-4" rel="noopener noreferrer">Politica de privacidad</a>
+    © {{year}} Copyright:
+    <a class="navbar-brand ml-4 final" (click)="gotoTop()">
+      <img height="50px" src="https://res.cloudinary.com/ensamble/image/upload/v1613153301/logopets_uyf4xq.png" alt="LocalPetsAndFamilyLogo">
+    </a>
+  </div>
+  <!--/.Copyright-->
+
+</footer>
+<!--/.Footer-->
+<div id="back-to-top" class="btn btn-inverse isShow scroll" *ngIf="isShow" (click)="gotoTop()" (scroll)="divScroll($event, true)"> 👆</div>
+</div> 
+
+<div class="modal modal-qr fade" tabindex="-1" role="dialog" id="politicPrivacy">
+  <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+          <div class="modal-header bg-dark text-white text-center header-modal" id="exampleModalLabel">
+              <h5 class="text-center modal-title"><i class="fas fa-paw"></i> Politica de privacidad</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body ">
+            <p class="font-weight-bold">POLÍTICA DE PRIVACIDAD</p>
+            <p>
+              La presente Política de Privacidad tiene por objeto dar a conocer el modo en que recabamos, tratamos y protegemos los datos de carácter personal recolectados a través de este sitio web, a fin de que los usuarios determinen libre y voluntariamente si desean facilitar sus datos personales a través de los formularios habilitados para tal efecto.
+              Para efectos de la presente “Política de Privacidad”, se entiende por Usuario a la persona que voluntariamente se registre en <span class="font-weight-bold">LocalPetsandFamily</span> en los formularios especialmente establecidos para este fin.
+              <span class="font-weight-bold">LocalPetsandFamily</span> proporcionará a los usuarios los recursos técnicos adecuados para que, con carácter previo a la cumplimentación de los datos personales, puedan acceder a esta Política de Privacidad y a cualquier otra información relevante en materia de Protección de Datos de Carácter Personal.
+              El acceso y uso del Sitio Web por el Usuario implica que acepta en su totalidad y se obliga a cumplir por completo los términos y condiciones recogidos disponibles en nuestro sitio. La prestación del servicio del sitio web tiene una duración limitada al momento en el que el Usuario se encuentre conectado al sitio web o alguno de los servicios que a través del mismo se facilitan; por tanto, el Usuario debe leer atentamente la presente Política de Privacidad en cada una de las ocasiones que se proponga utilizar el sitio web, ya que ésta puede sufrir modificaciones en función de novedades o exigencias legislativas y jurisprudenciales o por necesidades de negocio.
+              La presente Política de Privacidad será válida únicamente para los datos de carácter personal obtenidos en el sitio web, no siendo aplicable para aquella información recabada por terceros en otras páginas web, incluso si éstas se encuentran enlazadas por este sitio web. 
+            </p>
+             
+            <p class="font-weight-bold">  Recolección de datos personales:</p>
+            <p>
+            En cumplimiento con lo dispuesto en la Ley N° 8968 de Protección de la persona frente al tratamiento de sus datos personales y su normativa, publicada en La Gaceta N° 170 del año 2011, ponemos en conocimiento del Usuario que los datos recabados a través de cualesquiera formularios de recogida de datos de este sitio web serán incorporados a los ficheros de datos de carácter personal, respectivamente, de <span class="font-weight-bold">LocalPetsandFamily</span> garantizando la confidencialidad de los datos de carácter personal facilitados y el cumplimiento de toda la normativa aplicable al efecto.
+            Todos los campos que aparezcan señalados con un asterisco (*) en dichos formularios serán de obligada cumplimentación, de tal modo que la omisión de alguno de ellos podría comportar la imposibilidad de que se pueda atender su solicitud.
+            Asimismo, al hacer “click” en el botón “Enviar” (o equivalente) incorporado en los citados formularios, declara que la información y los datos que en ellos ha facilitado son exactos y veraces.
+            En el contexto de los tratamientos que se describen a continuación, es posible que suministre datos de carácter personal relativos a terceros. En este sentido, es su responsabilidad informar de tal circunstancia a los terceros cuyos datos nos va a ceder, así como, en caso de ser necesario, obtener su consentimiento expreso para suministrarnos dicha información.
+            </p> 
+
+            <p class="font-weight-bold">  Almacenamiento en el código Q.R.</p>
+            <p>        
+            Las letras “QR” se derivan de las palabras en inglés “Quick Response”, o “Respuesta rápida”. Un código QR es un módulo útil para almacenar información en una matriz de puntos o un código de barras bidimensional creado por la compañía japonesa Denso Wave, subsidiaria de Toyota, en 1994. Este sistema se caracteriza por los tres cuadrados que se encuentran en las esquinas y que permiten detectar la posición del código al lector.
+            Los códigos QR pueden leerse desde PC, teléfonos inteligentes  o tabletas, mediante dispositivos de captura de imagen, como puede ser un escáner o la cámara de fotos, programas o aplicaciones que lean los datos QR y una conexión a Internet para las direcciones web.
+            Para <span class="font-weight-bold">LocalPetsandFamily</span>. los códigos Q.R. serán utilizados para el almacenamiento de datos personales, así como enfermedades, alergias, advertencias médicas, etc, para que pudieran ser leídos en caso de emergencia por paramédicos, enfermeros, médicos, policía, etc., o para ser localizados en caso de algún extravío personal o de su mascota.
+            </p>
+             
+            <p class="font-weight-bold">  Tratamiento de sus datos en este sitio web:</p>
+            <p>
+              <span class="font-weight-bold">LocalPetsandFamily</span> deberá gestionar su registro de usuario e identificarle como “usuario registrado” para así personalizar su interfaz y mostrarle contenido e información acorde a sus intereses.    
+              Es indispensable que el Usuario resguarde en todo momento los números de referencia, contraseñas ó códigos personalizados que le serán provistos. El Usuario será el único responsable en caso del uso, autorizado o no, de su código personal, y en este sentido se compromete a hacer un uso diligente de dicha información, a no ponerla a disposición de terceros, y a comunicar su pérdida o robo.
+              <span class="font-weight-bold">LocalPetsandFamily</span> tratará sus datos con fines privados, siempre que el Usuario haya consentido el pertinente tratamiento de datos personales, ya sea por medios ordinarios o electrónicos. En función de las opciones autorizadas por el Usuario, para la realización de cualquier producto o servicio ofrecido en este sitio web.
+              No comunicaremos los datos de carácter personal del Usuario a terceras empresas pertenecientes o no a <span class="font-weight-bold">LocalPetsandFamily</span> sin recabar su previo consentimiento, salvo que la cesión de sus datos fuese necesaria para el mantenimiento de la relación con el Usuario.
+            </p>
+             
+            <p class="font-weight-bold">  Seguridad:</p>
+            <p>
+              El sitio web utiliza técnicas de seguridad de la información generalmente aceptadas en la industria, tales como firewalls, procedimientos de control de acceso y mecanismos criptográficos, todo ello con el objeto de evitar el acceso no autorizado a los datos. Para lograr estos fines, el usuario/cliente acepta que el prestador obtenga datos para efectos de la correspondiente autenticación de los controles de acceso.
+              <span class="font-weight-bold">LocalPetsandFamily</span> ha implementado y mantiene los más altos niveles de seguridad exigidos por la Ley para proteger los datos de carácter personal del Usuario frente a pérdidas fortuitas y a accesos, tratamientos o revelaciones no autorizados, habida cuenta del estado de la tecnología, la naturaleza de los datos almacenados y los riesgos a que están expuestos. No obstante, la transmisión de información a través de Internet no es totalmente segura; por ello, y a pesar de que <span class="font-weight-bold">LocalPetsandFamily</span> realizará sus mejores esfuerzos para proteger los datos del Usuario, no puede garantizar la seguridad de los mismos durante el tránsito hasta el Sitio Web. Toda la información que el Usuario facilite, se enviará por su cuenta y riesgo. Una vez recibidos los datos del Usuario, <span class="font-weight-bold">LocalPetsandFamily</span> utilizará rigurosos procedimientos y funciones de seguridad para impedir cualquier acceso no autorizado.
+            </p>
+            <p class="font-weight-bold">  Cookies:</p>
+           <p>
+            Al igual que otros portales de Internet, este sitio web utiliza una tecnología denominada “cookies" para recabar información sobre la forma de utilización del mismo. <span class="font-weight-bold">LocalPetsandFamily</span> por su propia cuenta o la de un tercero contratado para la prestación de servicios de medición, pueden utilizar cookies cuando un usuario navega por el sitio web. Las cookies son ficheros enviados al navegador por medio de un servidor web con la finalidad de registrar las actividades del usuario durante su tiempo de navegación.Las cookies utilizadas en este sitio web tienen, en todo caso, carácter temporal con la única finalidad de hacer más eficaz su transmisión ulterior. En ningún caso se utilizarán las cookies para recoger información de carácter personal. 
+           </p>  
+
+            <p class="font-weight-bold"> Sitios de terceros:</p> 
+           <p>
+            En nuestro sitio web se podrían incluir enlaces a sitios controlados por terceros. El Usuario debe recordar que al usar un enlace para acceder desde el Sitio Web a otro, dejarán de surtir efecto esta Política de Privacidad. La presente Política de Privacidad no refleja las prácticas en materia de privacidad de esos otros sitios de terceros. 
+            <span class="font-weight-bold">LocalPetsandFamily</span> se reserva el derecho de modificar o actualizar de tiempo en tiempo el presente aviso de privacidad, sin necesidad de dar previo aviso al respecto.
+            Para ejercer sus derechos el Usuario podrá dirigirse a <a href="soporte@localpetsandfamily.com">soporte@localpetsandfamily.com</a>, indicando claramente su solicitud.
+           </p>
+          </div>
+      </div>
+  </div>
+</div>
+
+<div class="modal modal-qr fade" tabindex="-1" role="dialog" id="termsandcondition">
+  <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+          <div class="modal-header bg-dark text-white text-center header-modal" id="exampleModalLabel">
+              <h5 class="text-center modal-title"><i class="fas fa-paw"></i> TÉRMINOS Y CONDICIONES</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body ">
+            <p class="font-weight-bold">TÉRMINOS Y CONDICIONES para uso del sitio web <span class="font-weight-bold">LocalPetsAndFamily</span>:</p>
+            <p>
+              Los siguientes términos y condiciones constituyen un acuerdo legal entre <span class="font-weight-bold">LocalPetsAndFamily</span> y los USUARIOS de su sitio web y rigen el uso que usted le dé al sitio y a cualquiera de los contenidos, características o funciones disponibles, que pudieran derivarse del mismo. <span class="font-weight-bold">LocalPetsAndFamily</span> podrá cambiar estos Términos y Condiciones en cualquier momento sin ninguna notificación, sólo publicando y actualizando dichos cambios en este sitio web. AL USAR EL SITIO WEB, USTED como USUARIO ACEPTA Y ESTÁ DE ACUERDO CON ESTOS TÉRMINOS Y CONDICIONES EN LO QUE SE REFIERE A SU USO. Si usted no está de acuerdo con estos Términos y Condiciones, no puede tener acceso al mismo ni usar el sitio web de ninguna otra manera.
+            </p>
+             
+            <p class="font-weight-bold"> Derechos de propiedad del sitio web:</p>
+            <p>
+              Entre usted (USUARIO) y nosotros, <span class="font-weight-bold">LocalPetsAndFamily</span> es dueño único y exclusivo de todos los derechos, título e intereses de su sitio, de todo el contenido (por ejemplo, audio, fotografías, ilustraciones, otros medios visuales, videos, copias, textos, software, títulos, códigos, datos y materiales del mismo); así como el aspecto, ambiente, diseño, organización, compilación de contenidos, códigos, datos y materiales, incluyendo pero no limitado a, cualesquiera derechos de autor, derechos de marca, derechos de patente, derechos de base de datos, derechos morales, derechos sui generis y otras propiedades intelectuales y derechos patrimoniales del mismo. El sitio web está protegido por las leyes y disposiciones de propiedad intelectual internacionales, por lo que el mismo no podrá ser asignado, sub-licenciado, concedido o transferido en virtud del presente Acuerdo.
+            </p> 
+
+            <p class="font-weight-bold">  
+              Acerca del uso del sitio web, su información y sus contenidos:</p>
+            <p>        
+              El usuario del sitio web es el único responsable de tener a su disposición el hardware y software necesarios, así como el Dial-Up, DSL, Cable Módem o cualquier otro tipo para lograr su acceso a la Internet y para poder usar este sitio satisfactoriamente.
+
+            </p>
+            <p>
+              El uso de este sitio web no le otorga al usuario la propiedad de ninguno de los contenidos, códigos, datos o materiales a los que pueda acceder en o a través del mismo, por lo tanto, no podrá almacenar, reproducir, copiar, editar o modificarlos. <span class="font-weight-bold">LocalPetsAndFamily</span> se reserva todos los derechos conforme a las leyes vigentes; cualquier uso indebido, no autorizado, publicación, distribución, alteración, explotación comercial o promocional del contenido de este sitio o cualquiera de los datos, códigos o materiales, o violación a este acuerdo; está estrictamente prohibido.
+            </p>
+             
+            <p class="font-weight-bold">  Marcas Comerciales:</p>
+            <p>
+              Las marcas comerciales, logos, marcas de servicios, marcas registradas (conjuntamente las "Marcas Comerciales") expuestas en este sitio web o en los contenidos disponibles a través del mismo, son marcas comerciales de <span class="font-weight-bold">LocalPetsAndFamily</span> registradas y no registradas y otras, y no pueden ser usadas con respecto a otros productos y/o servicios que no estén relacionados, asociados o patrocinados por sus poseedores de derechos y que puedan causar confusión a los clientes, o de alguna manera que denigre o desacredite a sus poseedores de derechos. Todas las marcas comerciales que no sean de <span class="font-weight-bold">LocalPetsAndFamily</span> y que aparezcan en, o a través, de este sitio web si las hubiera, son propiedad de sus respectivos dueños. El mal uso de las marcas comerciales expuestas en este sitio web, o a través de cualquiera de los servicios del mismo, está estrictamente prohibido. </p>
+             
+            <p class="font-weight-bold">  Prohibiciones para el usuario del sitio web:</p>
+            <p>
+              El usuario garantiza y está de acuerdo en que, mientras use el s y los diversos servicios, características y funciones que se ofrecen en o a través del mismo, usted no: (a) personalizará a ninguna otra persona o entidad que no sea usted, ni desvirtuará su afiliación con alguna otra persona o entidad; (b) intentará ganar acceso no autorizado a otros sistemas de cómputo a través del sitio web. Usted no: (i) participará en navegar por la red, en "raspar (scraping) la pantalla", "raspar (scraping) la base de datos", en recolectar direcciones de correo electrónico, direcciones inalámbricas u otra información personal o de contactos, o cualquier otro medio automático de obtener listas de usuarios u otra información de o a través del sitio web o de los servicios ofrecidos en o a través del mismo, incluyendo, sin limitación, cualquier información que se encuentre en algún servidor o base de datos relacionada con el sitio web o los servicios ofrecidos en o a través del mismo. (ii) obtendrá o intentará obtener acceso no autorizado a los sistemas de cómputo, materiales o información por cualquier medio; (iii) usará el sitio web o los servicios puestos a su disposición de alguna manera que pudiera interrumpir, dañar, deshabilitar, sobrecargar o deteriorar el sitio web o dichos servicios, incluyendo, sin limitación, mandar mensajes masivos no solicitados o "inundar" servidores con solicitudes; (iv) usará el sitio web o los servicios o artículos del mismo en violación de la propiedad intelectual o de otros derechos legales o patrimoniales de <span class="font-weight-bold">LocalPetsAndFamily</span> o de algún tercero; ni (v) usará el sitio web o los servicios del sitio web en violación de cualquier ley aplicable. Usted se obliga además, a no intentar (o alentar o apoyar el intento de otro) a embaucar, destruir, decodificar, o de otro modo alterar o interferir con el sitio web o con los servicios, o con cualquier contenido del mismo, o hacer cualquier uso no autorizado del mismo. Usted se obliga a no usar el sitio web de alguna manera que pudiera interferir con el uso y disfrute de cualquier otra persona o de cualquiera de sus servicios. Usted no obtendrá ni intentará obtener algún material o información a través de cualquier medio que no haya sido estipulado o puesto a la disposición del público intencionalmente a través del sitio web
+            </p>
+              <p class="font-weight-bold">  Compra de productos y Servicios:</p>
+            <p>
+            <span class="font-weight-bold">LocalPetsAndFamily</span>, pone sus productos y servicios a disposición de visitantes y registrados del sitio web. Si usted ordena cualquier producto, a través del presente documento usted acepta y garantiza que tiene 18 años de edad o más. Se obliga a pagar la totalidad de los precios de cualquier compra que realice ya sea con tarjeta de crédito/débito concurrente con su orden en línea o por otro medio de pago aceptable para <span class="font-weight-bold">LocalPetsAndFamily</span>.
+           </p>
+           <p>
+            Los productos de <span class="font-weight-bold">LocalPetsAndFamily</span> se venden solamente a través de este sitio y de distribuidores autorizados en las siete provincias del país. Cualquier costo adicional por transporte y/o entrega, deberá ser asumido por el usuario del servicio. El usuario se obliga a pagar todos los impuestos aplicables. Si el pago no es recibido por <span class="font-weight-bold">LocalPetsAndFamily</span> de parte del emisor de su tarjeta de crédito o débito o de sus agentes, el usuario se obliga a pagar todas las cantidades debidas al momento del reclamo por nuestra parte. Algunos productos que usted compra y/o descarga en o a través del sitio web pueden estar sujetos a términos y condiciones adicionales que le serán presentados al momento de dicha compra o descarga.
+           </p>  
+
+            <p class="font-weight-bold"> Información personal del usuario:</p> 
+            <p>
+              Al utilizar este sitio web y/o los servicios puestos a su disposición en o a través del mismo, se le solicitará que proporcione cierta información personalizada (dicha información denominada en lo sucesivo "Información personal del usuario"). Las políticas de privacidad, uso y recopilación de información de <span class="font-weight-bold">LocalPetsAndFamily</span>, se establecen en nuestra Política de Privacidad. Usted reconoce y acepta ser el único responsable de la exactitud del contenido de la “Información personal del usuario”.
+            </p>
+
+            <p class="font-weight-bold"> Derechos de autor:</p> 
+            <p>
+              Entre <span class="font-weight-bold">LocalPetsAndFamily</span> y los usuarios de este Sitio Web, el usuario reconoce que <span class="font-weight-bold">LocalPetsAndFamily</span> le brinda un código privado para introducir sus datos. El contenido incorporado en este Sitio es propiedad de los respectivos propietarios y está protegido por los derechos de autor y leyes de propiedad intelectual y sujeto a restricciones de uso, en virtud de dichas leyes.
+            </p>
+
+
+            <p class="font-weight-bold"> Publicaciones en nuestro sitio web:</p> 
+            <p>
+              <span class="font-weight-bold">LocalPetsAndFamily</span> puede, eventualmente, tener servicios de mensajería, chateo, tableros de noticias, blogs, otros foros y otros servicios disponibles en o a través del sitio web. Además de cualquier otra normatividad y regulación que podamos publicar con respecto a un servicio en particular, el usuario se obliga a no cargar, informar, transmitir, distribuir o de otra manera publicar a través del sitio web o de cualquier servicio o artículo puesto a la disposición en o a través del sitio web, cualquier material que (i) restrinja o inhiba a cualquier otro usuario de usar y disfrutar del Sitio Web o de los servicios del Sitio Web, (ii) sea fraudulento, ilegal, amenazante, abusivo, hostigante, calumnioso, difamatorio, obsceno, vulgar, ofensivo, pornográfico, profano, sexualmente explícito o indecente, (iii) constituya o aliente conductas que pudieran constituir una ofensa criminal, dar lugar a responsabilidad civil o de otro modo violar cualquier ley local, estatal, nacional o internacional, (iv) viole, plagie o infrinja los derechos de terceros incluyendo, sin limitación, derechos de autor, marcas comerciales, secretos comerciales, confidencialidad, contratos, patentes, derechos de privacidad o publicidad o cualquier otro derecho de propiedad, (v) contenga un virus, elemento de espionaje u otro componente dañino, (vi) contenga enlaces fijos, publicidad, cartas de cadenas o esquemas de pirámides de cualquier tipo, o (vii) constituya o contenga indicaciones de origen, endosos o declaraciones de hechos falsos o engañosos. Usted además se obliga a no personificar a cualquier otra persona o entidad, ya sea real o ficticia, incluyendo cualquier persona de <span class="font-weight-bold">LocalPetsAndFamily</span>. El usuario tampoco puede ofrecer comprar o vender algún producto o servicio en o a través de sus comentarios presentados en nuestros foros. El usuario del sitio web es responsable del contenido y de las consecuencias de cualquiera de sus actividades y publicaciones.
+            </p>
+            <p>
+              Los comentarios presentados en un foro pueden ser registrados y almacenados en múltiples lugares, tanto en nuestro sitio web como en otra parte en Internet, los cuales pueden ser accesibles durante mucho tiempo y no se tiene control sobre quién los leerá eventualmente. Por lo tanto, es importante que como usuario tenga cuidado y sea selectivo acerca de la información personal que divulgue acerca de usted y de otros, y en especial, no debe divulgar información delicada, patrimonial o confidencial en sus comentarios en nuestros foros públicos.
+            </p>
+
+            <p class="font-weight-bold"> Renuncia de garantías:</p> 
+            <p>
+              EL SITIO WEB, INCLUYENDO, SIN LIMITACIÓN, TODOS LOS SERVICIOS, CONTENIDOS, CARACTERÍSTICAS, FUNCIONES Y MATERIALES PROPORCIONADOS A TRAVÉS DEL MISMO, SON PROPORCIONADOS "TAL COMO ESTÉN", "COMO SE PONEN A LA DISPOSICIÓN", SIN GARANTÍA DE NINGÚN TIPO, YA SEA EXPRESA O IMPLÍCITA, INCLUYENDO, SIN LIMITACIÓN, CUALQUIER GARANTÍA DE INFORMACIÓN, DATOS, SERVICIOS DE PROCESAMIENTO DE DATOS, ACCESO ILIMITADO O ININTERRUMPIDO, CUALQUIER GARANTÍA CON RESPECTO A LA DISPONIBILIDAD, INTERPRETABILIDAD, NO INTERPRETABILIDAD, EXACTITUD, PRECISIÓN, RECTITUD, PERFECCIÓN, CONCLUSIÓN, UTILIDAD, O CONTENIDO DE LA INFORMACIÓN, Y CUALQUIER GARANTÍA DE TÍTULO, NO-INFRACCIÓN, COMERCIABILIDAD O APTITUD PARA UN PROPÓSITO EN PARTICULAR, Y EN EL PRESENTE RENUNCIAMOS A CUALQUIERA Y A TODAS DICHAS GARANTÍAS, EXPRESAS E IMPLÍCITAS. NO GARANTIZAMOS QUE EL SITIO WEB O LOS SERVICIOS, CONTENIDOS, FUNCIONES O MATERIALES PROPORCIONADOS A TRAVÉS DEL SITIO WEB SERÉN OPORTUNOS, SEGUROS, ININTERRUMPIDOS O LIBRES DE ERROR, O QUE LOS DEFECTOS SERÉN CORREGIDOS. NO DAMOS GARANTÍA DE QUE EL SITIO WEB O DE QUE LOS SERVICIOS PROPORCIONADOS CUMPLAN CON LOS REQUERIMIENTOS DE LOS USUARIOS. NINGÚN CONSEJO, RESULTADOS O INFORMACIÓN, YA SEA ORAL O ESCRITA, QUE USTED OBTENGA DE NOSOTROS A TRAVÉS DEL SITIO WEB CREARÁ ALGUNA GARANTÍA QUE NO HAYA SIDO ESTABLECIDA EXPRESAMENTE EN EL PRESENTE ACUERDO. <span class="font-weight-bold">LocalPetsAndFamily</span> TAMPOCO ASUME NINGUNA RESPONSABILIDAD DE CUALQUIER DAÑO A, O DE CUALQUIER VIRUS QUE PUDIERA INFECTAR SU EQUIPO A CAUSA DE SU ACCESO A, USO DE, O NAVEGACIÓN EN EL SITIO WEB O POR DESCARGAR CUALQUIERA DE LOS MATERIALES, DATOS, TEXTOS, IMÁGENES, CONTENIDOS DE VIDEO O CONTENIDOS DE AUDIO DEL SITIO WEB. SI USTED NO ESTÁ SATISFECHO CON EL SITIO WEB, SU ÚNICA SOLUCIÓN ES DESCONTINUAR EL USO DEL SITIO WEB.
+
+              TRATAMOS DE ASEGURAR QUE LA INFORMACIÓN PUBLICADA EN EL SITIO WEB SEA CORRECTA Y ACTUALIZADA. NOS RESERVAMOS EL DERECHO DE CAMBIAR O HACER CORRECCIONES A CUALQUIER INFORMACIÓN PROPORCIONADA EN EL SITIO WEB EN CUALQUIER MOMENTO Y SIN NINGÚN AVISO PREVIO. <span class="font-weight-bold">LocalPetsAndFamily</span> NI AVALA NI ES RESPONSABLE DE LA EXACTITUD O VERACIDAD DE CUALQUIER OPINIÓN, CONSEJO O DECLARACIÓN EN EL SITIO WEB, NI DE CUALQUIER PUBLICACIÓN OFENSIVA, DIFAMATORIA, OBSCENA, INDECENTE, ILEGAL O VIOLATORIA HECHA EN EL MISMO POR CUALQUIER PERSONA A NO SER UN EMPLEADO PORTAVOZ AUTORIZADO DE <span class="font-weight-bold">LocalPetsAndFamily</span> EN SU CARÉCTER OFICIAL.
+             </p>
+
+             <p class="font-weight-bold"> Límite de responsabilidad:</p> 
+              <p>
+               EN NINGÚN CASO, INCLUYENDO PERO NO LIMITADO A NEGLIGENCIA, <span class="font-weight-bold">LocalPetsAndFamily</span>, O CUALQUIERA DE SUS DIRECTORES, FUNCIONARIOS, EMPLEADOS, AGENTES O PROVEEDORES; SERÁ RESPONSABLE DE CUALQUIER DAÑO DIRECTO, INDIRECTO, ESPECIAL, INCIDENTAL, CONSECUENTE, EJEMPLAR O PUNITIVO COMO RESULTADO DE, O DIRECTA O INDIRECTAMENTE RELACIONADO CON, EL USO DE, O LA INCAPACIDAD DE USAR EL SITIO WEB O LOS CONTENIDOS, CARACTERÍSTICAS, MATERIALES Y FUNCIONES RELACIONADOS CON EL MISMO, SU PROVISIÓN DE INFORMACIÓN VÍA EL SITIO WEB, NEGOCIOS PERDIDOS O VENTAS PERDIDAS, AÚN CUANDO DICHA ENTIDAD PROTEGIDA HAYA SIDO ASESORADA SOBRE LA POSIBILIDAD DE DICHOS DAÑOS.
+              </p>
+             <p>
+              <span class="font-weight-bold">LocalPetsAndFamily</span> declina toda responsabilidad en caso de que el acceso o las visitas a su sitio web se vean imposibilitadas debido a una interrupción o defectuosa prestación de suministro eléctrico, telefónico o de proveedores de telecomunicaciones, o en e caso de producirse conflictos sociales y otros supuestos de fuerza mayor o cualquier actuación de un tercero. Se declina igualmente toda responsabilidad derivada de los daos que pudiera recibir el usuario en sus medios informáticos o telemáticos a consecuencia de la producción de cualquiera de las circunstancias antes expuestas.
+             </p>
+
+             <p class="font-weight-bold"> Indemnización:</p> 
+             <p>
+              Si el usuario del sitio web incumple estos Términos y Condiciones, incluyendo pero no limitado a cualquier violación de los derechos de autor o de propiedad intelectual, ya sea de su parte o de terceros, se obligará a indemnizar y a excluir a <span class="font-weight-bold">LocalPetsAndFamily</span>, a sus directores, funcionarios, empleados y agentes; de cualquier demanda, responsabilidad, costos y gastos, de cualquier naturaleza, incluyendo honorarios de abogados, en que incurriera como resultado del mal uso del sitio web.
+             </p>
+             <p>
+              Este acuerdo está regido por las leyes costarricenses. Para cualquier reclamo, acción o disputa con <span class="font-weight-bold">LocalPetsAndFamily</span>, a partir del uso de este sitio web, tendrá como jurisdicción exclusiva a San José, Costa Rica. Para cualquier comentario u observación, podrá escribir a soporte@localpetsandfamily.com
+             </p>
+             <p class="font-weight-bold"> ACEPTACIÓN DE ESTOS TÉRMINOS Y CONDICIONES:</p> 
+             <p>
+              El presente Acuerdo permanecerá vigente hasta que <span class="font-weight-bold">LocalPetsAndFamily</span> denuncie lo contrario. Los cambios en los Términos y Condiciones serán efectivos cuando se publiquen.
+             </p>
+             <p>
+              Usted como usuario acepta que es una persona mayor de 18 años de edad y declara que ha leído y entendido la información que se describe en el presente acuerdo de Términos y Condiciones. Al aceptar este acuerdo usted estará vinculado con lo que aquí se declara a nombre del “Usuario”, de lo contrario, no ingrese a este sitio.
+             </p>
+          </div>
+      </div>
+  </div>  
+</div>
+<div class="modal fade" id="customerServiceModal" tabindex="-1" role="dialog" aria-labelledby="customerServiceModal" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">Servicio al cliente</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-3 text-center">
+        <p>
+          <i class="fas fa-envelope"></i> Correo: <a>soporte@localpetsandfamily.com</a>
+        </p>
+        <p><i class="fas fa-phone"></i> Teléfono: +506 6305 0037</p>
+        <p>
+          <a href="https://wa.me/+50663050037?text=Estoy%20interesad@%20en%20sus%20productos%20necesito%20mas%20informacion" class="nav-link" target="_blank">
+            <i class="fab fa-whatsapp"></i> WhatsApp: +506 6305 0037
+          </a>
+        </p>
+        <p>
+          <a href="https://www.facebook.com/LocalPetsFamily-115795170546124" class="nav-link" target="_blank">
+            <i class="fab fa-facebook-f"></i> LocalPets&Family 
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div> 
