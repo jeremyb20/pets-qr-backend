@@ -6,7 +6,13 @@
     "npm": "7.13.0"
   },
   "scripts": {
-    "start": "nodemon app.js"
+    "heroku-postbuild": "ng build --prod",
+    "ng": "ng",
+    "start": "node app.js",
+    "build": "ng build",
+    "test": "ng test",
+    "lint": "ng lint",
+    "e2e": "ng e2e"
   },
   "private": true,
   "dependencies": {
@@ -73,7 +79,7 @@
     "ngx-infinite-scroll": "^9.1.0",
     "nodemailer": "^6.4.10",
     "nodemailer-express-handlebars": "^4.0.0",
-    "nodemon": "^2.0.15",
+    "nodemon": "^2.0.7",
     "passport": "0.4.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",

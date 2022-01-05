@@ -83,30 +83,15 @@ app.use(compression({
   level: 6
 }));
 
-// app.use(function (req, res, next) {
-//  // var origin = (req.headers.host == 'localhost:8080')? '*' : 'https://localpetsandfamilyapp.herokuapp.com';
-//   var origin = '*';
-//   res.setHeader('Access-Control-Allow-Origin', origin);
-//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-//   res.setHeader('Access-Control-Allow-Headers', 'Origin, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Response-Time, X-PINGOTHER, X-CSRF-Token,Authorization');
-//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-//   res.header('Access-Control-Allow-Credentials', true);
-//   res.setHeader('Access-Control-Allow-Credentials', true);
-//   next();
-// });
-
-app.use((req, res, next) => {
-  var origin = (req.headers.host == 'https://localpetsandfamily.com')? 'https://localpetsandfamilyapp.herokuapp.com' : 'https://localpetsandfamilyapp.herokuapp.com';
-  res.header('Access-Control-Allow-Origin', origin);
+app.use(function (req, res, next) {
+  var origin = (req.headers.host == 'localhost:8080')? '*' : 'https://www.localpetsandfamily.com/';
   res.setHeader('Access-Control-Allow-Origin', origin);
-  res.header('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Response-Time, X-PINGOTHER, X-CSRF-Token,Authorization');
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.setHeader('Access-Control-Allow-Credentials', true);
   next();
 });
-
 app.use(session({      secret: 'session secret key',     resave: false,     saveUninitialized: false }));
 app.set('views', path.join(__dirname, 'public'));
 app.set('views', path.join(__dirname, 'views'));

@@ -1,0 +1,14 @@
+PORT=8080
+BD_URL=mongodb+srv://jeremyjbacca:adminroot@cluster0.9azzu.mongodb.net/Cluster0?retryWrites=true&w=majority
+SECRET='yoursecret'
+GOOGLE_CLIENT=
+GOOGLE_SECRET=
+GOOGLE_REFRESH_TOKEN=
+CLOUD_NAME=ensamble
+API_KEY_CLOUDINARY=218419814373569
+API_SECRET=xBNx-qCyqTrcAahx8ZqGEAnNpwM
+ZOHO_HOST=
+ZOHO_PORT=
+ZOHO_USER=
+ZOHO_PASSWORD=
+ADMIN_ID='60219dea321aed00155e1659'
