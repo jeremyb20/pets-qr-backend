@@ -65,7 +65,7 @@ router.post('/register/new-pet', async(req, res, next) => {
             photo: result.secure_url == undefined ? obj.image : result.secure_url,
             petStatus: obj.petStatus,
             isActivated: false,
-            phoneVeterinarian: 00000000,
+            phoneVeterinarian: '00000000',
             permissions: {
               showPhoneInfo: true,
               showEmailInfo: true,
@@ -414,7 +414,7 @@ router.put('/register/new-pet-code-generator', async(req, res, next) => {
     petStatus: obj.petStatus,
     isActivated: false,
     password: obj.password,
-    phoneVeterinarian: 00000000,
+    phoneVeterinarian: '00000000',
   }
 
   await Pet.findOne({_id: req.body._id }, (err, pet) => {
@@ -1374,7 +1374,7 @@ router.get('/lost/getAllLostPets', function(req, res){
   pets.forEach((item)=> {
     if(item.petStatus == 'Perdido'){
       var object = {
-        link :'https://' + req.headers.host + '/myPetCode/' + item._id +'/'+ 0,
+        link :'https://www.localpetsandfamily.com/myPetCode/' + item._id +'/'+ 0,
         photo: item.photo,
         petName: item.petName,
         petStatusReport: item.petStatusReport
@@ -1385,7 +1385,7 @@ router.get('/lost/getAllLostPets', function(req, res){
       item.newPetProfile.forEach(value => {
         if(value.petStatus == 'Perdido'){
           var object = {
-            link : 'https://' + req.headers.host + '/myPetCode/' + item._id +'/'+ value._id,
+            link : 'https://www.localpetsandfamily.com/myPetCode/' + item._id +'/'+ value._id,
             photo: value.photo,
             petName: value.petName,
             petStatusReport: value.petStatusReport
