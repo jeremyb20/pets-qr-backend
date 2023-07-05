@@ -1,9 +1,15 @@
-# fly.toml file generated for petsqrbackend on 2022-11-28T08:26:22-06:00
+# fly.toml app configuration file generated for petsqrbackend on 2023-07-05T13:36:57-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
 app = "petsqrbackend"
 kill_signal = "SIGINT"
 kill_timeout = 5
+primary_region = "mia"
 processes = []
+
+[build]
 
 [env]
   PORT = "8080"
