@@ -2,6 +2,8 @@ const catalogCtl = {}
 
 const Catalog = require('../models/catalog');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs-extra');
+
 
 catalogCtl.getAllCatalog = async (_req, res) => {
     const catalog = await Catalog.find();
@@ -24,9 +26,8 @@ catalogCtl.createCatalog = async (req, res, next) => {
             description,
             cost,
             quantity,
-            images:[]
-            // image: result.secure_url,
-            // image_id: result.public_id
+            tagType,
+            images:[],
         });
         await catalog.save();
         // await fs.unlink(req.file.path);
@@ -84,10 +85,9 @@ catalogCtl.addCatalogImages = async (req, res) => {
             imageURL: result.secure_url,
             imageID: result.public_id
         }
-        
-        await Catalog.findOneAndUpdate({ _id: req.body._id }, { $push: { images: dataImage } }).then(function (data) {
-            res.send({ message: 'Imagenes agregadas exitosamente', success: true });
-        });
+        await fs.unlink(req.file.path);
+        await Catalog.findOneAndUpdate({ _id: req.body._id }, { $push: { images: dataImage } });
+        res.send({ message: 'Imagenes agregadas exitosamente', success: true });
     } catch (err) {
         res.json({ success: false, message: 'Hubo un error en el registro, intentelo mas tarde..!' });
         next(err);
@@ -95,7 +95,6 @@ catalogCtl.addCatalogImages = async (req, res) => {
 }
 
 catalogCtl.deleteImageCatalog = async (req, res) => {
-    console.log(req.body);
     try {
         await Catalog.findOneAndUpdate(
             { _id: req.body._id },

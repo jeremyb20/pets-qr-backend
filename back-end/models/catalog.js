@@ -34,6 +34,10 @@ const catalogSchema = new Schema({
         type: String,
         require: true
     },
+    tagType: {
+        type: String,
+        require: true
+    },
     images:[{
         imageURL: { type: String, required: true },
         imageID: { type: String, required: true },
