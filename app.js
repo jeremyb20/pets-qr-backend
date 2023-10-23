@@ -11,6 +11,7 @@ const session = require('express-session');
 const flash = require('express-flash');
 const User = require('./back-end/models/user');
 const compression = require('compression');
+const fileupload = require('express-fileupload');
 require('dotenv').config();
 const http = require("http");
 
@@ -42,10 +43,6 @@ const users = require('./back-end/routes/users');
 const pets = require('./back-end/routes/pets');
 const catalog = require('./back-end/routes/catalog');
 
-app.use(express.urlencoded({
-  extended: false,
-  parameterLimit: '500000'
-}));
 app.use(express.json({limit: "50mb"}));
 app.use(express.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
 app.use(cookieParser());
@@ -57,6 +54,10 @@ const storage = multer.diskStorage({
   }
 });
 app.use(multer({storage}).single('image'));
+
+app.use(fileupload({
+  useTempFiles:true
+}));
 
 // CORS Middleware
 app.use(cors());

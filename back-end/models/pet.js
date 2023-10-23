@@ -1,9 +1,10 @@
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
+const { Schema, model } = require('mongoose');
 const bcrypt = require('bcryptjs');
 const passportLocalMongoose = require('passport-local-mongoose');
 
 // User Schema
-const PetSchema = mongoose.Schema ({
+const PetSchema = new Schema({
   petName: {
     type: String
   },
@@ -22,15 +23,19 @@ const PetSchema = mongoose.Schema ({
   },
   lat: {
     type: String,
-    require: true
+    require: false
   },
   lng: {
     type: String,
-    require: true
+    require: false
   },
   photo: {
     type: String,
-    require: false
+    require: true
+  },
+  photo_id: {
+    type: String,
+    require: true
   },
   linkTwitter: {
     type: String,
@@ -48,192 +53,25 @@ const PetSchema = mongoose.Schema ({
     type: String,
     require: false
   },
-  notifications: [{
-    message: {
-      type: String,
-      require: true
-    },
-    userPetName: {
-      type: String,
-      require: true
-    },
-    isNewMsg: {
-      type: Boolean,
-      require: true
-    },
-    dateMsg: {
-      type: String,
-      require: true
-    },
-    idPet: {
-      type: String,
-      require: true
-    },
-    photo: {
-      type: String,
-      require: false
-    },
-  }],
-
-  permissions: [{
-    showPhoneInfo: {
-      type: Boolean,
-      require: true
-    },
-    showEmailInfo: {
-      type: Boolean,
-      require: true
-    },
-    showLinkTwitter: {
-      type: Boolean,
-      require: true
-    },
-    showLinkFacebook: {
-      type: Boolean,
-      require: true
-    },
-    showLinkInstagram: {
-      type: Boolean,
-      require: true
-    },
-    showOwnerPetName: {
-      type: Boolean,
-      require: true
-    },
-    showBirthDate: {
-      type: Boolean,
-      require: true
-    },
-    showAddressInfo: {
-      type: Boolean,
-      require: true
-    },
-    showAgeInfo: {
-      type: Boolean,
-      require: true
-    },
-    showVeterinarianContact: {
-      type: Boolean,
-      require: true
-    },
-    showPhoneVeterinarian: {
-      type: Boolean,
-      require: true
-    },
-    showHealthAndRequirements: {
-      type: Boolean,
-      require: true
-    },
-    showFavoriteActivities: {
-      type: Boolean,
-      require: true
-    },
-    showLocationInfo: {
-      type:Boolean,
-      require: true
-    }
-  }],
-  productsList: [{
-    productName: {
-      type: String,
-      require: true
-    },
-    size: {
-      type: String,
-      require: true
-    },
-    color: {
-      type: String,
-      require: true
-    },
-    description: {
-      type: String,
-      require: true
-    },
-    cost: {
-      type: String,
-      require: true
-    },
-    quantity: {
-      type: String,
-      require: true
-    },
-    firstPhoto: {
-      type: String,
-      require: true
-    },
-    secondPhoto: {
-      type: String,
-      require: true
-    },
-  }],
-  code: [{
-    petName: {
-      type: String,
-      require: true
-    },
-    email: {
-      type: String,
-      require: true
-    },
-    idPrincipal: {
-      type:String,
-      require: true
-    },
-    comment: {
-      type: String,
-      require: true
-    },
-    total : {
-      type: String,
-      require: true
-    },
-    productName : {
-      type: String,
-      require: true
-    },
-    description: {
-      type: String,
-      require: true
-    },
-    cost: {
-      type: String,
-      require: true
-    },
-    idCan: {
-      type: String,
-      require: true
-    },
-    petPhoto: {
-      type: String,
-      require: true
-    },
-    status: {
-      type: String,
-      require: true
-    },
-    link: {
-      type: String,
-      require: true
-    }
-  }],
   resetPasswordToken: {
-    type: String
+    type: String,
+    require: false
   },
   resetPasswordExpires: {
-    type: Date
+    type: Date,
+    require: false
   },
   randomCode:{
     type: String,
-    require: true
+    require: false
   }, 
   isActivated: {
     type: Boolean,
-    require: true
+    require: false
   },
   stateActivation: {
     type:  String,
-    require: true
+    require: false
   },
   genderSelected: {
     type: Number,
@@ -245,74 +83,114 @@ const PetSchema = mongoose.Schema ({
   },
   ownerPetName: {
     type: String,
-    require: true
+    require: false
   },
   birthDate: {
     type: String,
-    require: true
+    require: false
   },
   address: {
     type: String,
-    require: true
+    require: false
   },
   age: {
     type: Number,
-    require: true
+    require: false
   },
   phoneVeterinarian:{
     type: Number,
-    require: true
+    require: false
   },
   veterinarianContact: {
     type: String,
-    require: true
+    require: false
   },
   healthAndRequirements: {
     type: String,
-    require: true
+    require: false
   },
   favoriteActivities: {
     type: String,
-    require: true
+    require: false
   },
   petStatus : {
     type: String,
-    require: true
+    require: false
   },
   petStatusReport :[{
     lastPlaceLost: {
       type: String,
-      require: true
+      require: false
     },
     date: {
       type: String,
-      require: true
+      require: false
     },
     petStatus: {
       type: String,
-      require: true
+      require: false
     },
     descriptionLost: {
       type: String,
-      require: true
+      require: false
     }
   }],
-  calendar: [{
-    title: {
-      type: String,
-      require: true
+  permissions: [{
+    showPhoneInfo: {
+      type: Boolean,
+      require: false
     },
-    date: {
-      type: String,
-      require: true
+    showEmailInfo: {
+      type: Boolean,
+      require: false
     },
-    enddate: {
-      type: String,
-      require: true
+    showLinkTwitter: {
+      type: Boolean,
+      require: false
     },
-    description: {
-      type: String,
-      require: true
+    showLinkFacebook: {
+      type: Boolean,
+      require: false
+    },
+    showLinkInstagram: {
+      type: Boolean,
+      require: false
+    },
+    showOwnerPetName: {
+      type: Boolean,
+      require: false
+    },
+    showBirthDate: {
+      type: Boolean,
+      require: false
+    },
+    showAddressInfo: {
+      type: Boolean,
+      require: false
+    },
+    showAgeInfo: {
+      type: Boolean,
+      require: false
+    },
+    showVeterinarianContact: {
+      type: Boolean,
+      require: false
+    },
+    showPhoneVeterinarian: {
+      type: Boolean,
+      require: false
+    },
+    showHealthAndRequirements: {
+      type: Boolean,
+      require: false
+    },
+    showFavoriteActivities: {
+      type: Boolean,
+      require: false
+    },
+    showLocationInfo: {
+      type:Boolean,
+      require: false
     }
   }],
   newPetProfile: [
@@ -322,20 +200,20 @@ const PetSchema = mongoose.Schema ({
       },
       phone:{
         type: Number,
-        require: true
+        require: false
       },
       email: {
         type: String,
-        require: true,
-        unique: true
+        require: false,
+        unique: false
       },
       lat: {
         type: String,
-        require: true
+        require: false
       },
       lng: {
         type: String,
-        require: true
+        require: false
       },
       photo: {
         type: String,
@@ -353,147 +231,133 @@ const PetSchema = mongoose.Schema ({
         type: String,
         require: false
       },
-      permissions: [{
-        showPhoneInfo: {
-          type: Boolean,
-          require: true
-        },
-        showEmailInfo: {
-          type: Boolean,
-          require: true
-        },
-        showLinkTwitter: {
-          type: Boolean,
-          require: true
-        },
-        showLinkFacebook: {
-          type: Boolean,
-          require: true
-        },
-        showLinkInstagram: {
-          type: Boolean,
-          require: true
-        },
-        showOwnerPetName: {
-          type: Boolean,
-          require: true
-        },
-        showBirthDate: {
-          type: Boolean,
-          require: true
-        },
-        showAddressInfo: {
-          type: Boolean,
-          require: true
-        },
-        showAgeInfo: {
-          type: Boolean,
-          require: true
-        },
-        showVeterinarianContact: {
-          type: Boolean,
-          require: true
-        },
-        showPhoneVeterinarian: {
-          type: Boolean,
-          require: true
-        },
-        showHealthAndRequirements: {
-          type: Boolean,
-          require: true
-        },
-        showFavoriteActivities: {
-          type: Boolean,
-          require: true
-        },
-        showLocationInfo: {
-          type:Boolean,
-          require: true
-        }
-      }],
       userState: {
         type: Number,
         require: false
       },
       ownerPetName: {
         type: String,
-        require: true
+        require: false
       },
       birthDate: {
         type: String,
-        require: true
+        require: false
       },
       address: {
         type: String,
-        require: true
+        require: false
       },
       age: {
         type: Number,
-        require: true
+        require: false
       },
       phoneVeterinarian:{
         type: Number,
-        require: true
+        require: false
       },
       veterinarianContact: {
         type: String,
-        require: true
+        require: false
       },
       healthAndRequirements: {
         type: String,
-        require: true
+        require: false
       },
       favoriteActivities: {
         type: String,
-        require: true
+        require: false
       },
       petStatus : {
         type: String,
-        require: true
+        require: false
       },
+      permissions: [{
+        showPhoneInfo: {
+          type: Boolean,
+          require: false
+        },
+        showEmailInfo: {
+          type: Boolean,
+          require: false
+        },
+        showLinkTwitter: {
+          type: Boolean,
+          require: false
+        },
+        showLinkFacebook: {
+          type: Boolean,
+          require: false
+        },
+        showLinkInstagram: {
+          type: Boolean,
+          require: false
+        },
+        showOwnerPetName: {
+          type: Boolean,
+          require: false
+        },
+        showBirthDate: {
+          type: Boolean,
+          require: false
+        },
+        showAddressInfo: {
+          type: Boolean,
+          require: false
+        },
+        showAgeInfo: {
+          type: Boolean,
+          require: false
+        },
+        showVeterinarianContact: {
+          type: Boolean,
+          require: false
+        },
+        showPhoneVeterinarian: {
+          type: Boolean,
+          require: false
+        },
+        showHealthAndRequirements: {
+          type: Boolean,
+          require: false
+        },
+        showFavoriteActivities: {
+          type: Boolean,
+          require: false
+        },
+        showLocationInfo: {
+          type:Boolean,
+          require: false
+        }
+      }],
       petStatusReport :[{
         lastPlaceLost: {
           type: String,
-          require: true
+          require: false
         },
         date: {
           type: String,
-          require: true
+          require: false
         },
         petStatus: {
           type: String,
-          require: true
+          require: false
         },
         descriptionLost: {
           type: String,
-          require: true
+          require: false
         }
-      }],
-      calendar: [{
-        title: {
-          type: String,
-          require: true
-        },
-        date: {
-          type: String,
-          require: true
-        },
-        enddate: {
-          type: String,
-          require: true
-        },
-        description: {
-          type: String,
-          require: true
-        }
-      }],
+      }]
     }
-  ]
-}, { autoIndex: false });
+  ],
+}, 
+{  
+  timestamps: true,
+  versionKey: false
+});
 
 PetSchema.plugin(passportLocalMongoose);
 
-const Pet = module.exports = mongoose.model('Pet', PetSchema);
+const Pet = module.exports = model('Pet', PetSchema);
 
 module.exports.getPetById = function(id, callback) {
     Pet.findById(id, callback);

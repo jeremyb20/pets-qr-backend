@@ -1,161 +1,121 @@
 const express = require('express');
 const router = express.Router();
-const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const Pet = require('../models/pet');
-const cloudinary = require('cloudinary').v2;
+const cloudinary = require('./../cloudinary.config');
 const async = require('async');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
-const app = express();
 const hbs = require('nodemailer-express-handlebars');
 const path = require('path');
+const fs = require('fs-extra');
 require('dotenv').config();
 
-const { google } = require('googleapis')
 
-// Require oAuth2 from our google instance.
-const { OAuth2 } = google.auth
-
-// Create a new instance of oAuth and set our Client ID & Client Secret.
-const oAuth2Client = new OAuth2(
-  process.env.GOOGLE_CLIENT,process.env.GOOGLE_SECRET
-)
-
-// Call the setCredentials method on our oAuth2Client instance and set our refresh token.
-oAuth2Client.setCredentials({
-  refresh_token:process.env.GOOGLE_REFRESH_TOKEN,
-})
-
-
-
-var fileupload = require('express-fileupload');
-const pet = require('../models/pet');
-
-app.use(fileupload({
-  useTempFiles:true
-}));
-
-cloudinary.config({
-  cloud_name:process.env.CLOUD_NAME,
-  api_key: process.env.API_KEY_CLOUDINARY,
-  api_secret: process.env.API_SECRET
-});
-
-// Register aqui hay ebviar la foto
+// Nuewvo registro sin codigo
 router.post('/register/new-pet', async(req, res, next) => {
-  const obj = JSON.parse(JSON.stringify(req.body));
-  Pet.findOne({email: obj.email}, async function (err, myUser) {
-    
+  const {petName, phone, userState, email, password, petStatus, genderSelected, isActivated } = JSON.parse(JSON.stringify(req.body));
+  Pet.findOne({email: email}, async function (err, myUser) {
     if (!err){
       if(myUser){
+        await fs.unlink(req.file.path);
         res.json({ success: false, msg: 'El correo ya existe en el sistema' });
       }else{
-          const result = await cloudinary.uploader.upload(req.file != undefined ? req.file.path : obj.image);
-          let newPet = new Pet({
-            petName: obj.petName,
-            phone: obj.phone,
-            email: obj.email.toLowerCase(),
-            password: obj.password,
-            lat: obj.lat,
-            lng: obj.lng,
-            userState: obj.userState,
-            genderSelected: obj.genderSelected,
-            photo: result.secure_url == undefined ? obj.image : result.secure_url,
-            petStatus: obj.petStatus,
-            isActivated: false,
-            phoneVeterinarian: '00000000',
-            permissions: {
-              showPhoneInfo: true,
-              showEmailInfo: true,
-              showLinkTwitter: true,
-              showLinkFacebook: true,
-              showLinkInstagram: true,
-              showOwnerPetName: true,
-              showBirthDate: true,
-              showAddressInfo: true,
-              showAgeInfo: true,
-              showVeterinarianContact: true,
-              showPhoneVeterinarian: true,
-              showHealthAndRequirements: true,
-              showFavoriteActivities: true,
-              showLocationInfo: true
-            }
-          });
-        Pet.addPet(newPet, async (user, done) => {
+        const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.image, {folder: "mascotas_cr"});
+        const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
+        const newPet = new Pet( {
+          petName,
+          phone,
+          userState,
+          email,
+          password,
+          petStatus,
+          genderSelected,
+          isActivated,
+          photo: result.secure_url,
+          photo_id: result.public_id,
+          permissions : permissions
+        });
+      
+        Pet.addPet(newPet, async(_err, pPet, _done) => {
           try {
-              var smtpTransport = nodemailer.createTransport({
-                host: process.env.ZOHO_HOST,
-                port: process.env.ZOHO_PORT,
-                secure: true,
-                logger: true,
-                debug: true,
-                auth: {
-                  user: process.env.ZOHO_USER,
-                  pass: process.env.ZOHO_PASSWORD
-                },
-                tls: {
-                  // do not fail on invalid certs
-                  rejectUnauthorized: false
-                }
-              });
-            
-              const handlebarOptions = {
-                viewEngine: {
-                  extName: ".handlebars",
-                  partialsDir: path.resolve(__dirname, "views"),
-                  defaultLayout: false,
-                },
-                viewPath: path.resolve(__dirname, "views"),
+            await fs.unlink(req.file.path);
+            var smtpTransport = nodemailer.createTransport({
+              host: process.env.ZOHO_HOST,
+              port: process.env.ZOHO_PORT,
+              secure: true,
+              logger: true,
+              debug: true,
+              auth: {
+                user: process.env.ZOHO_USER,
+                pass: process.env.ZOHO_PASSWORD
+              },
+              tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
+              }
+            });
+          
+            const handlebarOptions = {
+              viewEngine: {
                 extName: ".handlebars",
-              };
-              
-              smtpTransport.use(
-                "compile",
-                hbs(handlebarOptions)
-              );
+                partialsDir: path.resolve(__dirname, "views"),
+                defaultLayout: false,
+              },
+              viewPath: path.resolve(__dirname, "views"),
+              extName: ".handlebars",
+            };
             
-              smtpTransport.verify(function(error, success) {
-                if (error) {
-                  console.log(error);
-                } else {
-                  console.log("Server is ready to take our messages");
-                }
-              });
-            
-              var mailOptions = {
-                to: newPet.email,
-                from: 'soporte@localpetsandfamily.com',
-                subject: 'LocalPetsAndFamily registro realizado exitosamente',
-                attachments: [
-                  {filename: 'localpetslogo.jpg', path:'./src/assets/localpetslogo.jpg'}
-                ],
-                template: 'index',
-                context: {
-                  text: 'Recibe esto porque usted (u otra persona) se ha registrado dentro de nuestra plataforma .\n\n' +
-                  'Haga clic en el siguiente enlace en su navegador para poder iniciar sesion:\n\n' +
-                  'Si no lo solicitó, ignore este correo electrónico.\n',
-                  link: 'https://www.localpetsandfamily.com/login-pets',
-                  textLink: 'Ir a iniciar sesión'
-                } 
-              };
-            
-              smtpTransport.sendMail(mailOptions, function(err) {
-                res.json({ success: true, msg: 'Su registro ha sido authenticado correctamente. Haz click en ok para iniciar sesión' });
-              });
-            } catch (err) {
-              res.json({ success: false, msg: 'Este Correo Ya existe.!' });
-              next(err);
-            }
+            smtpTransport.use(
+              "compile",
+              hbs(handlebarOptions)
+            );
+          
+            smtpTransport.verify(function(error, success) {
+              if (error) {
+                console.log(error);
+              } else {
+                console.log("Server is ready to take our messages");
+              }
+            });
+          
+            var mailOptions = {
+              to: email,
+              from: 'soporte@localpetsandfamily.com',
+              subject: 'Registro Exitoso en Plaquitas para mascotas CR',
+              template: 'email-new-pet',
+              template: 'email-new-pet',
+              context: {
+                text1: 'Estimado, ' + petName + '\n\n',
+                text2: '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
+                text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
+                petName: petName,
+                email: email,
+                text4: 'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
+                text5: 'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
+                text6: 'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
+                text7: '¡Bienvenido a bordo! ' + petName,
+                text8: 'Atentamente,',
+                text9: 'El Equipo de Plaquitas para mascotas CR',
+                textLink: 'Iniciar Sesión',
+                link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/login-pets'  : 'https://' + 'www.localpetsandfamily.com' + '/login-pets'
+              } 
+            };
+          
+            smtpTransport.sendMail(mailOptions, function(err) {
+              res.json({ success: true, msg: 'Su registro ha sido authenticado correctamente. Haz click en ok para iniciar sesión' });
+            });
+          } catch (err) {
+            res.json({success: false, message: 'El correo ya existe..!'});
+            next(err);
+          }
+      
         });
       }
-      
-    } else {
-      res.json({ success: false, msg: 'Ocurrió un problema favor de reportar al administrador' });
     }
-      
-    })
+
+  });
 });
 
 router.post('/register/new-petByUserPet', async(req, res) => {
@@ -253,7 +213,7 @@ router.post('/register/new-petByUserPet', async(req, res) => {
       from: 'soporte@localpetsandfamily.com',
       subject: 'LocalPetsAndFamily registro de nuevo can',
       attachments: [
-        {filename: 'localpetslogo.jpg', path:'./src/assets/localpetslogo.jpg'}
+        {filename: 'localpetslogo.jpg', path:'https://res.cloudinary.com/ensamble/image/upload/v1613167406/6f34a0248653a5483ac7d7950fc13ce4_2_shgyuj.png'}
       ],
       template: 'products',
       context: {
@@ -280,7 +240,7 @@ router.post('/authenticate', (req, res, next) => {
   Pet.getUserByUsername(email, (err, pet) => {
     if(err) throw err;
     if(!pet) {
-      return res.json({success: false, msg: 'Email not found'});
+      return res.json({success: false, msg: 'El correo ingresado no existe, favor revise de nuevo'});
     }
 
     Pet.comparePassword(password, pet.password, (err, isMatch) => {
@@ -513,7 +473,7 @@ router.put('/register/new-pet-code-generator', async(req, res, next) => {
                             from: 'soporte@localpetsandfamily.com',
                             subject: 'LocalPetsAndFamily registro realizado exitosamente',
                             attachments: [
-                              {filename: 'localpetslogo.jpg', path:'./src/assets/localpetslogo.jpg'}
+                              {filename: 'localpetslogo.jpg', path:'https://res.cloudinary.com/ensamble/image/upload/v1613167406/6f34a0248653a5483ac7d7950fc13ce4_2_shgyuj.png'}
                             ],
                             template: 'index',
                             context: {
@@ -661,8 +621,11 @@ router.get('/getPetDataList', function(req, res){
           var firstLetters = results.email;
           var lastLetters = results.email;
           var phone = results.phone;
-          var phoneVetrinarian = results.phoneVeterinarian;
-          const test5 = phoneVetrinarian.toString().slice(phoneVetrinarian.toString().length - 2);
+          const test5 = '';
+          if(results.phoneVeterinarian){
+            var phoneVetrinarian = results.phoneVeterinarian;
+            const test5 = phoneVetrinarian.toString().slice(phoneVetrinarian.toString().length - 2);
+          }
           let test = firstLetters.slice(0,5);
           const test2 = lastLetters.slice(lastLetters.length - 4);
           const test3 = Math.floor(Math.random() * (12 - 5 + 1)) + 5;
@@ -968,9 +931,12 @@ router.post('/register/generateQrCodePet', async(req, res) => {
 
   objProducts.forEach(item => {
     if(item.idCan == obj._id){
-      item.link = 'https://' + req.headers.host + '/myPetCode/' + obj._id +'/'+ 0
+      item.link = 'https://' + 'www.localpetsandfamily.com' + '/myPetCode/' + obj._id +'/'+ 0
+      
+      // item.link = 'https://' + req.headers.host + '/myPetCode/' + obj._id +'/'+ 0
     }else {
-      item.link = 'https://' + req.headers.host + '/myPetCode/' + obj._id +'/'+ item.idCan
+      item.link = 'https://' + 'www.localpetsandfamily.com' + '/myPetCode/' + obj._id +'/'+ item.idCan
+      //item.link = 'https://' + req.headers.host + '/myPetCode/' + obj._id +'/'+ item.idCan
     }
   })
 
@@ -1279,7 +1245,8 @@ router.get('/getNewCodes', function(req, res){
         randomCode: item.randomCode,
         isActivated: item.isActivated,
         stateActivation: item.stateActivation,
-        link: 'https://' + req.headers.host + '/myPetCode/' + item._id +'/'+ 0
+        link: 'https://www.localpetsandfamily.com/myPetCode/' + item._id +'/'+ 0
+        // link: 'https://' + req.headers.host + '/myPetCode/' + item._id +'/'+ 0
         // newPetProfile: (newPetObject.length > 0)? newPetObject: null
       }
       object.push(test);  
@@ -1805,6 +1772,7 @@ router.put('/update/updateReportLostPetStatus', async(req, res, next) => {
 
 
 router.post('/forgot', (req, res, next) => {
+  console.log('pasas aqui', req.body)
   const obj = JSON.parse(JSON.stringify(req.body));
   async.waterfall([
     function(done) {
@@ -1816,7 +1784,7 @@ router.post('/forgot', (req, res, next) => {
     function(token, done) {
         Pet.findOne({ email: obj.email }, (err, user) => {
         if (!user) {
-         return res.json({success:false,msg: 'Email not found'});
+         return res.json({success:false,msg: 'El correo ingresado no existe, favor revise de nuevo'});
         }
 
         if(user != null) {
@@ -1870,17 +1838,19 @@ router.post('/forgot', (req, res, next) => {
       var mailOptions = {
         to: user.email,
         from: '	soporte@localpetsandfamily.com',
-        subject: 'LocalPetsAndFamily restablecimiento de la contraseña',
-        attachments: [
-          {filename: 'localpetslogo.jpg', path:'./src/assets/localpetslogo.jpg'}
-        ],
-        template: 'index',
+        subject: 'Plaquitas para mascotas CR restablecimiento de la contraseña',
+        template: 'email-forgot',
         context: {
-          text: 'Recibe esto porque usted (u otra persona) ha solicitado el restablecimiento de la contraseña de su cuenta.\n\n' +
-          'Haga clic en el siguiente enlace o péguelo en su navegador para completar el proceso:\n\n' +
-          'Si no lo solicitó, ignore este correo electrónico y su contraseña permanecerá sin cambios.\n',
-          link: (req.headers.host == 'localhost:8080')? 'https://localhost:4100/reset-pets/' + token  : 'https://' + req.headers.host + '/reset-pets/' + token,
-          textLink: 'Ir al enlace'
+          text1: 'Estimado usuario, \n\n',
+          text2: 'Recibe este correo electrónico porque usted, o alguien en su representación, ha solicitado restablecer la contraseña de su cuenta.',
+          text3: 'Para completar este proceso, por favor haga clic en el enlace proporcionado a continuación o cópielo y péguelo en su navegador:\n\n',
+          linkSend: 'https://' + 'www.localpetsandfamily.com' + '/reset-pets/' + token + ' \n\n',
+          text4: 'Si usted no solicitó este restablecimiento de contraseña, le pedimos que por favor ignore este correo electrónico. En tal caso, su contraseña seguirá siendo la misma y segura.\n\n',
+          text5: 'Gracias por utilizar nuestros servicios y por mantener su cuenta segura.\n\n',
+          text6: 'Atentamente.\n\n',
+          text7:'Plaquitas para mascotas CR',
+          textLink: 'Ir al enlace',
+          link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/reset-pets/' + token  : 'https://' + 'www.localpetsandfamily.com' + '/reset-pets/' + token
         } 
       };
       smtpTransport.sendMail(mailOptions, function(err) {
@@ -1978,15 +1948,12 @@ router.post('/reset-pets/', function(req, res) {
       var mailOptions = {
         to: user.email,
         from: '	soporte@localpetsandfamily.com',
-        subject: 'LocalPetsAndFamily restablecimiento de la contraseña',
-        attachments: [
-          {filename: 'localpetslogo.jpg', path:'./src/assets/localpetslogo.jpg'}
-        ],
+        subject: 'Plaquitas para mascotas CR, restablecimiento de la contraseña',
         template: 'index',
         context: {
           text: 'La contraseña de su correo ' + user.email + ' ha sido actualizada satisfactoriamente.\n',
           link: 'https://www.localpetsandfamily.com/login-pets',
-          textLink: 'Ir a iniciar sesión'
+          textLink: 'Iniciar sesión'
         } 
       };
 
@@ -1997,332 +1964,6 @@ router.post('/reset-pets/', function(req, res) {
     }
   ], function(err) {
     res.redirect('/login');
-  });
-});
-
-//---------------CALENDAR--------------//
-
-router.post('/calendar/authentication', function(req, resp){
-  const fs = require('fs');
-  const { google } = require('googleapis')
-  const tkn = req.body.token;
-  // If modifying these scopes, delete token.json.
-  const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
-  // The file token.json stores the user's access and refresh tokens, and is
-  // created automatically when the authorization flow completes for the first
-  // time.
-  const TOKEN_PATH = 'token.json';
-
-  // Load client secrets from a local file.
-  fs.readFile('credentials.json', (err, content) => {
-    if (err) return authorize(content, listEvents); //console.log('Error loading client secret file:', err);
-    // Authorize a client with credentials, then call the Google Calendar API.
-    // authorize(JSON.parse(content), listEvents);
-  });
-
-  /**
-   * Create an OAuth2 client with the given credentials, and then execute the
-   * given callback function.
-   * @param {Object} credentials The authorization client credentials.
-   * @param {function} callback The callback to call with the authorized client.
-   */
-  function authorize(credentials, callback) {
-
-      credentials = process.env.GOOGLE_SECRET, process.env.GOOGLE_CLIENT, process.env.GOOGLE_REDIRECT_URIS; 
-
-      const oAuth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT, process.env.GOOGLE_SECRET, process.env.GOOGLE_REDIRECT_URIS);
-
-      // Check if we have previously stored a token.
-      fs.readFile(TOKEN_PATH, (err, token) => {
-          if(token == undefined){
-            Pet.findOne({_id: req.body._id }, (error, pet) => {
-              if (!pet) {
-                return res.json({success:false,msg: 'Usuario no encontrado'});
-              }
-               if(pet != null) {
-                 var arrayPet = [];
-                arrayPet.push(pet);
-                arrayPet.forEach(element => {
-                    element["token"] = '';
-                    pet.save();
-                    try {
-                      console.log('opppps');
-                    } catch (err) {
-                      console.log('token error' , err);
-                    }
-                })
-               }
-             });
-          }
-          if (err) return getAccessToken(oAuth2Client, callback);
-          oAuth2Client.setCredentials(JSON.parse(token));
-          callback(oAuth2Client);
-      });
-  }
-
-  /**
-   * Get and store new token after prompting for user authorization, and then
-   * execute the given callback with the authorized OAuth2 client.
-   * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
-   * @param {getEventsCallback} callback The callback for the authorized client.
-   */
-  function getAccessToken(oAuth2Client, callback) {
-      oAuth2Client.getToken(tkn, (err, token) => {
-        if(token != null){
-          if (err) return console.error('Error retrieving access token', err);
-          oAuth2Client.setCredentials(token);
-          // Store the token to disk for later program executions
-          fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-            if (err) return console.error(err);
-            resp.json({success:false,status: 200, msg: 'Se genero el token correctamente'});
-          });
-          callback(oAuth2Client);
-        }else{
-          resp.json({success:false, msg: 'Este token no sirve'});
-        }
-      });
-  }
-
-  /**
-   * Lists the next 10 events on the user's primary calendar.
-   * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
-   */
-  function listEvents(auth) {
-    // async function fun(){
-    const calendar = google.calendar({version: 'v3', auth});
-    calendar.events.list({
-      calendarId: 'primary',
-      timeMin: (new Date()).toISOString(),
-      maxResults: 10,
-      singleEvents: true,
-      orderBy: 'startTime',
-    }, (err, res) => {
-      if (err){
-        const TOKEN_PATH = 'token.json';
-        console.log('The API returned an error: ' + err);
-        const fs = require('fs')
-        fs.readFile(TOKEN_PATH, (err, token) => {
-          if(token){
-            fs.unlinkSync(TOKEN_PATH)
-          }
-        })
-        Pet.findOne({_id: req.body._id }, (error, pet) => {
-          if (!pet) {
-            return res.json({success:false,msg: 'Usuario no encontrado'});
-          }
-           if(pet != null) {
-             var arrayPet = [];
-            arrayPet.push(pet);
-            arrayPet.forEach(element => {
-              element["token"] = '';
-                pet.save();
-                try {
-                  console.log('token eliminado');
-                } catch (err) {
-                  console.log('token error' , error);
-                }
-
-            })
-           }
-         });
-        return resp.json({success:false,status: 200, msg: 'Se cerro la sesion, por favor inicie sesion de nuevo'});
-      } 
-      const events = res.data.items;
-      if (events.length) {
-       var arrayEvents = [];
-        events.map((event, i) => {
-          arrayEvents.push(event);  
-        });
-        resp.json({success:true,events: arrayEvents});
-
-        Pet.findOne({_id: req.body._id }, (error, pet) => {
-          if (!pet) {
-            return res.json({success:false,msg: 'Usuario no encontrado'});
-          }
-           if(pet != null) {
-             var arrayPet = [];
-            arrayPet.push(pet);
-            arrayPet.forEach(element => {
-              element["token"] = req.body.token;
-                pet.save();
-                try {
-                  console.log('token hecho');
-                } catch (err) {
-                  console.log('token error' , error);
-                }
-
-            })
-           }
-         });
-      } else {
-        res.json({success:true,msg: 'No se han encontrado ningun evento'});
-        console.log('No upcoming events found.');
-      }
-    });
-  }
-  //fun();
-//  }
-});
-
-
-router.post('/calendar/close-sesion', async(req, res, next) => {
-  const TOKEN_PATH = 'token.json';
-  await Pet.findOne({_id: req.body._id }, (err, pet) => {
-    if (!pet) {
-      return res.json({success:false,msg: 'Usuario no encontrado'});
-    }
-     if(pet != null) {
-        var arrayPet = [];
-          arrayPet.push(pet);
-          arrayPet.forEach(element => {
-            element["token"] = '';
-            pet.save();
-            try {
-              const fs = require('fs')
-              fs.readFile(TOKEN_PATH, (err, token) => {
-                if(token){
-                  fs.unlinkSync(TOKEN_PATH)
-                }
-              })
-              res.json({success:true,msg: 'Sesion terminada' });
-            } catch (err) {
-              console.log('token error' , err);
-            }
-        })
-     }
-   });
-});
-
-
-router.post('/calendar/send-new-event', function(req, resp) {
-  const obj = JSON.parse(JSON.stringify(req.body));
-  // Create a new calender instance.
-  const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
-
-  // Create a new event start date instance for temp uses in our calendar.
-  const eventStartTime = new Date()
-  eventStartTime.setDate(eventStartTime.getDate()+ parseInt(obj.date))
-
-  // Create a new event end date instance for temp uses in our calendar.
-  const eventEndTime = new Date()
-  eventEndTime.setDate(eventEndTime.getDate()+ parseInt(obj.enddate))
-  eventEndTime.setMinutes(eventEndTime.getMinutes() + 45)
-
-  // Create a dummy event for temp uses in our calendar
-  const event = {
-    summary: obj.title,
-    // location: `3595 California St, San Francisco, CA 94118`,
-    description: obj.description,
-    colorId: 1,
-    start: {
-      dateTime: eventStartTime,
-      timeZone: 'America/Denver',
-    },
-    end: {
-      dateTime: eventEndTime,
-      timeZone: 'America/Denver',
-    },
-  }
-
-  // Check if we a busy and have an event on our calendar for the same time.
-  calendar.freebusy.query(
-    {
-      resource: {
-        timeMin: eventStartTime,
-        timeMax: eventEndTime,
-        timeZone: 'America/Denver',
-        items: [{ id: 'primary' }],
-      },
-    },
-    (err, res) => {
-      // Check for errors in our query and log them if they exist.
-      if (err) return console.error('Free Busy Query Error: ', err)
-
-      // Create an array of all events on our calendar during that time.
-      const eventArr = res.data.calendars.primary.busy
-
-      // Check if event array is empty which means we are not busy
-      if (eventArr.length === 0)
-        // If we are not busy create a new calendar event.
-        return calendar.events.insert(
-          { calendarId: 'primary', resource: event },
-          err => {
-            // Check for errors and log them if they exist.
-            if (err) return resp.json({success:false,msg: 'Error creando el mensaje: '+err+'.'});
-            // Else log that the event was created.
-            return  resp.json({success:true,msg: 'Evento creado exitosamente.'});
-          }
-        )
-
-      // If event array is not empty log that we are busy.
-      return resp.json({success:false,msg: 'Lo sentimos, el usuario tiene una cita pendiente a esa hora'});
-    }
-  )
-});
-
-
-router.post('/calendar/delete-event', (req, res, next) => {
-  const obj = JSON.parse(JSON.stringify(req.body));
-  // Create a new calender instance.
-  const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
-
-  var params = {
-    calendarId: 'primary',
-    eventId: obj.eventId,
-  };
-
-  calendar.events.delete(params, function(err) {
-    if (err) {
-      console.log('The API returned an error delete: ' + err);
-      return;
-    }
-    res.json({success:true,msg: 'Evento eliminado exitosamente.'});
-  });
-});
-
-router.post('/calendar/edit-event', (req, res, next) => {
-  const obj = JSON.parse(JSON.stringify(req.body));
-  // Create a new calender instance.
-  const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
-
-  const event = calendar.events.get({"calendarId": 'primary', "eventId": obj.eventId});
-
-
-  // Create a new event start date instance for temp uses in our calendar.
-  const eventStartTime = new Date()
-  eventStartTime.setDate(eventStartTime.getDate()+ parseInt(obj.date))
-
-  // Create a new event end date instance for temp uses in our calendar.
-  const eventEndTime = new Date()
-  eventEndTime.setDate(eventEndTime.getDate()+ parseInt(obj.enddate))
-  eventEndTime.setMinutes(eventEndTime.getMinutes() + 45)
-
-  // Create a dummy event for temp uses in our calendar
-  const eventObj = {
-    summary: obj.title,
-    // location: `3595 California St, San Francisco, CA 94118`,
-    description: obj.description,
-    colorId: 1,
-    start: {
-      dateTime: eventStartTime,
-      timeZone: 'America/Denver',
-    },
-    end: {
-      dateTime: eventEndTime,
-      timeZone: 'America/Denver',
-    },
-  }
-
-  calendar.events.patch({
-    'calendarId': 'primary',
-    'eventId': obj.eventId,
-    'resource': eventObj
-  }).then(function(err){
-    if (!err) {
-      console.log('The API returned an error edit: ' + err);
-      return;
-    }
-    res.json({success:true,msg: 'Evento actualizado exitosamente.'});
   });
 });
 
