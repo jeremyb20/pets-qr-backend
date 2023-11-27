@@ -1,7 +1,6 @@
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
 const User = require('../models/user');
-const Company = require('../models/pet');
 require('dotenv').config();
 
 module.exports = function(passport) {
@@ -28,31 +27,6 @@ module.exports = function(passport) {
 
       if(user) {
         return done(null, user);
-      } else {
-        return done(null, false);
-      }
-    });
-
-    Company.getCompanyById(jwt_payload.data._id, (err, company) => {
-      if(err) {
-        return done(err, false);
-      }
-
-      if(company) {
-        return done(null, company);
-      } else {
-        return done(null, false);
-      }
-    });
-
-
-    Company.getUsers(jwt_payload.data, (err, company) => {
-      if(err) {
-        return done(err, false);
-      }
-
-      if(company) {
-        return done(null, company);
       } else {
         return done(null, false);
       }

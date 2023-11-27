@@ -12,7 +12,6 @@ catalogCtl.getAllCatalog = async (_req, res) => {
     } else {
         res.json({ listaCatalogos: catalog, success: true });
     }
-
 }
 
 catalogCtl.createCatalog = async (req, res, next) => {

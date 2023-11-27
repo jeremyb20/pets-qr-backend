@@ -10,6 +10,8 @@ curl -L https://fly.io/install.sh | sh
 
 fly auth login
 
-// para subir a prod
-
+// para subir un nuevo proyecto
 fly launch --now
+
+// para subir un update de petsqrbackend
+fly deploy

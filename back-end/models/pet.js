@@ -9,7 +9,7 @@ const PetSchema = new Schema({
     type: String
   },
   phone:{
-    type: Number,
+    type: String,
     require: true
   },
   email: {
@@ -35,6 +35,10 @@ const PetSchema = new Schema({
   },
   photo_id: {
     type: String,
+    require: true
+  },
+  isPrimary: {
+    type: Boolean,
     require: true
   },
   linkTwitter: {
@@ -98,7 +102,7 @@ const PetSchema = new Schema({
     require: false
   },
   phoneVeterinarian:{
-    type: Number,
+    type: String,
     require: false
   },
   veterinarianContact: {
@@ -195,158 +199,166 @@ const PetSchema = new Schema({
   }],
   newPetProfile: [
     {
-      petName: {
-        type: String
-      },
-      phone:{
-        type: Number,
-        require: false
-      },
-      email: {
-        type: String,
-        require: false,
-        unique: false
-      },
-      lat: {
-        type: String,
-        require: false
-      },
-      lng: {
-        type: String,
-        require: false
-      },
-      photo: {
-        type: String,
-        require: false
-      },
-      linkTwitter: {
-        type: String,
-        require: false
-      },
-      linkFacebook: {
-        type: String,
-        require: false
-      },
-      linkInstagram: {
-        type: String,
-        require: false
-      },
-      userState: {
-        type: Number,
-        require: false
-      },
-      ownerPetName: {
-        type: String,
-        require: false
-      },
-      birthDate: {
-        type: String,
-        require: false
-      },
-      address: {
-        type: String,
-        require: false
-      },
-      age: {
-        type: Number,
-        require: false
-      },
-      phoneVeterinarian:{
-        type: Number,
-        require: false
-      },
-      veterinarianContact: {
-        type: String,
-        require: false
-      },
-      healthAndRequirements: {
-        type: String,
-        require: false
-      },
-      favoriteActivities: {
-        type: String,
-        require: false
-      },
-      petStatus : {
-        type: String,
-        require: false
-      },
-      permissions: [{
-        showPhoneInfo: {
-          type: Boolean,
-          require: false
-        },
-        showEmailInfo: {
-          type: Boolean,
-          require: false
-        },
-        showLinkTwitter: {
-          type: Boolean,
-          require: false
-        },
-        showLinkFacebook: {
-          type: Boolean,
-          require: false
-        },
-        showLinkInstagram: {
-          type: Boolean,
-          require: false
-        },
-        showOwnerPetName: {
-          type: Boolean,
-          require: false
-        },
-        showBirthDate: {
-          type: Boolean,
-          require: false
-        },
-        showAddressInfo: {
-          type: Boolean,
-          require: false
-        },
-        showAgeInfo: {
-          type: Boolean,
-          require: false
-        },
-        showVeterinarianContact: {
-          type: Boolean,
-          require: false
-        },
-        showPhoneVeterinarian: {
-          type: Boolean,
-          require: false
-        },
-        showHealthAndRequirements: {
-          type: Boolean,
-          require: false
-        },
-        showFavoriteActivities: {
-          type: Boolean,
-          require: false
-        },
-        showLocationInfo: {
-          type:Boolean,
-          require: false
-        }
-      }],
-      petStatusReport :[{
-        lastPlaceLost: {
-          type: String,
-          require: false
-        },
-        date: {
-          type: String,
-          require: false
-        },
-        petStatus: {
-          type: String,
-          require: false
-        },
-        descriptionLost: {
-          type: String,
-          require: false
-        }
-      }]
+        type: new Schema( 
+            {
+                genderSelected: {
+                    type: String,
+                    require: false
+                },
+                petName: {
+                    type: String,
+                    require: false
+                },
+                petStatus : {
+                    type: String,
+                    require: false
+                },
+                email: {
+                    type: String,
+                    require: false,
+                },
+                phone:{
+                    type: String,
+                    require: true
+                },
+                ownerPetName: {
+                    type: String,
+                    require: false
+                },
+                address: {
+                    type: String,
+                    require: false
+                },
+                birthDate: {
+                    type: String,
+                    require: false
+                },
+                favoriteActivities: {
+                    type: String,
+                    require: false
+                },
+                healthAndRequirements: {
+                    type: String,
+                    require: false
+                },
+                phoneVeterinarian:{
+                    type: String,
+                    require: false
+                },
+                veterinarianContact: {
+                    type: String,
+                    require: false
+                },
+                photo: {
+                    type: String,
+                    require: false
+                },
+                photo_id: {
+                    type: String,
+                    require: false
+                },
+                lat: {
+                    type: String,
+                    require: false
+                },
+                lng: {
+                    type: String,
+                    require: false
+                },
+                linkTwitter: {
+                    type: String,
+                    require: false
+                },
+                linkFacebook: {
+                    type: String,
+                    require: false
+                },
+                linkInstagram: {
+                    type: String,
+                    require: false
+                },
+                permissions: [{
+                    showPhoneInfo: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showEmailInfo: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showLinkTwitter: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showLinkFacebook: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showLinkInstagram: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showOwnerPetName: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showBirthDate: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showAddressInfo: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showAgeInfo: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showVeterinarianContact: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showPhoneVeterinarian: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showHealthAndRequirements: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showFavoriteActivities: {
+                        type: Boolean,
+                        require: false
+                    },
+                    showLocationInfo: {
+                        type:Boolean,
+                        require: false
+                    }
+                }],
+                petStatusReport :[{
+                    lastPlaceLost: {
+                        type: String,
+                        require: false
+                    },
+                    date: {
+                        type: String,
+                        require: false
+                    },
+                    petStatus: {
+                        type: String,
+                        require: false
+                    },
+                    descriptionLost: {
+                        type: String,
+                        require: false
+                    }
+                }]
+            },
+            {  
+                timestamps: true,
+                versionKey: false
+            }
+        )
     }
   ],
 }, 
