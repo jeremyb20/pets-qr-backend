@@ -2,9 +2,48 @@ const userCtl = {}
 const cloudinary = require('cloudinary').v2;
 const Pet = require('../models/pet');
 const fs = require('fs-extra');
+const crypto = require('crypto'); //Encripta el token de recuperacion de password
+const async = require('async');
+const bcrypt = require('bcryptjs');// Desencripta el token
 const nodemailer = require('nodemailer');
 const hbs = require('nodemailer-express-handlebars');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+userCtl.authenticate =  async (req, res) => {
+    const { email, password } = req.body;
+
+    Pet.getUserByUsername(email, (err, pet) => {
+        if (err) throw err;
+        if (!pet) {
+            return res.json({ success: false, msg: 'Email not found' });
+        }
+
+        Pet.comparePassword(password, pet.password, (err, isMatch) => {
+            if (err) throw err;
+            if (isMatch) {
+                const token = jwt.sign({ data: pet.email }, process.env.SECRET, {
+                    expiresIn: 86400   // 1 week: 604800 1 day 86400 //60 one minute 
+                });
+                res.json({
+                    success: true,
+                    token: 'JWT ' + token,
+                    payload: {
+                        id: pet._id,
+                        userState: pet.userState,
+                        petName: pet.petName,
+                        photo: pet.photo,
+                        email: pet.email,
+                        idSecond: 0
+                    }
+                })
+            } else {
+                return res.json({ success: false, msg: 'Wrong password' });
+            }
+        });
+    });
+}
 
 userCtl.getUserProfileById = async (req, res) => {
     const user = await Pet.findById({_id: req.query.id});
@@ -81,8 +120,7 @@ userCtl.editProfileSecondaryInfo = async ( req,res )=> {
 }
 
 userCtl.registerNewPet = async(req, res, next) => {
-    const {petName, phone, email, password, genderSelected, userState, petStatus, isActivated } = req.body;
-
+    const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password } = req.body;
     Pet.findOne({email: email}, async (err, myUser) => {
         if (!err){
           if(myUser){
@@ -92,17 +130,10 @@ userCtl.registerNewPet = async(req, res, next) => {
             const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
             const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
             const newPet = new Pet( {
-              petName,
-              phone,
-              userState,
-              email,
-              password,
-              petStatus,
-              genderSelected,
-              isActivated,
-              photo: result.secure_url,
-              photo_id: result.public_id,
-              permissions : permissions
+                email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, 
+                photo: result.secure_url,
+                photo_id: result.public_id,
+                permissions : permissions
             });
           
             Pet.addPet(newPet, async(_err, pPet, _done) => {
@@ -165,7 +196,7 @@ userCtl.registerNewPet = async(req, res, next) => {
                     text8: 'Atentamente,',
                     text9: 'El Equipo de Plaquitas para mascotas CR',
                     textLink: 'Iniciar Sesión',
-                    link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/login-pets'  : 'https://' + 'www.localpetsandfamily.com' + '/login-pets'
+                    link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/login-pets'  : 'https://' + process.env.DOMAIN_WEB + '/login'
                   } 
                 };
               
@@ -296,7 +327,7 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
                                             text8: 'Atentamente,',
                                             text9: 'El Equipo de Plaquitas para mascotas CR',
                                             textLink: 'Iniciar Sesión',
-                                            link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/login-pets' : 'https://' + 'www.localpetsandfamily.com' + '/login-pets'
+                                            link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/login-pets' : 'https://' + process.env.DOMAIN_WEB + '/login'
                                         }
                                     };
 
@@ -363,6 +394,185 @@ userCtl.deletePetById = async(req, res, next) => {
     } catch (error) {
         res.json({ success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error)) });
     }
+}
+
+userCtl.forgot = async(req, res, next) => {
+    const { email } = req.body;
+    async.waterfall([
+        function (done) {
+            crypto.randomBytes(20, function (err, buf) {
+                var token = buf.toString('hex');
+                done(err, token);
+            });
+        },
+        function (token, done) {
+            Pet.findOne({ email: email }, (err, user) => {
+                if (!user) {
+                    return res.json({ success: false, msg: 'Email not found' });
+                }
+
+                if (user != null) {
+                    user.resetPasswordToken = token;
+                    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+                    user.save(function (err) {
+                        done(err, token, user);
+                    });
+                }
+            });
+        },
+        function (token, user, done) {
+            var smtpTransport = nodemailer.createTransport({
+                host: process.env.ZOHO_HOST,
+                port: process.env.ZOHO_PORT,
+                secure: true,
+                logger: true,
+                debug: true,
+                auth: {
+                    user: process.env.ZOHO_USER,
+                    pass: process.env.ZOHO_PASSWORD
+                },
+                tls: {
+                    // do not fail on invalid certs
+                    rejectUnauthorized: false
+                }
+            });
+
+            const handlebarOptions = {
+                viewEngine: {
+                    extName: ".handlebars",
+                    partialsDir: path.resolve(__dirname, "views"),
+                    defaultLayout: false,
+                },
+                viewPath: path.resolve(__dirname, "views"),
+                extName: ".handlebars",
+            };
+
+            smtpTransport.use(
+                "compile",
+                hbs(handlebarOptions)
+            );
+
+            smtpTransport.verify(function (error, success) {
+                if (error) {
+                    console.log(error);
+                } else {
+                    console.log("Server is ready to take our messages");
+                }
+            });
+            var mailOptions = {
+                to: user.email,
+                from: '	soporte@localpetsandfamily.com',
+                subject: 'Plaquitas para mascotas CR restablecimiento de la contraseña',
+                template: 'email-forgot',
+                context: {
+                    text1: 'Estimado usuario, \n\n',
+                    text2: 'Recibe este correo electrónico porque usted, o alguien en su representación, ha solicitado restablecer la contraseña de su cuenta.',
+                    text3: 'Para completar este proceso, por favor haga clic en el enlace proporcionado a continuación o cópielo y péguelo en su navegador:\n\n',
+                    linkSend: 'https://' + process.env.DOMAIN_WEB + '/reset-password/' + token + ' \n\n',
+                    text4: 'Si usted no solicitó este restablecimiento de contraseña, le pedimos que por favor ignore este correo electrónico. En tal caso, su contraseña seguirá siendo la misma y segura.\n\n',
+                    text5: 'Gracias por utilizar nuestros servicios y por mantener su cuenta segura.\n\n',
+                    text6: 'Atentamente.\n\n',
+                    text7: 'Plaquitas para mascotas CR',
+                    textLink: 'Ir al enlace',
+                    link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/reset-password/' + token : 'https://' + process.env.DOMAIN_WEB + '/reset-password/' + token
+                }
+            };
+            smtpTransport.sendMail(mailOptions, function (err) {
+                res.json({ success: true, msg: 'Se ha enviado un correo electrónico a ' + user.email + ' con más instrucciones. favor de revisar la carpeta de spam si no ves el correo en tu bandeja principal' });
+                done(err, 'done');
+            });
+        }
+    ], function (err) {
+        res.json({ success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(err)) });
+    });
+}
+
+userCtl.resetPassword = async(req, res, next) => {
+    req.params.token = req.body.token;
+    const { token, password } = req.body;
+    async.waterfall([
+        function (done) {
+            Pet.findOne({ resetPasswordToken: token, resetPasswordExpires: { $gt: Date.now() } }, function (err, user) {
+                if (!user) {
+                    return res.json({ success: false, msg: 'El token de restablecimiento de contraseña no es válido o ha caducado..' });
+                } else{
+                    user.password = password;
+                    user.resetPasswordToken = undefined;
+                    user.resetPasswordExpires = undefined;
+
+                    bcrypt.genSalt(10, function (err, salt) {
+                        if (err) return next(err);
+
+                        bcrypt.hash(user.password, salt, function (err, hash) {
+                            if (err) return next(err);
+                            user.password = hash;
+                            user.save(function (err) {
+                                done(err, user);
+                            });
+                        });
+                    });
+                }
+            });
+        },
+        function (user, done) {
+            var smtpTransport = nodemailer.createTransport({
+                host: process.env.ZOHO_HOST,
+                port: process.env.ZOHO_PORT,
+                secure: true,
+                logger: true,
+                debug: true,
+                auth: {
+                    user: process.env.ZOHO_USER,
+                    pass: process.env.ZOHO_PASSWORD
+                },
+                tls: {
+                    // do not fail on invalid certs
+                    rejectUnauthorized: false
+                }
+            });
+
+            const handlebarOptions = {
+                viewEngine: {
+                    extName: ".handlebars",
+                    partialsDir: path.resolve(__dirname, "views"),
+                    defaultLayout: false,
+                },
+                viewPath: path.resolve(__dirname, "views"),
+                extName: ".handlebars",
+            };
+
+            smtpTransport.use(
+                "compile",
+                hbs(handlebarOptions)
+            );
+
+            smtpTransport.verify(function (error, success) {
+                if (error) {
+                    console.log(error);
+                } else {
+                    console.log("Server is ready to take our messages");
+                }
+            });
+
+            var mailOptions = {
+                to: user.email,
+                from: '	soporte@localpetsandfamily.com',
+                subject: 'Plaquitas para mascotas CR, restablecimiento de la contraseña',
+                template: 'index',
+                context: {
+                    text: 'La contraseña de su correo ' + user.email + ' ha sido actualizada satisfactoriamente.\n',
+                    link: 'https://' + process.env.DOMAIN_WEB + '/login',
+                    textLink: 'Iniciar sesión'
+                }
+            };
+
+            smtpTransport.sendMail(mailOptions, function (err) {
+                res.json({ success: true, msg: 'Your password has been successfully updated.' });
+            });
+        }
+    ], function (err) {
+        res.json({ success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(err)) });
+    });
 }
 
 module.exports = userCtl;

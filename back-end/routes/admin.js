@@ -15,4 +15,6 @@ router.post('/createNewCode', verification, adminCtl.createNewCode);
 
 router.put('/updateStateActivationCode', verification, adminCtl.updateStateActivationCode);
 
+router.get('/getLocationAllPets', verification, adminCtl.getLocationAllPets);
+
 module.exports = router;

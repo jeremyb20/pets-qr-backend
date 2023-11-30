@@ -35,7 +35,6 @@ const storage = multer.diskStorage({
 });
 app.use(multer({storage}).single('image'));
 
-app.use("/api/pet", require('./back-end/routes/pets'));
 app.use("/api/admin", require('./back-end/routes/admin'));
 app.use("/api/user", require('./back-end/routes/users'));
 
