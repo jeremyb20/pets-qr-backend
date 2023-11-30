@@ -2,7 +2,6 @@ const express = require('express');
 const morgan = require('morgan');
 const multer = require('multer');
 const path = require('path');
-const exphbs = require('express-handlebars');
 const cors = require('cors');
 const compression = require('compression');
 require('dotenv').config();
@@ -37,7 +36,6 @@ app.use(multer({storage}).single('image'));
 
 app.use("/api/admin", require('./back-end/routes/admin'));
 app.use("/api/user", require('./back-end/routes/users'));
-
 app.use("/api/catalog", require('./back-end/routes/catalog'));
 
 // Start Server

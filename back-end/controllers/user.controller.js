@@ -1,5 +1,5 @@
 const userCtl = {}
-const cloudinary = require('cloudinary').v2;
+const cloudinary = require('./../cloudinary.config');
 const Pet = require('../models/pet');
 const fs = require('fs-extra');
 const crypto = require('crypto'); //Encripta el token de recuperacion de password
@@ -121,12 +121,12 @@ userCtl.editProfileSecondaryInfo = async ( req,res )=> {
 
 userCtl.registerNewPet = async(req, res, next) => {
     const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password } = req.body;
-    Pet.findOne({email: email}, async (err, myUser) => {
-        if (!err){
-          if(myUser){
-            await fs.unlink(req.file.path);
-            res.json({ success: false, msg: 'The email already exists in the system' });
-          }else{
+    const emailFound = await Pet.findOne({email: email });
+    if(emailFound){
+        await fs.unlink(req.file.path);
+        res.json({ success: false, msg: 'The email already exists in the system' });
+    }else{
+        try {
             const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
             const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
             const newPet = new Pet( {
@@ -135,217 +135,222 @@ userCtl.registerNewPet = async(req, res, next) => {
                 photo_id: result.public_id,
                 permissions : permissions
             });
-          
+        
             Pet.addPet(newPet, async(_err, pPet, _done) => {
-              try {
-                await fs.unlink(req.file.path);
-                var smtpTransport = nodemailer.createTransport({
-                  host: process.env.ZOHO_HOST,
-                  port: process.env.ZOHO_PORT,
-                  secure: true,
-                  logger: true,
-                  debug: true,
-                  auth: {
-                    user: process.env.ZOHO_USER,
-                    pass: process.env.ZOHO_PASSWORD
-                  },
-                  tls: {
-                    // do not fail on invalid certs
-                    rejectUnauthorized: false
-                  }
-                });
-              
-                const handlebarOptions = {
-                  viewEngine: {
-                    extName: ".handlebars",
-                    partialsDir: path.resolve(__dirname, "views"),
-                    defaultLayout: false,
-                  },
-                  viewPath: path.resolve(__dirname, "views"),
-                  extName: ".handlebars",
-                };
+                try {
+                    await fs.unlink(req.file.path);
+                    var smtpTransport = nodemailer.createTransport({
+                    host: process.env.ZOHO_HOST,
+                    port: process.env.ZOHO_PORT,
+                    secure: true,
+                    logger: true,
+                    debug: true,
+                    auth: {
+                        user: process.env.ZOHO_USER,
+                        pass: process.env.ZOHO_PASSWORD
+                    },
+                    tls: {
+                        // do not fail on invalid certs
+                        rejectUnauthorized: false
+                    }
+                    });
                 
-                smtpTransport.use(
-                  "compile",
-                  hbs(handlebarOptions)
-                );
-              
-                smtpTransport.verify(function(error, success) {
-                  if (error) {
-                    console.log(error);
-                  } else {
-                    console.log("Server is ready to take our messages");
-                  }
-                });
-              
-                var mailOptions = {
-                  to: email,
-                  from: 'soporte@localpetsandfamily.com',
-                  subject: 'Registro Exitoso en Plaquitas para mascotas CR',
-                  template: 'email-new-pet',
-                  context: {
-                    text1: 'Estimado, ' + petName + '\n\n',
-                    text2: '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
-                    text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
-                    petName: petName,
-                    email: email,
-                    text4: 'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
-                    text5: 'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
-                    text6: 'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
-                    text7: '¡Bienvenido a bordo! ' + petName,
-                    text8: 'Atentamente,',
-                    text9: 'El Equipo de Plaquitas para mascotas CR',
-                    textLink: 'Iniciar Sesión',
-                    link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/login-pets'  : 'https://' + process.env.DOMAIN_WEB + '/login'
-                  } 
-                };
-              
-                smtpTransport.sendMail(mailOptions, function(err) {
-                  res.json({ success: true, msg: 'Your pet has been created successfully.' });
-                });
+                    const handlebarOptions = {
+                        viewEngine: {
+                            extName: ".handlebars",
+                            partialsDir: path.resolve(__dirname, "views"),
+                            defaultLayout: false,
+                        },
+                        viewPath: path.resolve(__dirname, "views"),
+                        extName: ".handlebars",
+                    };
+                    
+                    smtpTransport.use(
+                        "compile",
+                        hbs(handlebarOptions)
+                    );
+                
+                    smtpTransport.verify(function(error, success) {
+                        if (error) {
+                            console.log(error);
+                        } else {
+                            console.log("Server is ready to take our messages");
+                        }
+                    });
+            
+                    var mailOptions = {
+                        to: email,
+                        from: 'soporte@localpetsandfamily.com',
+                        subject: 'Registro Exitoso en Plaquitas para mascotas CR',
+                        template: 'email-new-pet',
+                        context: {
+                            text1: 'Estimado, ' + petName + '\n\n',
+                            text2: '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
+                            text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
+                            petName: petName,
+                            email: email,
+                            text4: 'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
+                            text5: 'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
+                            text6: 'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
+                            text7: '¡Bienvenido a bordo! ' + petName,
+                            text8: 'Atentamente,',
+                            text9: 'El Equipo de Plaquitas para mascotas CR',
+                            textLink: 'Iniciar Sesión',
+                            link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/login-pets'  : 'https://' + process.env.DOMAIN_WEB + '/login'
+                        } 
+                    };
+            
+                        smtpTransport.sendMail(mailOptions, function(err) {
+                        res.json({ success: true, msg: 'Your pet has been created successfully.' });
+                    });
                 } catch (err) {
                     res.json({success: false, message: 'The email already exists in the system'});
                     next(err);
                 }
             });
-          }
+        } catch (error) {
+            await fs.unlink(req.file.path);
+            res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
         }
-    });  
+    }
+
 }
 
 userCtl.registerNewPetByQRcode = async(req, res, next) => {
     const code = await Pet.findById({_id: req.body._id});
     if(code.randomCode === req.body.codeGenerator){
-        Pet.findOne({email: req.body.email}, async (err, myUser) => {
-            if (!err){
-                if(myUser){
-                  await fs.unlink(req.file.path);
-                  res.json({ success: false, msg: 'The email already exists in the system' });
-                }else{
-                    const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, _id } = req.body;
-                    const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
-                    const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
-                    const newPet = {
-                        _id, 
-                        email,
-                        address,
-                        birthDate,
-                        userState,
-                        favoriteActivities,
-                        healthAndRequirements,
-                        ownerPetName,
-                        phoneVeterinarian,
-                        veterinarianContact,
-                        password,
-                        petStatus,
-                        genderSelected,
-                        isActivated,
-                        petName,
-                        phone,
-                        photo: result.secure_url,
-                        photo_id: result.public_id,
-                        permissions : permissions
-                    }
-
-                    Pet.newPetGeneratorCode(newPet, async(_err, pPet, _done) => {
-                        await Pet.findByIdAndUpdate(pPet._id, { 
-                            email: pPet.email,
-                            password: pPet.password,
-                            address: pPet.address, 
-                            birthDate: pPet.birthDate, 
-                            userState: pPet.userState,
-                            favoriteActivities: pPet.favoriteActivities, 
-                            healthAndRequirements: pPet.healthAndRequirements, 
-                            ownerPetName: pPet.ownerPetName, 
-                            phoneVeterinarian: pPet.phoneVeterinarian, 
-                            veterinarianContact: pPet.veterinarianContact, 
-                            petName: pPet.petName, 
-                            petStatus: pPet.petStatus, 
-                            genderSelected: pPet.genderSelected, 
-                            isActivated: pPet.isActivated,
-                            phone: pPet.phone,
-                            photo: pPet.photo,
-                            photo_id: pPet.photo_id,
-                            permissions: pPet.permissions
-                          }).then( async function(data, err){
-                                try {
-                                    await fs.unlink(req.file.path);
-                                    var smtpTransport = nodemailer.createTransport({
-                                        host: process.env.ZOHO_HOST,
-                                        port: process.env.ZOHO_PORT,
-                                        secure: true,
-                                        logger: true,
-                                        debug: true,
-                                        auth: {
-                                            user: process.env.ZOHO_USER,
-                                            pass: process.env.ZOHO_PASSWORD
-                                        },
-                                        tls: {
-                                            // do not fail on invalid certs
-                                            rejectUnauthorized: false
-                                        }
-                                    });
-
-                                    const handlebarOptions = {
-                                        viewEngine: {
-                                            extName: ".handlebars",
-                                            partialsDir: path.resolve(__dirname, "views"),
-                                            defaultLayout: false,
-                                        },
-                                        viewPath: path.resolve(__dirname, "views"),
-                                        extName: ".handlebars",
-                                    };
-
-                                    smtpTransport.use(
-                                        "compile",
-                                        hbs(handlebarOptions)
-                                    );
-
-                                    smtpTransport.verify(function (error, success) {
-                                        if (error) {
-                                            console.log(error);
-                                        } else {
-                                            console.log("Server is ready to take our messages");
-                                        }
-                                    });
-
-                                    var mailOptions = {
-                                        to: email,
-                                        from: 'soporte@localpetsandfamily.com',
-                                        subject: 'Registro Exitoso en Plaquitas para mascotas CR',
-                                        template: 'email-new-pet',
-                                        context: {
-                                            text1: 'Estimado, ' + petName + '\n\n',
-                                            text2: '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
-                                            text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
-                                            petName: petName,
-                                            email: email,
-                                            text4: 'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
-                                            text5: 'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
-                                            text6: 'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
-                                            text7: '¡Bienvenido a bordo! ' + petName,
-                                            text8: 'Atentamente,',
-                                            text9: 'El Equipo de Plaquitas para mascotas CR',
-                                            textLink: 'Iniciar Sesión',
-                                            link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/login-pets' : 'https://' + process.env.DOMAIN_WEB + '/login'
-                                        }
-                                    };
-
-                                    smtpTransport.sendMail(mailOptions, function (err) {
-                                        res.json({ success: true, msg: 'Your pet has been created successfully.' });
-                                    });
-                                } catch (err) {
-                                    res.json({ success: false, message: 'The email already exists in the system' });
-                                    next(err);
-                                }
-
-                        }).catch( error => {
-                            console.log(error, 'que raro ');
-                        })
-                    })
+        const emailFound = await Pet.findOne({email: req.body.email});
+        if(emailFound){
+            await fs.unlink(req.file.path);
+            res.json({ success: false, msg: 'The email already exists in the system' });
+        }else{
+            try {
+                const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, _id } = req.body;
+                const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
+                const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
+                const newPet = {
+                    _id, 
+                    email,
+                    address,
+                    birthDate,
+                    userState,
+                    favoriteActivities,
+                    healthAndRequirements,
+                    ownerPetName,
+                    phoneVeterinarian,
+                    veterinarianContact,
+                    password,
+                    petStatus,
+                    genderSelected,
+                    isActivated,
+                    petName,
+                    phone,
+                    photo: result.secure_url,
+                    photo_id: result.public_id,
+                    permissions : permissions
                 }
+
+                Pet.newPetGeneratorCode(newPet, async(_err, pPet, _done) => {
+                    await Pet.findByIdAndUpdate(pPet._id, { 
+                        email: pPet.email,
+                        password: pPet.password,
+                        address: pPet.address, 
+                        birthDate: pPet.birthDate, 
+                        userState: pPet.userState,
+                        favoriteActivities: pPet.favoriteActivities, 
+                        healthAndRequirements: pPet.healthAndRequirements, 
+                        ownerPetName: pPet.ownerPetName, 
+                        phoneVeterinarian: pPet.phoneVeterinarian, 
+                        veterinarianContact: pPet.veterinarianContact, 
+                        petName: pPet.petName, 
+                        petStatus: pPet.petStatus, 
+                        genderSelected: pPet.genderSelected, 
+                        isActivated: pPet.isActivated,
+                        phone: pPet.phone,
+                        photo: pPet.photo,
+                        photo_id: pPet.photo_id,
+                        permissions: pPet.permissions
+                        }).then( async function(data, err){
+                            try {
+                                await fs.unlink(req.file.path);
+                                var smtpTransport = nodemailer.createTransport({
+                                    host: process.env.ZOHO_HOST,
+                                    port: process.env.ZOHO_PORT,
+                                    secure: true,
+                                    logger: true,
+                                    debug: true,
+                                    auth: {
+                                        user: process.env.ZOHO_USER,
+                                        pass: process.env.ZOHO_PASSWORD
+                                    },
+                                    tls: {
+                                        // do not fail on invalid certs
+                                        rejectUnauthorized: false
+                                    }
+                                });
+
+                                const handlebarOptions = {
+                                    viewEngine: {
+                                        extName: ".handlebars",
+                                        partialsDir: path.resolve(__dirname, "views"),
+                                        defaultLayout: false,
+                                    },
+                                    viewPath: path.resolve(__dirname, "views"),
+                                    extName: ".handlebars",
+                                };
+
+                                smtpTransport.use(
+                                    "compile",
+                                    hbs(handlebarOptions)
+                                );
+
+                                smtpTransport.verify(function (error, success) {
+                                    if (error) {
+                                        console.log(error);
+                                    } else {
+                                        console.log("Server is ready to take our messages");
+                                    }
+                                });
+
+                                var mailOptions = {
+                                    to: email,
+                                    from: 'soporte@localpetsandfamily.com',
+                                    subject: 'Registro Exitoso en Plaquitas para mascotas CR',
+                                    template: 'email-new-pet',
+                                    context: {
+                                        text1: 'Estimado, ' + petName + '\n\n',
+                                        text2: '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
+                                        text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
+                                        petName: petName,
+                                        email: email,
+                                        text4: 'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
+                                        text5: 'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
+                                        text6: 'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
+                                        text7: '¡Bienvenido a bordo! ' + petName,
+                                        text8: 'Atentamente,',
+                                        text9: 'El Equipo de Plaquitas para mascotas CR',
+                                        textLink: 'Iniciar Sesión',
+                                        link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/login-pets' : 'https://' + process.env.DOMAIN_WEB + '/login'
+                                    }
+                                };
+
+                                smtpTransport.sendMail(mailOptions, function (err) {
+                                    res.json({ success: true, msg: 'Your pet has been created successfully.' });
+                                });
+                            } catch (error) {
+                                res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+                                next(error);
+                            }
+
+                    }).catch( error => {
+                        console.log(error, 'que raro ');
+                    })
+                })
+                
+            } catch (error) {
+                res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
             }
-        })
+        }
     }else{
         await fs.unlink(req.file.path);
         res.json({ success: false, msg: 'Invalid code' });
