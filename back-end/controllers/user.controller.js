@@ -119,6 +119,42 @@ userCtl.editProfileSecondaryInfo = async ( req,res )=> {
     }
 }
 
+userCtl.editPhotoProfile = async ( req,res )=> {
+    const { idPrincipal, idSecondary, idPhoto } = req.body;
+
+    const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.image, {folder: "mascotas_cr"});
+
+    try {
+        if(idSecondary === '0') {
+            if(idPhoto != undefined){
+                await cloudinary.uploader.destroy(idPhoto);
+            }
+            await Pet.findByIdAndUpdate(idPrincipal, { 
+                photo: result.secure_url,
+                photo_id: result.public_id,
+            });
+            await fs.unlink(req.file.path);
+        }else{
+            if(idPhoto != undefined){
+                await cloudinary.uploader.destroy(idPhoto);
+            }
+            await Pet.findOneAndUpdate(
+                { _id: idPrincipal, 'newPetProfile._id': idSecondary },
+                {
+                  $set: {
+                    'newPetProfile.$.photo': result.secure_url, 
+                    'newPetProfile.$.photo_id': result.public_id, 
+                  }
+                },
+            );
+            await fs.unlink(req.file.path);
+        }
+        res.send({msg: 'The information was updated correctly', success: true});
+    } catch (error) {
+        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+    }
+}
+
 userCtl.registerNewPet = async(req, res, next) => {
     const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password } = req.body;
     const emailFound = await Pet.findOne({email: email });

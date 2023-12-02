@@ -13,6 +13,8 @@ router.put('/editProfileInfo', verification, userCtl.editProfileInfo);
 
 router.put('/editProfileSecondaryInfo', verification, userCtl.editProfileSecondaryInfo);
 
+router.put('/editPhotoProfile', verification, userCtl.editPhotoProfile);
+
 router.post('/registerNewPet', userCtl.registerNewPet);
 
 router.post('/registerNewPetByQRcode', userCtl.registerNewPetByQRcode);
