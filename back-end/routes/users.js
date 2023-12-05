@@ -7,6 +7,8 @@ router.post('/authenticate', userCtl.authenticate);
 
 router.get('/getUserProfileById?:id', verification, userCtl.getUserProfileById);
 
+router.get('/getUserProfileByIdScanner/:idPrimary/:idSecondary', verification, userCtl.getUserProfileByIdScanner);
+
 router.get('/getMyPetCode', userCtl.getMyPetCode);
 
 router.put('/editProfileInfo', verification, userCtl.editProfileInfo);

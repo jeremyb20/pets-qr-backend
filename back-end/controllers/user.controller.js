@@ -55,6 +55,38 @@ userCtl.getUserProfileById = async (req, res) => {
     }
 }
 
+userCtl.getUserProfileByIdScanner = async (req, res) => {
+    try {
+        const {idPrimary, idSecondary} = req.params;
+        const user = await Pet.findById({_id: idPrimary});
+        if(user){
+            if(!user.isActivated){
+                if(idSecondary == '0'){
+                    const { photo, petName } = user;
+                    res.status(200).send({ success: true, payload: { photo, petName } });
+                }else{
+                    const data = user.newPetProfile.find(x => x._id == idSecond);
+                    if(data){
+                        const userReceived = {
+                            petName: data.petName,
+                            photo: data.photo
+                        }
+                        res.status(200).send({ success: true, payload: userReceived });
+                    }else{
+                        res.status(200).send({ success: false, msg: 'User not found' });
+                    }
+                }
+            }else{
+                res.status(200).send({ success: false, msg: 'User not found' });
+            }
+        }else{
+            res.status(200).send({ success: false, msg: 'User not found' });
+        }
+    } catch (error) {
+        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+    }
+}
+
 userCtl.getMyPetCode = async (req, res) => {
   const user = await Pet.findById({_id: req.query.id});
   if(user){
