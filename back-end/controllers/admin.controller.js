@@ -25,7 +25,8 @@ adminCtl.getAllUsers = async (_req, res) => {
                             age: element.age,
                             birthDate: element.birthDate,
                             ownerPetName: element.ownerPetName,
-                            petStatus: element.petStatus
+                            petStatus: element.petStatus,
+                            isDigitalIdentificationActive: element.isDigitalIdentificationActive
                         }
                         newPetObject.push(pet);
                     })
@@ -43,6 +44,7 @@ adminCtl.getAllUsers = async (_req, res) => {
                     updatedAt: item.updatedAt,
                     createdAt: item.createdAt,
                     userState: item.userState,
+                    isDigitalIdentificationActive: item.isDigitalIdentificationActive,
                     newPetProfile: (newPetObject.length > 0) ? newPetObject : null
                 }
                 object.push(test);
@@ -85,7 +87,7 @@ adminCtl.deleteUserById = async (req, res) => {
 }
 
 adminCtl.editUser = async (req, res) => {
-    const { petName, email, phone, age, birthDate, ownerPetName, petStatus, userState } = req.body;
+    const { petName, email, phone, age, birthDate, ownerPetName, petStatus, userState, isDigitalIdentificationActive } = req.body;
     try {
         await Pet.findByIdAndUpdate(req.body.id, {
             petName,
@@ -95,7 +97,8 @@ adminCtl.editUser = async (req, res) => {
             birthDate,
             ownerPetName,
             petStatus,
-            userState
+            userState,
+            isDigitalIdentificationActive
         });
         res.send({ msg: 'The information was updated correctly', success: true });
     } catch (err) {

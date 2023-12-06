@@ -102,7 +102,8 @@ userCtl.getMyPetCode = async (req, res) => {
                 const data = user.newPetProfile.find(x => x._id == req.query.idSecond);
                 res.status(200).send({ success: true, payload: data });
             }else{
-                res.status(200).send({ success: true, payload: user });
+                const { phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive } = user
+                res.status(200).send({ success: true, payload:  {phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive } });
             }
         }
   }else{
