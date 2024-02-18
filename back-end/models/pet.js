@@ -6,7 +6,16 @@ const passportLocalMongoose = require('passport-local-mongoose');
 // User Schema
 const PetSchema = new Schema({
     petName: {
-        type: String
+        type: String,
+        require: false
+    },
+    race: {
+        type: String,
+        require: false
+    },
+    weight: {
+        type: String,
+        require: false
     },
     phone: {
         type: String,
@@ -218,6 +227,14 @@ const PetSchema = new Schema({
                         require: false
                     },
                     petName: {
+                        type: String,
+                        require: false
+                    },
+                    race: {
+                        type: String,
+                        require: false
+                    },
+                    weight: {
                         type: String,
                         require: false
                     },

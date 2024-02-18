@@ -49,8 +49,8 @@ userCtl.authenticate =  async (req, res) => {
 userCtl.getUserProfileById = async (req, res) => {
     const user = await Pet.findById({_id: req.query.id});
     if(user){
-        const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id } = user;
-        res.status(200).send({ success: true, payload: {  address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id } });
+        const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id, race, weight } = user;
+        res.status(200).send({ success: true, payload: {  address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id, race, weight } });
     }else{
         res.status(200).send({ success: false, msg: 'User not found' });
     }
@@ -103,8 +103,8 @@ userCtl.getMyPetCode = async (req, res) => {
                 const data = user.newPetProfile.find(x => x._id == req.query.idSecond);
                 res.status(200).send({ success: true, payload: data });
             }else{
-                const { phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive } = user
-                res.status(200).send({ success: true, payload:  {phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive } });
+                const { phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive, race, weight } = user
+                res.status(200).send({ success: true, payload:  {phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive, race, weight } });
             }
         }
   }else{
@@ -113,9 +113,9 @@ userCtl.getMyPetCode = async (req, res) => {
 }
 
 userCtl.editProfileInfo = async ( req,res )=> {
-    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected } = req.body;
+    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, race, weight } = req.body;
     try {
-        await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected });
+        await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, race, weight });
         res.send({msg: 'The information was updated correctly', success: true});
     } catch (error) {
         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
@@ -123,10 +123,10 @@ userCtl.editProfileInfo = async ( req,res )=> {
 }
 
 userCtl.editProfileSecondaryInfo = async ( req,res )=> {
-    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone } = req.body;
+    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone , race, weight} = req.body;
     try {
         if(req.body.idSecond === 0) {
-            await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone });
+            await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone, race, weight });
         }else{
             await Pet.findOneAndUpdate(
                 { _id: req.body._id, 'newPetProfile._id': req.body.idSecond },
@@ -143,6 +143,8 @@ userCtl.editProfileSecondaryInfo = async ( req,res )=> {
                     'newPetProfile.$.petStatus': petStatus,
                     'newPetProfile.$.genderSelected': genderSelected,
                     'newPetProfile.$.phone': phone,
+                    'newPetProfile.$.race': race,
+                    'newPetProfile.$.weight': weight
                   }
                 },
             );
