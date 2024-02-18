@@ -26,7 +26,8 @@ adminCtl.getAllUsers = async (_req, res) => {
                             birthDate: element.birthDate,
                             ownerPetName: element.ownerPetName,
                             petStatus: element.petStatus,
-                            isDigitalIdentificationActive: element.isDigitalIdentificationActive
+                            photo_id: element.photo_id,                            
+                            isDigitalIdentificationActive: (element.isDigitalIdentificationActive)? true: false
                         }
                         newPetObject.push(pet);
                     })
@@ -54,7 +55,7 @@ adminCtl.getAllUsers = async (_req, res) => {
     }
 }
 
-adminCtl.getNewCodes = async (_req, res) => {
+adminCtl.getNewCodes = async (req, res) => {
     const users = await Pet.find();
     if (users.length == 0) {
         res.status(200).send({ success: false, msg: 'An error occurred in the process.' });
@@ -62,15 +63,18 @@ adminCtl.getNewCodes = async (_req, res) => {
         const object = [];
         users.forEach(item => {
             if (item.isActivated) {
-                var code = {
-                    id: item._id,
-                    randomCode: item.randomCode,
-                    isActivated: item.isActivated,
-                    stateActivation: item.stateActivation,
-                    updatedAt: item.updatedAt,
-                    link: 'https://' + process.env.DOMAIN_WEB + '/myPetCode/' + item._id + '/' + 0
+                if(item.hostName == req.headers.referer){
+                    const host = item.hostName ? item.hostName : req.headers.referer;
+                    var code = {
+                        id: item._id,
+                        randomCode: item.randomCode,
+                        isActivated: item.isActivated,
+                        stateActivation: item.stateActivation,
+                        updatedAt: item.updatedAt,
+                        link: host + 'myPetCode/' + item._id + '/' + 0
+                    }
+                    object.push(code);
                 }
-                object.push(code);
             }
         })
         res.status(200).send({ success: true, payload: object });
@@ -107,6 +111,38 @@ adminCtl.editUser = async (req, res) => {
     }
 }
 
+adminCtl.editUserSecondLevel = async ( req,res )=> {
+    const { isDigitalIdentificationActive } = req.body;
+    try {
+        if(req.body.idSecond === 0) {
+            await Pet.findByIdAndUpdate(req.body._id, { isDigitalIdentificationActive });
+        }else{
+            await Pet.findOneAndUpdate(
+                { _id: req.body._id, 'newPetProfile._id': req.body.idParental },
+                {
+                    $set: {
+                        'newPetProfile.$.isDigitalIdentificationActive': isDigitalIdentificationActive
+                    }
+                },
+            );
+        }
+        res.send({msg: 'The information was updated correctly', success: true});
+    } catch (error) {
+        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+    }
+}
+
+adminCtl.deletePetByIdForAdmin = async(req, res, next) => {
+    try {
+        await Pet.findByIdAndUpdate( req.body.idPrimary , { $pull: { newPetProfile: { _id: req.body.idSecond } } } ).then( async function(data){
+            await cloudinary.uploader.destroy(req.body.photo_id);
+            res.json({ success: true, msg: 'Delete successfull.' });
+        })   
+    } catch (error) {
+        res.json({ success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error)) });
+    }
+}
+
 adminCtl.createNewCode = async (req, res) => {
     Pet.findOne({ randomCode: req.body.randomCode }, async function (err, myUser) {
         if (!err) {
@@ -116,7 +152,8 @@ adminCtl.createNewCode = async (req, res) => {
                 let newPet = new Pet({
                     randomCode: req.body.randomCode,
                     isActivated: req.body.isActivated,
-                    stateActivation: req.body.stateActivation
+                    stateActivation: req.body.stateActivation,
+                    hostName: req.headers.referer
                 });
 
                 Pet.addNewCode(newPet, async (user, done) => {
@@ -139,7 +176,8 @@ adminCtl.updateStateActivationCode = async (req, res) => {
     const { stateActivation } = req.body;
     try {
         await Pet.findByIdAndUpdate(req.body.id, {
-            stateActivation
+            stateActivation,
+            hostName: req.headers.referer
         });
         res.send({ msg: 'The information was updated correctly', success: true });
     } catch (err) {

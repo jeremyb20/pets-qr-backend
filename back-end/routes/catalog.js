@@ -2,7 +2,7 @@ const { Router } = require('express');
 const catalogCtl = require('../controllers/catalog.controller')
 const router = Router();
 
-router.get('/getAllCatalog', catalogCtl.getAllCatalog);
+router.get('/getAllInventoryList', catalogCtl.getAllInventoryList);
 
 router.post('/createCatalog', catalogCtl.createCatalog);
 

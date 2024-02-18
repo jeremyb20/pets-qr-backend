@@ -17,6 +17,8 @@ router.put('/editProfileSecondaryInfo', verification, userCtl.editProfileSeconda
 
 router.put('/editPhotoProfile', verification, userCtl.editPhotoProfile);
 
+router.put('/editThemeProfile', verification, userCtl.editThemeProfile);
+
 router.post('/registerNewPet', userCtl.registerNewPet);
 
 router.post('/registerNewPetByQRcode', userCtl.registerNewPetByQRcode);

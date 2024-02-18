@@ -1,48 +1,47 @@
 const { Schema, model } = require('mongoose');
 
 const catalogSchema = new Schema({
-    
+    idOwner: {
+        type: String,
+        require: false
+    },
+    code: {
+        type: String,
+        require: false
+    },
     productName: {
         type: String,
-        require: true
-    },
-    size: {
-        type: String,
-        require: true
-    },
-    color: {
-        type: String,
-        require: true
+        require: false
     },
     description: {
         type: String,
-        require: true
+        require: false
     },
-    cost: {
+    price: {
         type: String,
-        require: true
+        require: false
     },
     quantity: {
         type: String,
-        require: true
+        require: false
     },
-    firstPhoto: {
+    inventoryStatus: {
         type: String,
-        require: true
+        require: false
     },
-    secondPhoto: {
+    category: {
         type: String,
-        require: true
+        require: false
     },
-    tagType: {
+    images: [{
+        imageURL: { type: String, required: false },
+        imageID: { type: String, required: false },
+    }],
+    rating: {
         type: String,
-        require: true
-    },
-    images:[{
-        imageURL: { type: String, required: true },
-        imageID: { type: String, required: true },
-    }]
-    },
+        require: false
+    }
+},
     {
         timestamps: true,
         versionKey: false

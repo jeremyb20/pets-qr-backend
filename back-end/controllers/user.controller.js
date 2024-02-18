@@ -35,6 +35,7 @@ userCtl.authenticate =  async (req, res) => {
                         petName: pet.petName,
                         photo: pet.photo,
                         email: pet.email,
+                        theme: pet.theme,
                         idSecond: 0
                     }
                 })
@@ -188,6 +189,16 @@ userCtl.editPhotoProfile = async ( req,res )=> {
     }
 }
 
+userCtl.editThemeProfile = async ( req,res )=> {
+    const { theme } = req.body;
+    try {
+        await Pet.findByIdAndUpdate(req.body._id, { theme });
+        res.send({msg: 'The information was updated correctly', success: true});
+    } catch (error) {
+        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+    }
+}
+
 userCtl.registerNewPet = async(req, res, next) => {
     const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password } = req.body;
     const emailFound = await Pet.findOne({email: email });
@@ -202,6 +213,7 @@ userCtl.registerNewPet = async(req, res, next) => {
                 email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, 
                 photo: result.secure_url,
                 photo_id: result.public_id,
+                theme: 'theme-default-light',
                 permissions : permissions
             });
         
@@ -265,7 +277,7 @@ userCtl.registerNewPet = async(req, res, next) => {
                             text8: 'Atentamente,',
                             text9: 'El Equipo de Plaquitas para mascotas CR',
                             textLink: 'Iniciar Sesión',
-                            link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/login-pets'  : 'https://' + process.env.DOMAIN_WEB + '/login'
+                            link: (req.headers.host == 'localhost:8080')? 'http://localhost:4200/login-pets'  : req.headers.referer + '/login'
                         } 
                     };
             
@@ -316,7 +328,8 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
                     phone,
                     photo: result.secure_url,
                     photo_id: result.public_id,
-                    permissions : permissions
+                    permissions : permissions,
+                    theme: 'theme-default-light'
                 }
 
                 Pet.newPetGeneratorCode(newPet, async(_err, pPet, _done) => {
@@ -399,7 +412,7 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
                                         text8: 'Atentamente,',
                                         text9: 'El Equipo de Plaquitas para mascotas CR',
                                         textLink: 'Iniciar Sesión',
-                                        link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/login-pets' : 'https://' + process.env.DOMAIN_WEB + '/login'
+                                        link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/login-pets' : req.headers.referer + '/login'
                                     }
                                 };
 
@@ -542,13 +555,13 @@ userCtl.forgot = async(req, res, next) => {
                     text1: 'Estimado usuario, \n\n',
                     text2: 'Recibe este correo electrónico porque usted, o alguien en su representación, ha solicitado restablecer la contraseña de su cuenta.',
                     text3: 'Para completar este proceso, por favor haga clic en el enlace proporcionado a continuación o cópielo y péguelo en su navegador:\n\n',
-                    linkSend: 'https://' + process.env.DOMAIN_WEB + '/reset-password/' + token + ' \n\n',
+                    linkSend: req.headers.referer + '/reset-password/' + token + ' \n\n',
                     text4: 'Si usted no solicitó este restablecimiento de contraseña, le pedimos que por favor ignore este correo electrónico. En tal caso, su contraseña seguirá siendo la misma y segura.\n\n',
                     text5: 'Gracias por utilizar nuestros servicios y por mantener su cuenta segura.\n\n',
                     text6: 'Atentamente.\n\n',
                     text7: 'Plaquitas para mascotas CR',
                     textLink: 'Ir al enlace',
-                    link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/reset-password/' + token : 'https://' + process.env.DOMAIN_WEB + '/reset-password/' + token
+                    link: (req.headers.host == 'localhost:8080') ? 'http://localhost:4200/reset-password/' + token : req.headers.referer + '/reset-password/' + token
                 }
             };
             smtpTransport.sendMail(mailOptions, function (err) {
@@ -635,7 +648,7 @@ userCtl.resetPassword = async(req, res, next) => {
                 template: 'index',
                 context: {
                     text: 'La contraseña de su correo ' + user.email + ' ha sido actualizada satisfactoriamente.\n',
-                    link: 'https://' + process.env.DOMAIN_WEB + '/login',
+                    link: req.headers.referer + '/login',
                     textLink: 'Iniciar sesión'
                 }
             };

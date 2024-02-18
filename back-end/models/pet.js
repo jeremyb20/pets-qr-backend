@@ -12,6 +12,10 @@ const PetSchema = new Schema({
         type: String,
         require: true
     },
+    theme: {
+        type: String,
+        require: true
+    },
     email: {
         type: String,
         require: true,
@@ -74,6 +78,10 @@ const PetSchema = new Schema({
         require: false
     },
     stateActivation: {
+        type: String,
+        require: false
+    },
+    hostName: {
         type: String,
         require: false
     },
