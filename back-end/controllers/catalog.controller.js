@@ -12,6 +12,40 @@ catalogCtl.getAllInventoryList = async (_req, res) => {
     }
 }
 
+catalogCtl.getCatalogList = async (_req, res) => {
+    const catalog = await Catalog.find();
+    if (catalog.length == 0) {
+        res.json({ success: false, message: 'No hay lista de catálogos disponibles' });
+    } else {
+        const data = [];
+        catalog.forEach(element => {
+            if(element.inventoryStatus != 'PROMOTION'){
+                if(element.images.length > 0){
+                    data.push(element);
+                }
+            }
+        });
+        res.json({ payload: data, success: true });
+    }
+}
+
+catalogCtl.getPromoList = async (_req, res) => {
+    const catalog = await Catalog.find();
+    if (catalog.length == 0) {
+        res.json({ success: false, message: 'No hay lista de promociones disponibles' });
+    } else {
+        const data = [];
+        catalog.forEach(element => {
+            if(element.inventoryStatus === 'PROMOTION'){
+                if(element.images.length > 0){
+                    data.push(element);
+                }
+            }
+        });
+        res.json({ payload: data, success: true });
+    }
+}
+
 catalogCtl.createCatalog = async (req, res, next) => {
     const {code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner } = req.body;
     try {

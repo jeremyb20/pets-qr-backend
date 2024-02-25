@@ -4,6 +4,10 @@ const router = Router();
 
 router.get('/getAllInventoryList', catalogCtl.getAllInventoryList);
 
+router.get('/getCatalogList', catalogCtl.getCatalogList);
+
+router.get('/getPromoList', catalogCtl.getPromoList);
+
 router.post('/createCatalog', catalogCtl.createCatalog);
 
 router.get('/getCatalogById?:id', catalogCtl.getCatalogById);
