@@ -33,9 +33,13 @@ const catalogSchema = new Schema({
         type: String,
         require: false
     },
+    country: {
+        type: String,
+        require: false
+    },
     images: [{
         imageURL: { type: String, required: false },
-        imageID: { type: String, required: false },
+        image_id: { type: String, required: false },
     }],
     rating: {
         type: String,

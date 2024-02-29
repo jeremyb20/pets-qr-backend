@@ -49,8 +49,8 @@ userCtl.authenticate =  async (req, res) => {
 userCtl.getUserProfileById = async (req, res) => {
     const user = await Pet.findById({_id: req.query.id});
     if(user){
-        const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id, race, weight } = user;
-        res.status(200).send({ success: true, payload: {  address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id, race, weight } });
+        const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id, race, weight, country } = user;
+        res.status(200).send({ success: true, payload: {  address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, email, petName, petStatus, phone, photo, photo_id, updatedAt, createdAt, newPetProfile, genderSelected, _id, race, weight, country } });
     }else{
         res.status(200).send({ success: false, msg: 'User not found' });
     }
@@ -113,9 +113,9 @@ userCtl.getMyPetCode = async (req, res) => {
 }
 
 userCtl.editProfileInfo = async ( req,res )=> {
-    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, race, weight } = req.body;
+    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, race, weight, country } = req.body;
     try {
-        await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, race, weight });
+        await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, race, weight, country });
         res.send({msg: 'The information was updated correctly', success: true});
     } catch (error) {
         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
@@ -123,10 +123,10 @@ userCtl.editProfileInfo = async ( req,res )=> {
 }
 
 userCtl.editProfileSecondaryInfo = async ( req,res )=> {
-    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone , race, weight} = req.body;
+    const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone , race, weight, country} = req.body;
     try {
         if(req.body.idSecond === 0) {
-            await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone, race, weight });
+            await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone, race, weight, country });
         }else{
             await Pet.findOneAndUpdate(
                 { _id: req.body._id, 'newPetProfile._id': req.body.idSecond },
@@ -144,7 +144,8 @@ userCtl.editProfileSecondaryInfo = async ( req,res )=> {
                     'newPetProfile.$.genderSelected': genderSelected,
                     'newPetProfile.$.phone': phone,
                     'newPetProfile.$.race': race,
-                    'newPetProfile.$.weight': weight
+                    'newPetProfile.$.weight': weight,
+                    'newPetProfile.$.country': country
                   }
                 },
             );
@@ -202,7 +203,7 @@ userCtl.editThemeProfile = async ( req,res )=> {
 }
 
 userCtl.registerNewPet = async(req, res, next) => {
-    const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password } = req.body;
+    const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, country } = req.body;
     const emailFound = await Pet.findOne({email: email });
     if(emailFound){
         await fs.unlink(req.file.path);
@@ -212,7 +213,7 @@ userCtl.registerNewPet = async(req, res, next) => {
             const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
             const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
             const newPet = new Pet( {
-                email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, 
+                email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, country,
                 photo: result.secure_url,
                 photo_id: result.public_id,
                 theme: 'theme-default-light',
@@ -308,7 +309,7 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
             res.json({ success: false, msg: 'The email already exists in the system' });
         }else{
             try {
-                const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, _id } = req.body;
+                const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, _id, country } = req.body;
                 const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
                 const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
                 const newPet = {
@@ -328,6 +329,7 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
                     isActivated,
                     petName,
                     phone,
+                    country,
                     photo: result.secure_url,
                     photo_id: result.public_id,
                     permissions : permissions,
@@ -353,6 +355,7 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
                         phone: pPet.phone,
                         photo: pPet.photo,
                         photo_id: pPet.photo_id,
+                        country: pPet.country,
                         permissions: pPet.permissions
                         }).then( async function(data, err){
                             try {
@@ -442,7 +445,7 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
 }
 
 userCtl.registerNewPetfromUserProfile = async(req, res, next) => {
-    const { genderSelected, petName, petStatus, email, phone, ownerPetName, address, birthDate, favoriteActivities, healthAndRequirements, phoneVeterinarian, veterinarianContact } = req.body;
+    const { genderSelected, petName, petStatus, email, phone, ownerPetName, address, birthDate, favoriteActivities, healthAndRequirements, phoneVeterinarian, veterinarianContact, country } = req.body;
     const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
     const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
     const newPet = {
@@ -458,6 +461,7 @@ userCtl.registerNewPetfromUserProfile = async(req, res, next) => {
         healthAndRequirements, 
         phoneVeterinarian, 
         veterinarianContact,
+        country,
         photo: result.secure_url,
         photo_id: result.public_id,
         permissions : permissions

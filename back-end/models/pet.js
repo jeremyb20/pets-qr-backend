@@ -9,6 +9,10 @@ const PetSchema = new Schema({
         type: String,
         require: false
     },
+    country: {
+        type: String,
+        require: false
+    },
     race: {
         type: String,
         require: false
@@ -249,6 +253,10 @@ const PetSchema = new Schema({
                     phone: {
                         type: String,
                         require: true
+                    },
+                    country: {
+                        type: String,
+                        require: false
                     },
                     ownerPetName: {
                         type: String,

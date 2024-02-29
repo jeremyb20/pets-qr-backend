@@ -108,8 +108,9 @@ catalogCtl.addCatalogImages = async (req, res) => {
             imageURL: result.secure_url
         }
         await fs.unlink(req.file.path);
-        await Catalog.findOneAndUpdate({ _id: req.body._id }, { $push: { images: dataImage } });
-        res.send({msg: 'The information was updated correctly', success: true}); 
+        var catalog = await Catalog.findOneAndUpdate({ _id: req.body._id }, { $push: { images: dataImage } });
+        console.log(catalog)
+        res.send({msg: 'The information was updated correctly', success: true, payload: dataImage}); 
     } catch (error) {
         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
     }
@@ -119,11 +120,12 @@ catalogCtl.deleteImageCatalog = async (req, res) => {
     try {
         await Catalog.findOneAndUpdate(
             { _id: req.body._id },
-            { $pull: { images: { _id: req.body.image_id } } },
+            { $pull: { images: { _id: req.body.imageID } } },
             { safe: true, multi: false }
         );
-
-        await cloudinary.uploader.destroy(req.body.image_id);
+        if(req.body.imageCloud) {
+            await cloudinary.uploader.destroy(req.body.imageCloud);
+        }
         res.send({msg: 'The information was updated correctly', success: true}); 
 
     } catch (error) {

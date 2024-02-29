@@ -1,6 +1,6 @@
 {
   "name": "pets-qr-backend",
-  "version": "3.10.1-250224",
+  "version": "3.11.1-290224",
   "engines": {
     "node": "18.10.0",
     "npm": "8.9.2"
