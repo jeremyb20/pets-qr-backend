@@ -18,11 +18,9 @@ catalogCtl.getCatalogList = async (_req, res) => {
         res.json({ success: false, message: 'No hay lista de catálogos disponibles' });
     } else {
         const data = [];
-        catalog.forEach(element => {
-            if(element.inventoryStatus != 'PROMOTION'){
-                if(element.images.length > 0){
-                    data.push(element);
-                }
+        catalog.forEach(element => { 
+            if(element.images.length > 0){
+                data.push(element);
             }
         });
         res.json({ payload: data, success: true });
@@ -47,7 +45,7 @@ catalogCtl.getPromoList = async (_req, res) => {
 }
 
 catalogCtl.createCatalog = async (req, res, next) => {
-    const {code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner } = req.body;
+    const {code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner, metaDescription } = req.body;
     try {
         const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path : req.body.image, { folder: "catalog" });
 
@@ -57,7 +55,7 @@ catalogCtl.createCatalog = async (req, res, next) => {
         }
 
         const catalog = new Catalog({
-            code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner, images: dataImage,
+            code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner, metaDescription, images: dataImage,
         });
         await catalog.save();
         res.send({msg: 'The information was updated correctly', success: true});
@@ -102,14 +100,12 @@ catalogCtl.deleteCatalog = async (req, res) => {
 catalogCtl.addCatalogImages = async (req, res) => {
     try {
         const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path : req.body.image, { folder: "catalog" });
-
         const dataImage = {
             image_id: result.public_id,
             imageURL: result.secure_url
         }
         await fs.unlink(req.file.path);
-        var catalog = await Catalog.findOneAndUpdate({ _id: req.body._id }, { $push: { images: dataImage } });
-        console.log(catalog)
+        await Catalog.findOneAndUpdate({ _id: req.body._id }, { $push: { images: dataImage } });
         res.send({msg: 'The information was updated correctly', success: true, payload: dataImage}); 
     } catch (error) {
         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});

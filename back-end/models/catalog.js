@@ -17,6 +17,10 @@ const catalogSchema = new Schema({
         type: String,
         require: false
     },
+    metaDescription:{
+        type: String,
+        require: false
+    },
     price: {
         type: String,
         require: false
@@ -34,6 +38,10 @@ const catalogSchema = new Schema({
         require: false
     },
     country: {
+        type: String,
+        require: false
+    },
+    phone: {
         type: String,
         require: false
     },
