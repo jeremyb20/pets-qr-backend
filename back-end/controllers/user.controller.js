@@ -32,11 +32,8 @@ userCtl.authenticate =  async (req, res) => {
                     payload: {
                         id: pet._id,
                         userState: pet.userState,
-                        petName: pet.petName,
-                        photo: pet.photo,
                         email: pet.email,
                         theme: pet.theme,
-                        idSecond: 0
                     }
                 })
             } else {
@@ -89,28 +86,48 @@ userCtl.getUserProfileByIdScanner = async (req, res) => {
 }
 
 userCtl.getMyPetCode = async (req, res) => {
-  const user = await Pet.findById({_id: req.query.id});
-  if(user){
+    const user = await Pet.findById({ _id: req.query.id });
+    if (user) {
         const qrCode = {
             isActivated: user.isActivated,
             _id: user._id
         }
-        if(user.isActivated){
+        if (user.isActivated) {
             const data = qrCode;
             res.status(200).send({ success: true, payload: data });
-        }else{
-            if(req.query.idSecond != '0'){
+        } else {
+            if (req.query.idSecond != '0') {
                 const data = user.newPetProfile.find(x => x._id == req.query.idSecond);
                 res.status(200).send({ success: true, payload: data });
-            }else{
-                const { phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive, race, weight } = user
-                res.status(200).send({ success: true, payload:  {phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, isDigitalIdentificationActive, race, weight } });
+            } else {
+                const { phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, isDigitalIdentificationActive, race, weight } = user
+                res.status(200).send({ success: true, payload: { phone, _id, photo, address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, isDigitalIdentificationActive, race, weight } });
             }
         }
-  }else{
+    } else {
         res.status(200).send({ success: false, msg: 'User not found' });
-  }
+    }
 }
+
+userCtl.getMyPetInfo = async (req, res) => {
+    const user = await Pet.findById({_id: req.query.id});
+    if(user){
+          const qrCode = {
+              isActivated: user.isActivated,
+              _id: user._id
+          }
+          if(user.isActivated){
+              const data = qrCode;
+              res.status(200).send({ success: true, payload: data });
+          }else{ 
+            const petInfo = user.newPetProfile[req.query.idSecond];
+            //res.status(200).send({ success: true, payload: petInfo });
+            res.status(200).send({ success: petInfo ? true : false , payload: petInfo ? petInfo : null, msg: petInfo ? '' : 'User not found'  });
+          }
+    }else{
+          res.status(200).send({ success: false, msg: 'User not found' });
+    }
+  }
 
 userCtl.editProfileInfo = async ( req,res )=> {
     const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, race, weight, country } = req.body;
@@ -122,34 +139,30 @@ userCtl.editProfileInfo = async ( req,res )=> {
     }
 }
 
-userCtl.editProfileSecondaryInfo = async ( req,res )=> {
+userCtl.editPetProfile = async ( req,res )=> {
     const { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone , race, weight, country} = req.body;
     try {
-        if(req.body.idSecond === 0) {
-            await Pet.findByIdAndUpdate(req.body._id, { address, birthDate, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName , petStatus, genderSelected, phone, race, weight, country });
-        }else{
-            await Pet.findOneAndUpdate(
-                { _id: req.body._id, 'newPetProfile._id': req.body.idSecond },
-                {
-                  $set: {
-                    'newPetProfile.$.address': address, 
-                    'newPetProfile.$.birthDate': birthDate,
-                    'newPetProfile.$.favoriteActivities': favoriteActivities,
-                    'newPetProfile.$.healthAndRequirements': healthAndRequirements,
-                    'newPetProfile.$.ownerPetName': ownerPetName,
-                    'newPetProfile.$.phoneVeterinarian': phoneVeterinarian,
-                    'newPetProfile.$.veterinarianContact': veterinarianContact,
-                    'newPetProfile.$.petName': petName,
-                    'newPetProfile.$.petStatus': petStatus,
-                    'newPetProfile.$.genderSelected': genderSelected,
-                    'newPetProfile.$.phone': phone,
-                    'newPetProfile.$.race': race,
-                    'newPetProfile.$.weight': weight,
-                    'newPetProfile.$.country': country
-                  }
-                },
-            );
-        }
+        await Pet.findOneAndUpdate(
+            { _id: req.body._id, 'newPetProfile._id': req.body.secondaryId },
+            {
+              $set: {
+                'newPetProfile.$.address': address, 
+                'newPetProfile.$.birthDate': birthDate,
+                'newPetProfile.$.favoriteActivities': favoriteActivities,
+                'newPetProfile.$.healthAndRequirements': healthAndRequirements,
+                'newPetProfile.$.ownerPetName': ownerPetName,
+                'newPetProfile.$.phoneVeterinarian': phoneVeterinarian,
+                'newPetProfile.$.veterinarianContact': veterinarianContact,
+                'newPetProfile.$.petName': petName,
+                'newPetProfile.$.petStatus': petStatus,
+                'newPetProfile.$.genderSelected': genderSelected,
+                'newPetProfile.$.phone': phone,
+                'newPetProfile.$.race': race,
+                'newPetProfile.$.weight': weight,
+                'newPetProfile.$.country': country
+              }
+            },
+        );
         res.send({msg: 'The information was updated correctly', success: true});
     } catch (error) {
         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
@@ -203,26 +216,27 @@ userCtl.editThemeProfile = async ( req,res )=> {
 }
 
 userCtl.registerNewPet = async(req, res, next) => {
-    const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, country } = req.body;
-    const emailFound = await Pet.findOne({email: email });
-    if(emailFound){
-        await fs.unlink(req.file.path);
+    const { email, phone, isActivated, password, country, userState } = req.body;
+    const emailFound = await Pet.findOne({email: email }); 
+    if(emailFound){ 
         res.json({ success: false, msg: 'The email already exists in the system' });
+        return;
     }else{
         try {
-            const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
-            const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
             const newPet = new Pet( {
-                email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, country,
-                photo: result.secure_url,
-                photo_id: result.public_id,
+                email, 
+                phone, 
+                country,
+                isActivated, 
+                password,  
+                userState,
+                hostName: req.headers.referer,
+                newPetProfile:[],
                 theme: 'theme-default-light',
-                permissions : permissions
             });
         
             Pet.addPet(newPet, async(_err, pPet, _done) => {
-                try {
-                    await fs.unlink(req.file.path);
+                try { 
                     var smtpTransport = nodemailer.createTransport({
                     host: process.env.ZOHO_HOST,
                     port: process.env.ZOHO_PORT,
@@ -268,15 +282,14 @@ userCtl.registerNewPet = async(req, res, next) => {
                         subject: 'Registro Exitoso en Plaquitas para mascotas CR',
                         template: 'email-new-pet',
                         context: {
-                            text1: 'Estimado, ' + petName + '\n\n',
+                            text1: 'Hola \n\n',
                             text2: '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
                             text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
-                            petName: petName,
                             email: email,
                             text4: 'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
                             text5: 'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
                             text6: 'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
-                            text7: '¡Bienvenido a bordo! ' + petName,
+                            text7: '¡Bienvenido a bordo! ',
                             text8: 'Atentamente,',
                             text9: 'El Equipo de Plaquitas para mascotas CR',
                             textLink: 'Iniciar Sesión',
@@ -287,13 +300,12 @@ userCtl.registerNewPet = async(req, res, next) => {
                         smtpTransport.sendMail(mailOptions, function(err) {
                         res.json({ success: true, msg: 'Your pet has been created successfully.' });
                     });
-                } catch (err) {
-                    res.json({success: false, message: 'The email already exists in the system'});
-                    next(err);
+                } catch (error) { 
+                    res.json({success: false, msg: 'The email already exists in the system', error: JSON.parse(JSON.stringify(error))});
+                    next(error);
                 }
             });
-        } catch (error) {
-            await fs.unlink(req.file.path);
+        } catch (error) { 
             res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
         }
     }
@@ -304,59 +316,32 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
     const code = await Pet.findById({_id: req.body._id});
     if(code.randomCode === req.body.codeGenerator){
         const emailFound = await Pet.findOne({email: req.body.email});
-        if(emailFound){
-            await fs.unlink(req.file.path);
+        if(emailFound){ 
             res.json({ success: false, msg: 'The email already exists in the system' });
         }else{
             try {
-                const { email, address, birthDate, userState, favoriteActivities, healthAndRequirements, ownerPetName, phoneVeterinarian, veterinarianContact, petName, petStatus, genderSelected, phone, isActivated, password, _id, country } = req.body;
-                const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
-                const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
+                const { email, userState, phone, isActivated, password, _id, country } = req.body; 
+                 
                 const newPet = {
                     _id, 
                     email,
-                    address,
-                    birthDate,
                     userState,
-                    favoriteActivities,
-                    healthAndRequirements,
-                    ownerPetName,
-                    phoneVeterinarian,
-                    veterinarianContact,
-                    password,
-                    petStatus,
-                    genderSelected,
+                    password, 
                     isActivated,
-                    petName,
                     phone,
-                    country,
-                    photo: result.secure_url,
-                    photo_id: result.public_id,
-                    permissions : permissions,
+                    country, 
                     theme: 'theme-default-light'
                 }
 
                 Pet.newPetGeneratorCode(newPet, async(_err, pPet, _done) => {
                     await Pet.findByIdAndUpdate(pPet._id, { 
                         email: pPet.email,
-                        password: pPet.password,
-                        address: pPet.address, 
-                        birthDate: pPet.birthDate, 
-                        userState: pPet.userState,
-                        favoriteActivities: pPet.favoriteActivities, 
-                        healthAndRequirements: pPet.healthAndRequirements, 
-                        ownerPetName: pPet.ownerPetName, 
-                        phoneVeterinarian: pPet.phoneVeterinarian, 
-                        veterinarianContact: pPet.veterinarianContact, 
-                        petName: pPet.petName, 
-                        petStatus: pPet.petStatus, 
-                        genderSelected: pPet.genderSelected, 
+                        password: pPet.password, 
+                        userState: pPet.userState, 
                         isActivated: pPet.isActivated,
-                        phone: pPet.phone,
-                        photo: pPet.photo,
-                        photo_id: pPet.photo_id,
-                        country: pPet.country,
-                        permissions: pPet.permissions
+                        phone: pPet.phone, 
+                        country: pPet.country, 
+                        newPetProfile: []
                         }).then( async function(data, err){
                             try {
                                 await fs.unlink(req.file.path);
@@ -405,15 +390,14 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
                                     subject: 'Registro Exitoso en Plaquitas para mascotas CR',
                                     template: 'email-new-pet',
                                     context: {
-                                        text1: 'Estimado, ' + petName + '\n\n',
+                                        text1: 'Hola \n\n',
                                         text2: '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
-                                        text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
-                                        petName: petName,
+                                        text3: 'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n', 
                                         email: email,
                                         text4: 'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
                                         text5: 'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
                                         text6: 'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
-                                        text7: '¡Bienvenido a bordo! ' + petName,
+                                        text7: '¡Bienvenido a bordo! ' ,
                                         text8: 'Atentamente,',
                                         text9: 'El Equipo de Plaquitas para mascotas CR',
                                         textLink: 'Iniciar Sesión',
@@ -430,7 +414,7 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
                             }
 
                     }).catch( error => {
-                        console.log(error, 'que raro ');
+                        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
                     })
                 })
                 
@@ -446,28 +430,27 @@ userCtl.registerNewPetByQRcode = async(req, res, next) => {
 
 userCtl.registerNewPetfromUserProfile = async(req, res, next) => {
     const { genderSelected, petName, petStatus, email, phone, ownerPetName, address, birthDate, favoriteActivities, healthAndRequirements, phoneVeterinarian, veterinarianContact, country } = req.body;
-    const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
-    const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
-    const newPet = {
-        genderSelected, 
-        petName, 
-        petStatus, 
-        email,
-        phone, 
-        ownerPetName, 
-        address, 
-        birthDate, 
-        favoriteActivities, 
-        healthAndRequirements, 
-        phoneVeterinarian, 
-        veterinarianContact,
-        country,
-        photo: result.secure_url,
-        photo_id: result.public_id,
-        permissions : permissions
-    };
-
     try {
+        const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path: req.body.photo, {folder: "mascotas_cr"});
+        const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
+        const newPet = {
+            genderSelected, 
+            petName, 
+            petStatus, 
+            email,
+            phone, 
+            ownerPetName, 
+            address, 
+            birthDate, 
+            favoriteActivities, 
+            healthAndRequirements, 
+            phoneVeterinarian, 
+            veterinarianContact,
+            country,
+            photo: result.secure_url,
+            photo_id: result.public_id,
+            permissions : permissions
+        };
         await Pet.findByIdAndUpdate(req.body._id, { $push: { newPetProfile: newPet }},{new: true}).then( async function(data){
             await fs.unlink(req.file.path);
             res.json({ success: true, msg: 'Your pet has been created successfully.' });

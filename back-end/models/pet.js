@@ -5,19 +5,7 @@ const passportLocalMongoose = require('passport-local-mongoose');
 
 // User Schema
 const PetSchema = new Schema({
-    petName: {
-        type: String,
-        require: false
-    },
     country: {
-        type: String,
-        require: false
-    },
-    race: {
-        type: String,
-        require: false
-    },
-    weight: {
         type: String,
         require: false
     },
@@ -37,40 +25,16 @@ const PetSchema = new Schema({
     password: {
         type: String,
         require: true
-    },
-    lat: {
-        type: String,
-        require: false
-    },
-    lng: {
-        type: String,
-        require: false
-    },
-    photo: {
+    }, 
+    photoProfile: {
         type: String,
         require: true
     },
-    photo_id: {
+    photo_id_profile: {
         type: String,
         require: true
-    },
-    isPrimary: {
-        type: Boolean,
-        require: true
-    },
-    linkTwitter: {
-        type: String,
-        require: false
-    },
+    },  
     token: {
-        type: String,
-        require: false
-    },
-    linkFacebook: {
-        type: String,
-        require: false
-    },
-    linkInstagram: {
         type: String,
         require: false
     },
@@ -97,53 +61,9 @@ const PetSchema = new Schema({
     hostName: {
         type: String,
         require: false
-    },
-    genderSelected: {
-        type: Number,
-        require: true
-    },
+    }, 
     userState: {
         type: Number,
-        require: false
-    },
-    ownerPetName: {
-        type: String,
-        require: false
-    },
-    birthDate: {
-        type: String,
-        require: false
-    },
-    address: {
-        type: String,
-        require: false
-    },
-    age: {
-        type: Number,
-        require: false
-    },
-    phoneVeterinarian: {
-        type: String,
-        require: false
-    },
-    veterinarianContact: {
-        type: String,
-        require: false
-    },
-    healthAndRequirements: {
-        type: String,
-        require: false
-    },
-    favoriteActivities: {
-        type: String,
-        require: false
-    },
-    petStatus: {
-        type: String,
-        require: false
-    },
-    isDigitalIdentificationActive: {
-        type: Boolean,
         require: false
     },
     petStatusReport: [{

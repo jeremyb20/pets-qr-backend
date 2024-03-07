@@ -21,5 +21,9 @@ router.get('/getLocationAllPets', verification, adminCtl.getLocationAllPets);
 
 router.post('/deletePetByIdForAdmin', verification, adminCtl.deletePetByIdForAdmin);
 
+router.put('/updateFirstProfile', verification, adminCtl.updateFirstProfile);
+
+router.put('/sortNewPetProfile', verification, adminCtl.sortNewPetProfile);
+
 
 module.exports = router;

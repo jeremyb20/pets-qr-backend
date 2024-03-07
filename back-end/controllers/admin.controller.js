@@ -22,6 +22,7 @@ adminCtl.getAllUsers = async (_req, res) => {
                             petName: element.petName,
                             email: element.email,
                             phone: element.phone,
+                            photo: element.photo,
                             age: element.age,
                             birthDate: element.birthDate,
                             ownerPetName: element.ownerPetName,
@@ -35,17 +36,17 @@ adminCtl.getAllUsers = async (_req, res) => {
 
                 var test = {
                     id: item._id,
-                    petName: item.petName,
+                    // petName: item.petName,
                     email: item.email,
-                    phone: item.phone,
-                    age: item.age,
-                    birthDate: item.birthDate,
-                    ownerPetName: item.ownerPetName,
+                    // phone: item.phone,
+                    // age: item.age,
+                    // birthDate: item.birthDate,
+                    // ownerPetName: item.ownerPetName,
                     petStatus: item.petStatus,
                     updatedAt: item.updatedAt,
                     createdAt: item.createdAt,
                     userState: item.userState,
-                    isDigitalIdentificationActive: item.isDigitalIdentificationActive,
+                    //isDigitalIdentificationActive: item.isDigitalIdentificationActive,
                     newPetProfile: (newPetObject.length > 0) ? newPetObject : null
                 }
                 object.push(test);
@@ -135,7 +136,10 @@ adminCtl.editUserSecondLevel = async ( req,res )=> {
 adminCtl.deletePetByIdForAdmin = async(req, res, next) => {
     try {
         await Pet.findByIdAndUpdate( req.body.idPrimary , { $pull: { newPetProfile: { _id: req.body.idSecond } } } ).then( async function(data){
-            await cloudinary.uploader.destroy(req.body.photo_id);
+            if (req.body.photo_id) {
+               await cloudinary.uploader.destroy(req.body.photo_id); 
+            }
+            
             res.json({ success: true, msg: 'Delete successfull.' });
         })   
     } catch (error) {
@@ -230,6 +234,31 @@ adminCtl.getLocationAllPets = async(req, res) => {
     });
 };
 
+
+adminCtl.updateFirstProfile = async(req, res, next) => {
+    const {  address, age, birthDate, country, email, favoriteActivities, genderSelected, healthAndRequirements, isDigitalIdentificationActive, lat, lng, ownerPetName,  petName, petStatus,  phone, phoneVeterinarian, photo, photo_id, race,  userState, veterinarianContact, weight } = req.body;
+    
+    const permissions = { showPhoneInfo: true, showEmailInfo: true, showLinkTwitter: true, showLinkFacebook: true, showLinkInstagram: true, showOwnerPetName: true, showBirthDate: true, showAddressInfo: true, showAgeInfo: true, showVeterinarianContact: true, showPhoneVeterinarian: true, showHealthAndRequirements: true, showFavoriteActivities: true, showLocationInfo: true }
+    const newPet = { address, age, birthDate, country, email, favoriteActivities, genderSelected, healthAndRequirements, isDigitalIdentificationActive, lat, lng, ownerPetName, permissions: permissions, petName, petStatus, petStatusReport: [], phone, phoneVeterinarian, photo, photo_id, race,  userState, veterinarianContact, weight };
+
+    try {
+        await Pet.findByIdAndUpdate(req.body.id, { $push: { newPetProfile: newPet }},{new: true}).then( async function(data){ 
+            res.json({ success: true, msg: 'Your pet has been updated successfully.' });
+        })   
+    } catch (error) {
+        res.json({ success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error)) });
+    }
+}
+
+
+adminCtl.sortNewPetProfile = async (req, res) => {
+    try {
+        await Pet.findByIdAndUpdate(req.body._id, req.body);
+        res.send({msg: 'The information was updated correctly', success: true});
+    } catch (error) {
+        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+    }
+}
 
 
 module.exports = adminCtl;

@@ -11,9 +11,11 @@ router.get('/getUserProfileByIdScanner/:idPrimary/:idSecondary', verification, u
 
 router.get('/getMyPetCode', userCtl.getMyPetCode);
 
+router.get('/getMyPetInfo', userCtl.getMyPetInfo);
+
 router.put('/editProfileInfo', verification, userCtl.editProfileInfo);
 
-router.put('/editProfileSecondaryInfo', verification, userCtl.editProfileSecondaryInfo);
+router.put('/editPetProfile', verification, userCtl.editPetProfile);
 
 router.put('/editPhotoProfile', verification, userCtl.editPhotoProfile);
 
