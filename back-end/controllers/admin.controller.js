@@ -203,31 +203,19 @@ adminCtl.getLocationAllPets = async(req, res) => {
         if(item.newPetProfile.length>0){
           item.newPetProfile.forEach(element => {
             var pet  = {
-              _id:item._id,
-              idPet: element._id,
-              petName: element.petName,
-              email: element.email,
-              lat:element.lat,
-              lng:element.lng,
-              photo:element.photo,
-              showPanel: true,
-              petStatus: element.petStatus
-            }
-            newPetObject.push(pet);
+                _id: element._id,
+                idPrimary: item._id,
+                petName: element.petName,
+                email: element.email,
+                lat:element.lat,
+                lng:element.lng,
+                photo:element.photo,
+                showPanel: true,
+                petStatus: element.petStatus
+              }
+              object.push(pet);
           })
-        }
-        
-        var test = {
-          idPet: item._id,
-          petName: item.petName,
-          email: item.email,
-          lat:item.lat,
-          lng:item.lng,
-          petStatus: item.petStatus,
-          photo:item.photo,
-          newPetProfile: (newPetObject.length > 0)? newPetObject: null
-        }  
-        object.push(test);
+        } 
       }
     })
     res.json(object)
@@ -250,6 +238,22 @@ adminCtl.updateFirstProfile = async(req, res, next) => {
     }
 }
 
+adminCtl.updateLocationPet  = async (req, res) => {
+    try {
+        await Pet.findOneAndUpdate(
+            { _id: req.body.idPrimary, 'newPetProfile._id': req.body.idSecondary },
+            {
+                $set: {
+                    'newPetProfile.$.lat': req.body.lat,
+                    'newPetProfile.$.lng': req.body.lng
+                }
+            },
+        );
+        res.send({msg: 'The information was updated correctly', success: true});
+    } catch (error) {
+        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+    }
+}
 
 adminCtl.sortNewPetProfile = async (req, res) => {
     try {

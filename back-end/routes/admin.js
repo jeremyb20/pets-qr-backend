@@ -25,5 +25,7 @@ router.put('/updateFirstProfile', verification, adminCtl.updateFirstProfile);
 
 router.put('/sortNewPetProfile', verification, adminCtl.sortNewPetProfile);
 
+router.put('/updateLocationPet', verification, adminCtl.updateLocationPet);
+
 
 module.exports = router;
