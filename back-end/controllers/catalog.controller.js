@@ -45,7 +45,7 @@ catalogCtl.getPromoList = async (_req, res) => {
 }
 
 catalogCtl.createCatalog = async (req, res, next) => {
-    const {code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner, metaDescription } = req.body;
+    const {code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner, metaDescription, phone, country } = req.body;
     try {
         const result = await cloudinary.uploader.upload((req.file != undefined) ? req.file.path : req.body.image, { folder: "catalog" });
 
@@ -55,9 +55,10 @@ catalogCtl.createCatalog = async (req, res, next) => {
         }
 
         const catalog = new Catalog({
-            code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner, metaDescription, images: dataImage,
+            code, productName, description, price, quantity, inventoryStatus, category, rating, idOwner, metaDescription, phone, country, images: dataImage,
         });
         await catalog.save();
+        await fs.unlink(req.file.path);
         res.send({msg: 'The information was updated correctly', success: true});
     } catch (error) {
         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
