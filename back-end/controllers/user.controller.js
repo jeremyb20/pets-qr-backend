@@ -215,6 +215,25 @@ userCtl.editThemeProfile = async ( req,res )=> {
     }
 }
 
+userCtl.updatePetViewed = async ( req,res )=> {
+    const { lat, lng, dateViewed } = req.body;
+    try { 
+
+        const data = { lat, lng, dateViewed }
+        await Pet.findOneAndUpdate(
+            { _id: req.body._id, 'newPetProfile._id': req.body.secondaryId },
+            {
+              $push: {
+                'newPetProfile.$.petViewCounter': data,  
+              }
+            },{new: true}
+        );
+        res.send({msg: 'The information was updated correctly', success: true});
+    } catch (error) {
+        res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+    }
+}
+
 userCtl.registerNewPet = async(req, res, next) => {
     const { email, phone, isActivated, password, country, userState } = req.body;
     const emailFound = await Pet.findOne({email: email }); 

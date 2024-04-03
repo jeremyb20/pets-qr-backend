@@ -27,6 +27,7 @@ adminCtl.getAllUsers = async (_req, res) => {
                             birthDate: element.birthDate,
                             ownerPetName: element.ownerPetName,
                             petStatus: element.petStatus,
+                            petViewCounter: element.petViewCounter,
                             photo_id: element.photo_id,                            
                             isDigitalIdentificationActive: (element.isDigitalIdentificationActive)? true: false
                         }

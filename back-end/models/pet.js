@@ -238,6 +238,20 @@ const PetSchema = new Schema({
                         type: Boolean,
                         require: false
                     },
+                    petViewCounter: [{
+                        lat: {
+                            type: String,
+                            require: false
+                        },
+                        lng: {
+                            type: String,
+                            require: false
+                        },
+                        dateViewed: {
+                            type: String,
+                            require: false
+                        },
+                    }],
                     permissions: [{
                         showPhoneInfo: {
                             type: Boolean,
