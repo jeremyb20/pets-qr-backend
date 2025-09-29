@@ -1,9 +1,13 @@
 const { Router } = require('express');
 const userCtl = require('../controllers/user.controller')
 const router = Router();
-const verification = require('./../config');
+const verification = require('../middleware/config'); 
 
-router.post('/authenticate', userCtl.authenticate);
+router.post('/authenticate', userCtl.authenticateLegacy);
+
+router.post('/email/sign-in', userCtl.authenticate);
+
+router.get('/me', verification, userCtl.me);
 
 router.get('/getUserProfileById?:id', verification, userCtl.getUserProfileById);
 

@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const adminCtl = require('../controllers/admin.controller')
 const router = Router();
-const verification = require('./../config')
+const verification = require('../middleware/config')
 
 router.get('/getAllUsers', verification, adminCtl.getAllUsers);
 
