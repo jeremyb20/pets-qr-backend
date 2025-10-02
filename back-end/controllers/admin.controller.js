@@ -59,20 +59,51 @@ adminCtl.getAllUsersLegacy = async (_req, res) => {
 };
 
 // Nuevo método con paginación y caching con Upstash
+// Backend - adminController.js
 adminCtl.getAllRegisteredUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Clave única para el cache
-    const cacheKey = `users:page:${page}:limit:${limit}`;
+    // Obtener filtros del query
+    const { search, status, startDate, endDate } = req.query;
+
+    // Construir objeto de filtro para MongoDB
+    let filter = { isActivated: false };
+
+    // Aplicar filtro de búsqueda por email
+    if (search) {
+      filter.email = { $regex: search, $options: 'i' };
+    }
+
+    // Aplicar filtro por estado
+    if (status && status !== 'all') {
+      filter.userState = status;
+    }
+
+    // Aplicar filtro por fecha
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        filter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        filter.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    // Clave única para el cache que incluya los filtros
+    const cacheKey = `users:page:${page}:limit:${limit}:search:${
+      search || ''
+    }:status:${status || ''}:startDate:${startDate || ''}:endDate:${
+      endDate || ''
+    }`;
 
     // 1. INTENTAR OBTENER DESDE CACHE
     const cachedData = await cacheService.get(cacheKey);
     if (cachedData) {
       console.log('🚀 Serving from Redis Cache');
-      // NO hacer JSON.parse - Upstash ya devuelve el objeto
       return res.json(cachedData);
     }
 
@@ -81,8 +112,8 @@ adminCtl.getAllRegisteredUsers = async (req, res) => {
 
     // 2. CONSULTAR MONGODB (si no hay cache)
     const [totalUsers, users] = await Promise.all([
-      Pet.countDocuments({ isActivated: false }),
-      Pet.find({ isActivated: false })
+      Pet.countDocuments(filter),
+      Pet.find(filter)
         .select(
           '_id email petStatus userState createdAt updatedAt newPetProfile'
         )
@@ -95,7 +126,7 @@ adminCtl.getAllRegisteredUsers = async (req, res) => {
     const dbQueryTime = Date.now() - startTime;
     console.log(`📊 MongoDB query took: ${dbQueryTime}ms`);
 
-    // Procesar datos
+    // Procesar datos (mantener tu lógica actual)
     const payload = users.map((item) => {
       const newPetObject = [];
 
@@ -143,7 +174,6 @@ adminCtl.getAllRegisteredUsers = async (req, res) => {
     };
 
     // 3. GUARDAR EN CACHE PARA PRÓXIMAS CONSULTAS
-    // NO hacer JSON.stringify - Upstash maneja la serialización
     await cacheService.setex(cacheKey, 300, response); // 5 minutos
 
     const totalTime = Date.now() - startTime;
@@ -160,7 +190,6 @@ adminCtl.getAllRegisteredUsers = async (req, res) => {
     });
   }
 };
-
 adminCtl.getNewCodes = async (req, res) => {
   const users = await Pet.find();
   if (users.length == 0) {
