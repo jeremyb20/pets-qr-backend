@@ -79,7 +79,7 @@ adminCtl.getAllRegisteredUsers = async (req, res) => {
 
     // Aplicar filtro por estado
     if (status && status !== 'all') {
-      filter.userState = status;
+      filter.userState = Number(status);
     }
 
     // Aplicar filtro por fecha
