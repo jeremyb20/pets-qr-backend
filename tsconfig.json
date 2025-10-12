@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "rootDir": "./back-end",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "sourceMap": true,
+    "removeComments": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["back-end/*"],
+      "@models/*": ["back-end/models/*"],
+      "@controllers/*": ["back-end/controllers/*"],
+      "@routes/*": ["back-end/routes/*"],
+      "@middleware/*": ["back-end/middleware/*"],
+      "@config/*": ["back-end/config/*"],
+      "@types/*": ["back-end/types/*"],
+      "@utils/*": ["back-end/utils/*"]
+    },
+    "typeRoots": ["./node_modules/@types", "./back-end/types"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": [
+    "back-end/**/*.ts",
+    "back-end/**/*.tsx",
+    "back-end/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "public",
+    "services",
+    "back-end/views",
+    "back-end/scripts/*.js",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

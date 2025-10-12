@@ -1,6 +1,6 @@
-const webpush = require('web-push');
+import webpush from 'web-push';
 
-const configureWebPush = () => {
+const configureWebPush = (): typeof webpush => {
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
   const vapidEmail = process.env.VAPID_EMAIL;
@@ -18,4 +18,4 @@ const configureWebPush = () => {
   return webpush;
 };
 
-module.exports = configureWebPush;
+export default configureWebPush;

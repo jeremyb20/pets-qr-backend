@@ -1,4 +1,4 @@
-// const mongoose = require('mongoose');
+// back-end/models/old/Pet.js
 const { Schema, model } = require('mongoose');
 const bcrypt = require('bcryptjs');
 const passportLocalMongoose = require('passport-local-mongoose');
@@ -21,7 +21,6 @@ const PetSchema = new Schema(
     email: {
       type: String,
       require: true,
-      //   unique: true,
     },
     password: {
       type: String,
@@ -375,7 +374,6 @@ PetSchema.index({ randomCode: 1 }, { sparse: true });
 PetSchema.plugin(passportLocalMongoose, {
   usernameField: 'email',
   usernameUnique: true,
-  // Agregar estas opciones para índices sparse
   index: {
     unique: true,
     sparse: true,
@@ -383,26 +381,31 @@ PetSchema.plugin(passportLocalMongoose, {
   },
 });
 
-const Pet = (module.exports = model('Pet', PetSchema));
+// ⬇️⬇️⬇️ CAMBIO CRÍTICO AQUÍ ⬇️⬇️⬇️
+// Cambiar de 'Pet' a 'OldPet'
+// const OldPet = (module.exports = model('OldPet', PetSchema));\
+const OldPet = (module.exports = model('OldPet', PetSchema, 'pets')); // ⬅️ Agrega 'pets' como tercer parámetro
+
 const initializeIndexes = async () => {
   try {
     // 1. Eliminar índices problemáticos de passport-local-mongoose
     try {
-      await Pet.collection.dropIndex('username_1');
+      await OldPet.collection.dropIndex('username_1'); // ⬅️ Cambiado
       console.log('✅ Removed problematic username_1 index');
     } catch (e) {
       console.log('ℹ️ username_1 index already removed');
     }
 
     try {
-      await Pet.collection.dropIndex('email_1');
+      await OldPet.collection.dropIndex('email_1'); // ⬅️ Cambiado
       console.log('✅ Removed problematic email_1 index');
     } catch (e) {
       console.log('ℹ️ email_1 index already removed');
     }
 
     // 2. Crear índices sparse manualmente
-    await Pet.collection.createIndex(
+    await OldPet.collection.createIndex(
+      // ⬅️ Cambiado
       { email: 1 },
       {
         unique: true,
@@ -413,11 +416,11 @@ const initializeIndexes = async () => {
     console.log('✅ Created sparse email index');
 
     // 3. Crear otros índices necesarios
-    await Pet.collection.createIndex({ isActivated: 1, createdAt: -1 });
+    await OldPet.collection.createIndex({ isActivated: 1, createdAt: -1 }); // ⬅️ Cambiado
     console.log('✅ Created isActivated + createdAt index');
 
     // 4. Verificar que no hay índices problemáticos
-    const indexes = await Pet.collection.indexes();
+    const indexes = await OldPet.collection.indexes(); // ⬅️ Cambiado
     console.log('\n📋 Final indexes:');
     indexes.forEach((index) => {
       console.log(`   - ${index.name}:`, index.key);
@@ -427,15 +430,14 @@ const initializeIndexes = async () => {
   }
 };
 
-initializeIndexes();
-
+// ⬇️⬇️⬇️ ACTUALIZAR TODAS LAS FUNCIONES ⬇️⬇️⬇️
 module.exports.getPetById = function (id, callback) {
-  Pet.findById(id, callback);
+  OldPet.findById(id, callback); // ⬅️ Cambiado
 };
 
 module.exports.getUserByUsername = function (email, callback) {
   const query = { email: email };
-  Pet.findOne(query, callback);
+  OldPet.findOne(query, callback); // ⬅️ Cambiado
 };
 
 module.exports.addPet = function (newPet, callback) {
@@ -464,23 +466,24 @@ module.exports.addNewCode = function (newPet, callback) {
 
 module.exports.getUsers = function (users, callback) {
   const query = { users: users };
-  Pet.find();
+  OldPet.find(); // ⬅️ Cambiado
 };
 
 module.exports.deleteOne = function (req, res) {
-  Pet.findByIdAndRemove({ _id: req.body.id }).then(function (data) {
+  OldPet.findByIdAndRemove({ _id: req.body.id }).then(function (data) {
+    // ⬅️ Cambiado
     res.json({ success: true, msg: 'Se ha eliminado correctamente.' });
   });
 };
 
 module.exports.update = function (username, callback) {
-  Pet.findByIdAndUpdate(username, callback);
+  OldPet.findByIdAndUpdate(username, callback); // ⬅️ Cambiado
 };
 
 module.exports.getUserMessage = function (req, callback) {
   console.log(req, 'que sale');
   const query = { id: req.body._id };
-  Pet.find();
+  OldPet.find(); // ⬅️ Cambiado
 };
 
 module.exports.comparePassword = function (candidatePassword, hash, callback) {
@@ -489,3 +492,5 @@ module.exports.comparePassword = function (candidatePassword, hash, callback) {
     callback(null, isMatch);
   });
 };
+
+// initializeIndexes(); // Mantener comentado por ahora
