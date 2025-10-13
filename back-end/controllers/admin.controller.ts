@@ -665,18 +665,18 @@ const adminCtl: AdminController = {
         }
       }
 
-      const cacheKey = `users:page:${page}:limit:${limit}:search:${
-        search || ''
-      }:status:${status || ''}:startDate:${startDate || ''}:endDate:${
-        endDate || ''
-      }`;
+      // const cacheKey = `users:page:${page}:limit:${limit}:search:${
+      //   search || ''
+      // }:status:${status || ''}:startDate:${startDate || ''}:endDate:${
+      //   endDate || ''
+      // }`;
 
-      const cachedData = await cacheService.get(cacheKey);
-      if (cachedData) {
-        console.log('🚀 Serving from Redis Cache');
-        res.json(cachedData);
-        return;
-      }
+      // const cachedData = await cacheService.get(cacheKey);
+      // if (cachedData) {
+      //   console.log('🚀 Serving from Redis Cache');
+      //   res.json(cachedData);
+      //   return;
+      // }
 
       const startTime = Date.now();
 
@@ -744,7 +744,7 @@ const adminCtl: AdminController = {
         total: totalUsers,
       };
 
-      await cacheService.setex(cacheKey, 300, response);
+      // await cacheService.setex(cacheKey, 300, response);
 
       const totalTime = Date.now() - startTime;
       console.log(
