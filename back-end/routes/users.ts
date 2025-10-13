@@ -45,7 +45,7 @@
 
 import { Router } from 'express';
 import userCtl from '../controllers/user.controller';
-import verification from '../middleware/config';
+import verification from '../middlewares/config-legacy';
 
 const router = Router();
 

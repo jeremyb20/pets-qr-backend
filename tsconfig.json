@@ -25,7 +25,7 @@
       "@models/*": ["back-end/models/*"],
       "@controllers/*": ["back-end/controllers/*"],
       "@routes/*": ["back-end/routes/*"],
-      "@middleware/*": ["back-end/middleware/*"],
+      "@middlewares/*": ["back-end/middlewares/*"],
       "@config/*": ["back-end/config/*"],
       "@types/*": ["back-end/types/*"],
       "@utils/*": ["back-end/utils/*"]
@@ -37,7 +37,7 @@
   "include": [
     "back-end/**/*.ts",
     "back-end/**/*.tsx",
-    "back-end/types/**/*.d.ts"
+    "back-end/types/**/*.d.ts"  // ✅ Esto está correcto
   ],
   "exclude": [
     "node_modules",

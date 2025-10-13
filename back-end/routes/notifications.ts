@@ -25,7 +25,7 @@
 // module.exports = router;
 import { Router } from 'express';
 import notificationCtl from '../controllers/notification.controller';
-import verification from '../middleware/config';
+import verification from '../middlewares/config-legacy';
 
 const router = Router();
 

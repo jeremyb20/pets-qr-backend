@@ -147,7 +147,12 @@ const userCtl: UserController = {
       const isMatch = await bcrypt.compare(password, user.password);
       if (isMatch) {
         const token = jwt.sign(
-          { data: user.email, id: user._id },
+          {
+            email: user.email,
+            id: user._id,
+            role: user.role,
+            userStatus: user.userStatus,
+          },
           process.env.SECRET as string,
           {
             expiresIn: 86400,
@@ -155,10 +160,10 @@ const userCtl: UserController = {
         );
         res.json({
           success: true,
-          token: 'JWT ' + token,
+          token: token,
           payload: {
             id: user._id,
-            userState: user.userStatus,
+            userStatus: user.userStatus,
             role: user.role,
             email: user.email,
             theme: user.theme,

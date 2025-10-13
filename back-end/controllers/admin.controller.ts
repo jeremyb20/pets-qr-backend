@@ -519,9 +519,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
-import Pet from '../models/Pet';
+import User from '../models/User';
 import { cacheService } from '../config/redis';
 import 'dotenv/config';
+// import { AuthenticatedRequest } from '@/middlewares';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -590,7 +591,7 @@ interface AdminController {
 
 const adminCtl: AdminController = {
   getAllUsersLegacy: async (_req: Request, res: Response): Promise<void> => {
-    const users = await Pet.find();
+    const users = await User.find();
     if (users.length == 0) {
       res.send({ success: false, msg: 'An error occurred in the process.' });
     } else {
@@ -651,7 +652,7 @@ const adminCtl: AdminController = {
       }
 
       if (status && status !== 'all') {
-        filter.userState = Number(status);
+        filter.userStatus = Number(status);
       }
 
       if (startDate || endDate) {
@@ -677,15 +678,17 @@ const adminCtl: AdminController = {
         return;
       }
 
-      console.log('🔍 Querying MongoDB...');
       const startTime = Date.now();
 
       const [totalUsers, users] = await Promise.all([
-        Pet.countDocuments(filter),
-        Pet.find(filter)
-          .select(
-            '_id email petStatus userState createdAt updatedAt newPetProfile'
-          )
+        User.countDocuments(filter),
+        User.find(filter)
+          .select('_id email userStatus role createdAt updatedAt pets')
+          .populate({
+            path: 'pets',
+            select:
+              'petName email phone photo age birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive',
+          })
           .skip(skip)
           .limit(limit)
           .sort({ createdAt: -1 })
@@ -696,43 +699,43 @@ const adminCtl: AdminController = {
       console.log(`📊 MongoDB query took: ${dbQueryTime}ms`);
 
       const payload = users.map((item: any) => {
-        const newPetObject: PetProfile[] = [];
+        const petsArray: PetProfile[] = [];
 
-        if (item.newPetProfile && item.newPetProfile.length > 0) {
-          item.newPetProfile.forEach((element: any) => {
-            const pet: PetProfile = {
-              _id: item._id,
-              idParental: element._id,
-              petName: element.petName,
-              email: element.email,
-              phone: element.phone,
-              photo: element.photo,
-              age: element.age,
-              birthDate: element.birthDate,
-              ownerPetName: element.ownerPetName,
-              petStatus: element.petStatus,
-              petViewCounter: element.petViewCounter,
-              photo_id: element.photo_id,
+        // Ahora item.pets contendrá los documentos poblados de las mascotas
+        if (item.pets && item.pets.length > 0) {
+          item.pets.forEach((pet: any) => {
+            const petProfile: PetProfile = {
+              _id: pet._id, // ID de la mascota
+              idParental: item._id, // ID del usuario padre
+              petName: pet.petName,
+              email: pet.email,
+              phone: pet.phone,
+              photo: pet.photo,
+              age: pet.age,
+              birthDate: pet.birthDate,
+              ownerPetName: pet.ownerPetName,
+              petStatus: pet.petStatus,
+              petViewCounter: pet.petViewCounter,
+              photo_id: pet.photo_id,
               isDigitalIdentificationActive:
-                !!element.isDigitalIdentificationActive,
+                !!pet.isDigitalIdentificationActive,
             };
-            newPetObject.push(pet);
+            petsArray.push(petProfile);
           });
         }
 
         return {
           id: item._id,
           email: item.email,
-          petStatus: item.petStatus,
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
-          userState: item.userState,
-          newPetProfile: newPetObject.length > 0 ? newPetObject : null,
+          userStatus: item.userStatus,
+          role: item.role,
+          pets: petsArray.length > 0 ? petsArray : null,
         };
       });
 
       const totalPages = Math.ceil(totalUsers / limit);
-
       const response: UserResponse = {
         success: true,
         payload,
@@ -759,7 +762,7 @@ const adminCtl: AdminController = {
   },
 
   getNewCodes: async (req: Request, res: Response): Promise<void> => {
-    const users = await Pet.find();
+    const users = await User.find();
     if (users.length == 0) {
       res
         .status(200)
@@ -787,7 +790,7 @@ const adminCtl: AdminController = {
   },
 
   deleteUserById: async (req: Request, res: Response): Promise<void> => {
-    const photo = await Pet.findByIdAndDelete(req.query.id);
+    const photo = await User.findByIdAndDelete(req.query.id);
     if (photo && (photo as any).image_id) {
       await cloudinaryV2.uploader.destroy((photo as any).image_id);
     }
@@ -812,7 +815,7 @@ const adminCtl: AdminController = {
       isDigitalIdentificationActive,
     } = req.body;
     try {
-      await Pet.findByIdAndUpdate(req.body.id, {
+      await User.findByIdAndUpdate(req.body.id, {
         petName,
         email,
         phone,
@@ -834,11 +837,11 @@ const adminCtl: AdminController = {
     const { isDigitalIdentificationActive } = req.body;
     try {
       if (req.body.idSecond === 0) {
-        await Pet.findByIdAndUpdate(req.body._id, {
+        await User.findByIdAndUpdate(req.body._id, {
           isDigitalIdentificationActive,
         });
       } else {
-        await Pet.findOneAndUpdate(
+        await User.findOneAndUpdate(
           { _id: req.body._id, 'newPetProfile._id': req.body.idParental },
           {
             $set: {
@@ -864,7 +867,7 @@ const adminCtl: AdminController = {
     next?: NextFunction
   ): Promise<void> => {
     try {
-      await Pet.findByIdAndUpdate(req.body.idPrimary, {
+      await User.findByIdAndUpdate(req.body.idPrimary, {
         $pull: { newPetProfile: { _id: req.body.idSecond } },
       }).then(async function (data) {
         if (req.body.photo_id) {
@@ -888,22 +891,22 @@ const adminCtl: AdminController = {
     next?: NextFunction
   ): Promise<void> => {
     try {
-      const myUser = await Pet.findOne({ randomCode: req.body.randomCode });
-      
+      const myUser = await User.findOne({ randomCode: req.body.randomCode });
+
       if (myUser) {
         res.json({
           success: false,
           msg: 'An error occurred in the process.',
         });
       } else {
-        let newPet = new Pet({
+        let newPet = new User({
           randomCode: req.body.randomCode,
           isActivated: req.body.isActivated,
           stateActivation: req.body.stateActivation,
           hostName: req.headers.referer,
         });
 
-        (Pet as any).addNewCode(newPet, async (user: any, done: any) => {
+        (User as any).addNewCode(newPet, async (user: any, done: any) => {
           try {
             res.json({
               success: true,
@@ -933,7 +936,7 @@ const adminCtl: AdminController = {
   ): Promise<void> => {
     const { stateActivation } = req.body;
     try {
-      await Pet.findByIdAndUpdate(req.body.id, {
+      await User.findByIdAndUpdate(req.body.id, {
         stateActivation,
         hostName: req.headers.referer,
       });
@@ -950,7 +953,7 @@ const adminCtl: AdminController = {
     next?: NextFunction
   ): Promise<void> => {
     try {
-      const pets = await Pet.find({});
+      const pets = await User.find({});
       const object: any[] = [];
       pets.forEach((item: any) => {
         if (!item.isActivated) {
@@ -1053,7 +1056,7 @@ const adminCtl: AdminController = {
     };
 
     try {
-      await Pet.findByIdAndUpdate(
+      await User.findByIdAndUpdate(
         req.body.id,
         { $push: { newPetProfile: newPet } },
         { new: true }
@@ -1074,7 +1077,7 @@ const adminCtl: AdminController = {
 
   updateLocationPet: async (req: Request, res: Response): Promise<void> => {
     try {
-      await Pet.findOneAndUpdate(
+      await User.findOneAndUpdate(
         { _id: req.body.idPrimary, 'newPetProfile._id': req.body.idSecondary },
         {
           $set: {
@@ -1095,7 +1098,7 @@ const adminCtl: AdminController = {
 
   sortNewPetProfile: async (req: Request, res: Response): Promise<void> => {
     try {
-      await Pet.findByIdAndUpdate(req.body._id, req.body);
+      await User.findByIdAndUpdate(req.body._id, req.body);
       res.send({ msg: 'The information was updated correctly', success: true });
     } catch (error) {
       res.json({
