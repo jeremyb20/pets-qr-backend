@@ -166,7 +166,7 @@ const upload = multer({
   },
 });
 
-app.use(upload.single('image'));
+// app.use(upload.single('image'));
 
 // Rutas de la API
 app.use('/api/admin', adminRoutes);

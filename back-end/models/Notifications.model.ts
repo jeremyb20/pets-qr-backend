@@ -88,7 +88,7 @@ const NotificationSchema = new Schema<INotification>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'Pet', // Referencia a Pet según tu modelo
+      ref: 'User', // Referencia a User según tu modelo
       required: true,
     },
     title: {

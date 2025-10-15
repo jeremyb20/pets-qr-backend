@@ -1,6 +1,8 @@
 
 ## Para actualizar necesitas varias cosas
 
+npx web-push generate-vapid-keys --json
+
 En caso de ubuntu
 
 curl -L https://fly.io/install.sh | sh

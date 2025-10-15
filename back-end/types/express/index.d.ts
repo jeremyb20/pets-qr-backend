@@ -1,4 +1,4 @@
-import { IUser } from '@/models/User';
+import { IUser } from '@/models/User.model';
 declare global {
   namespace Express {
     // Opción 1: Extender el User de Passport (recomendado si usas Passport)

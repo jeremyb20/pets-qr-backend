@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
-import Subscription, { ISubscription } from '../models/Subscription';
+import Subscription, { ISubscription } from '../models/Subscription.model';
 import Notification, {
   INotification,
   NotificationType,
-} from '../models/Notifications';
+} from '../models/Notifications.model';
 import configureWebPush from '../config/webpush';
-import { IUser } from '../models/User';
+import { IUser } from '../models/User.model';
 
 const webpush = configureWebPush();
 

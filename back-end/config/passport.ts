@@ -4,7 +4,7 @@ import {
   StrategyOptions,
 } from 'passport-jwt';
 import passport, { PassportStatic } from 'passport';
-import User, { IUser } from '../models/User';
+import User, { IUser } from '../models/User.model';
 import 'dotenv/config';
 
 // Interface para el payload del JWT

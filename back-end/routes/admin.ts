@@ -1,7 +1,9 @@
 import { Router } from 'express';
-import adminCtl from '../controllers/admin.controller';
+import adminCtl from '../controllers/admin/admin.controller';
+import adminProductCtl from '../controllers/admin/admin-products.controller';
 import verification from '../middlewares/config-legacy';
 import { isAdmin } from '../middlewares/roleMiddlewares';
+import { uploadProductImages } from '../middlewares/uploadMiddleware';
 import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -13,7 +15,7 @@ router.get(
   authenticateToken,
   isAdmin,
   adminCtl.getAllRegisteredUsers
-); // obtiene todos los usuarios registrados (nueva version)
+);
 
 router.get('/getNewCodes', verification, adminCtl.getNewCodes);
 
@@ -44,5 +46,77 @@ router.put('/updateFirstProfile', verification, adminCtl.updateFirstProfile);
 router.put('/sortNewPetProfile', verification, adminCtl.sortNewPetProfile);
 
 router.put('/updateLocationPet', verification, adminCtl.updateLocationPet);
+
+/// Admin Catalog Routes
+// Product routes
+router.get(
+  '/product/list',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.getAllProductList
+);
+router.get('/catalog', authenticateToken, isAdmin, adminProductCtl.getProducts);
+router.get(
+  '/stats',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.getProductStats
+);
+router.get(
+  '/product/details',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.getProductById
+);
+router.post(
+  '/createProduct',
+  uploadProductImages,
+  adminProductCtl.createProduct
+);
+router.put(
+  '/updateProduct',
+  authenticateToken,
+  isAdmin,
+  uploadProductImages,
+  adminProductCtl.updateProduct
+);
+router.delete(
+  '/:id',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.deleteProduct
+);
+router.delete(
+  '/',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.bulkDeleteProducts
+);
+
+// Review routes
+router.get(
+  '/:productId/reviews',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.getProductReviews
+);
+router.post(
+  '/:productId/reviews',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.createProductReview
+);
+router.put(
+  '/reviews/:reviewId',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.updateProductReview
+);
+router.delete(
+  '/:productId/reviews/:reviewId',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.deleteProductReview
+);
 
 export default router;
