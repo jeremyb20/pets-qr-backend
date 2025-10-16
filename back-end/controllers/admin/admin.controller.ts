@@ -3,73 +3,17 @@ import cloudinary from 'cloudinary';
 import User from '../../models/User.model';
 import { cacheService } from '../../config/redis';
 import 'dotenv/config';
-// import { AuthenticatedRequest } from '@/middlewares';
+import {
+  ApiResponse,
+  ErrorResponse,
+  UserFilters,
+  UserQueryParams,
+} from '../../types/response.type';
+import { AdminController, PetProfile } from '../../types/admin.types';
 
 const cloudinaryV2 = cloudinary.v2;
 
 // Interfaces para los tipos
-interface UserResponse {
-  success: boolean;
-  msg?: string;
-  payload?: any;
-  totalPages?: number;
-  currentPage?: number;
-  total?: number;
-  message?: string;
-}
-
-interface PetProfile {
-  _id: any;
-  petName?: string;
-  idParental?: string;
-  email?: string;
-  phone?: string;
-  photo?: string;
-  age?: string;
-  birthDate?: string;
-  ownerPetName?: string;
-  petStatus?: string;
-  petViewCounter?: any[];
-  photo_id?: string;
-  isDigitalIdentificationActive?: boolean;
-}
-
-interface AdminController {
-  getAllUsersLegacy(req: Request, res: Response): Promise<void>;
-  getAllRegisteredUsers(req: Request, res: Response): Promise<void>;
-  getNewCodes(req: Request, res: Response): Promise<void>;
-  deleteUserById(req: Request, res: Response): Promise<void>;
-  editUser(req: Request, res: Response, next?: NextFunction): Promise<void>;
-  editUserSecondLevel(req: Request, res: Response): Promise<void>;
-  deletePetByIdForAdmin(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
-  createNewCode(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
-  updateStateActivationCode(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
-  getLocationAllPets(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
-  updateFirstProfile(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
-  updateLocationPet(req: Request, res: Response): Promise<void>;
-  sortNewPetProfile(req: Request, res: Response): Promise<void>;
-}
-
 const adminCtl: AdminController = {
   getAllUsersLegacy: async (_req: Request, res: Response): Promise<void> => {
     const users = await User.find();
@@ -120,44 +64,44 @@ const adminCtl: AdminController = {
 
   getAllRegisteredUsers: async (req: Request, res: Response): Promise<void> => {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = (page - 1) * limit;
+      const {
+        page = '1',
+        limit = '10',
+        search = '',
+        status = '',
+        startDate = '',
+        endDate = '',
+      } = req.query as UserQueryParams;
 
-      const { search, status, startDate, endDate } = req.query;
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const skip = (pageNum - 1) * limitNum;
 
-      let filter: any = { isActivated: false };
+      let filter: UserFilters = { isActivated: false };
 
+      // Búsqueda por email
       if (search) {
         filter.email = { $regex: search, $options: 'i' };
       }
 
+      // Filtro por status
       if (status && status !== 'all') {
         filter.userStatus = Number(status);
       }
 
+      // Filtro por fecha
       if (startDate || endDate) {
         filter.createdAt = {};
         if (startDate) {
-          filter.createdAt.$gte = new Date(startDate as string);
+          filter.createdAt.$gte = new Date(startDate);
         }
         if (endDate) {
-          filter.createdAt.$lte = new Date(endDate as string);
+          filter.createdAt.$lte = new Date(endDate);
         }
       }
 
-      // const cacheKey = `users:page:${page}:limit:${limit}:search:${
-      //   search || ''
-      // }:status:${status || ''}:startDate:${startDate || ''}:endDate:${
-      //   endDate || ''
-      // }`;
-
-      // const cachedData = await cacheService.get(cacheKey);
-      // if (cachedData) {
-      //   console.log('🚀 Serving from Redis Cache');
-      //   res.json(cachedData);
-      //   return;
-      // }
+      // Cache key (comentado por ahora)
+      // const cacheKey = `users:page:${pageNum}:limit:${limitNum}:search:${search}:status:${status}:startDate:${startDate}:endDate:${endDate}`;
 
       const startTime = Date.now();
 
@@ -171,7 +115,7 @@ const adminCtl: AdminController = {
               'petName email phone photo age birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive',
           })
           .skip(skip)
-          .limit(limit)
+          .limit(limitNum)
           .sort({ createdAt: -1 })
           .lean(),
       ]);
@@ -182,12 +126,11 @@ const adminCtl: AdminController = {
       const payload = users.map((item: any) => {
         const petsArray: PetProfile[] = [];
 
-        // Ahora item.pets contendrá los documentos poblados de las mascotas
         if (item.pets && item.pets.length > 0) {
           item.pets.forEach((pet: any) => {
             const petProfile: PetProfile = {
-              _id: pet._id, // ID de la mascota
-              idParental: item._id, // ID del usuario padre
+              _id: pet._id,
+              idParental: item._id,
               petName: pet.petName,
               email: pet.email,
               phone: pet.phone,
@@ -216,15 +159,18 @@ const adminCtl: AdminController = {
         };
       });
 
-      const totalPages = Math.ceil(totalUsers / limit);
-      const response: UserResponse = {
+      const response: ApiResponse<typeof payload> = {
         success: true,
         payload,
-        totalPages,
-        currentPage: page,
-        total: totalUsers,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalUsers,
+          pages: Math.ceil(totalUsers / limitNum),
+        },
       };
 
+      // Cache (comentado por ahora)
       // await cacheService.setex(cacheKey, 300, response);
 
       const totalTime = Date.now() - startTime;
@@ -232,13 +178,19 @@ const adminCtl: AdminController = {
         `✅ Request completed in ${totalTime}ms (DB: ${dbQueryTime}ms)`
       );
 
-      res.json(response);
+      res.status(200).json(response);
     } catch (error) {
       console.error('❌ Error fetching users:', error);
-      res.status(500).json({
+
+      // Usando next para manejo centralizado de errores
+
+      // O si prefieres manejar directamente:
+      const errorResponse: ErrorResponse = {
         success: false,
-        message: 'An error occurred in the process.',
-      });
+        message: 'An error occurred while fetching users.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      };
+      res.status(500).json(errorResponse);
     }
   },
 
