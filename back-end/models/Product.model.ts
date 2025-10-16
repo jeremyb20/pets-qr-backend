@@ -63,10 +63,12 @@ const productSchema = new Schema<IProduct>(
         trim: true,
       },
     ],
-    // gender: {
-    //   type: String,
-
-    // },
+    colors: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     gender: [
       {
         type: String,
@@ -102,12 +104,6 @@ const productSchema = new Schema<IProduct>(
       {
         imageURL: { type: String, required: false },
         image_id: { type: String, required: false },
-      },
-    ],
-    colors: [
-      {
-        type: String,
-        trim: true,
       },
     ],
     quantity: {

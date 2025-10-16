@@ -183,91 +183,46 @@ const adminProductCtl: AdminProductController = {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Procesar datos del producto - CORREGIDO para FormData
-      let productData: any;
-      if (req.body.data) {
-        try {
-          productData = JSON.parse(req.body.data);
+      // USAR req.body DIRECTAMENTE COMO EN EL UPDATE
+      const productData = { ...req.body };
+      const fieldsToParse = [
+        'saleLabel',
+        'newLabel',
+        'tags',
+        'colors',
+        'sizes',
+        'gender',
+        'existingImages', // ← Incluir también para consistencia
+      ];
 
-          // Parsear campos específicos - VERSIÓN CORREGIDA
-          const fieldsToParse = [
-            'saleLabel',
-            'newLabel',
-            'tags',
-            'colors',
-            'sizes',
-          ];
-
-          fieldsToParse.forEach((field) => {
-            if (typeof productData[field] === 'string') {
-              try {
-                const parsedValue = JSON.parse(productData[field]);
-
-                // CORRECCIÓN: Si es un array con un solo elemento que es otro array, extraerlo
-                if (
-                  Array.isArray(parsedValue) &&
-                  parsedValue.length === 1 &&
-                  Array.isArray(parsedValue[0])
-                ) {
-                  productData[field] = parsedValue[0];
-                  console.log(`🔄 Corregido ${field}:`, productData[field]);
-                } else {
-                  productData[field] = parsedValue;
-                }
-              } catch (e) {
-                console.warn(`⚠️ Error parsing ${field}:`, e);
-              }
-            }
-          });
-
-          // Convertir números
-          const numberFields = ['price', 'priceSale', 'quantity', 'taxes'];
-          numberFields.forEach((field) => {
-            if (productData[field]) {
-              productData[field] = Number(productData[field]);
-            }
-          });
-
-          // // Parsear los campos que vienen como strings desde FormData
-          // if (typeof productData.saleLabel === 'string') {
-          //   productData.saleLabel = JSON.parse(productData.saleLabel);
-          // }
-          // if (typeof productData.newLabel === 'string') {
-          //   productData.newLabel = JSON.parse(productData.newLabel);
-          // }
-          // if (typeof productData.tags === 'string') {
-          //   productData.tags = JSON.parse(productData.tags);
-          // }
-          // if (typeof productData.colors === 'string') {
-          //   productData.colors = JSON.parse(productData.colors);
-          // }
-          // if (typeof productData.sizes === 'string') {
-          //   productData.sizes = JSON.parse(productData.sizes);
-          // }
-          // // Convertir números
-          // if (productData.price) productData.price = Number(productData.price);
-          // if (productData.priceSale)
-          //   productData.priceSale = Number(productData.priceSale);
-          // if (productData.quantity)
-          //   productData.quantity = Number(productData.quantity);
-          // if (productData.taxes) productData.taxes = Number(productData.taxes);
-        } catch (parseError) {
-          console.error('Error parsing JSON data:', parseError);
-          productData = req.body;
+      fieldsToParse.forEach((field) => {
+        if (productData[field] && typeof productData[field] === 'string') {
+          try {
+            const parsedValue = JSON.parse(productData[field]);
+            productData[field] = parsedValue;
+            console.log(`✅ Parseado ${field}:`, productData[field]);
+          } catch (e) {
+            console.warn(`⚠️ Error parsing ${field}:`, e);
+            // Mantener el valor original si falla el parseo
+          }
         }
-      } else {
-        productData = req.body;
-      }
+      });
 
-      console.log('🔄 Datos del producto procesados:', productData);
+      // Convertir números (igual que en update)
+      const numberFields = ['price', 'priceSale', 'quantity', 'taxes'];
+      numberFields.forEach((field) => {
+        if (productData[field] !== undefined && productData[field] !== null) {
+          productData[field] = Number(productData[field]);
+        }
+      });
 
-      // Obtener archivos de Multer
+      // Obtener archivos de Multer (igual que en update)
       const imageFiles = (req.files as Express.Multer.File[]) || [];
-      console.log('🖼️ Archivos recibidos:', imageFiles.length);
+      console.log('🆕 Archivos recibidos:', imageFiles.length);
 
       let productImages: IProductImage[] = [];
 
-      // Subir imágenes a Cloudinary si hay archivos
+      // Subir imágenes a Cloudinary (similar al update)
       if (imageFiles.length > 0) {
         console.log(
           `📸 Subiendo ${imageFiles.length} imágenes a Cloudinary...`
@@ -275,7 +230,6 @@ const adminProductCtl: AdminProductController = {
 
         for (const file of imageFiles) {
           try {
-            // Subir a Cloudinary usando el buffer
             const result = await cloudinary.uploader.upload(
               `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
               {
@@ -292,22 +246,26 @@ const adminProductCtl: AdminProductController = {
             console.log(`✅ Imagen subida: ${result.secure_url}`);
           } catch (uploadError) {
             console.error('❌ Error subiendo imagen:', uploadError);
-            // Continuar con las demás imágenes aunque falle una
           }
         }
-      } else {
-        console.log('ℹ️ No se recibieron archivos de imagen');
       }
 
-      // La primera imagen será la cover
-      console.log(productImages, 'productImages');
+      // Obtener imágenes existentes (para consistencia con update)
+      const existingImages = productData.existingImages || [];
 
-      const coverUrl = productImages[0]?.imageURL || productData.coverUrl || '';
+      // Combinar imágenes (en create normalmente solo habrá nuevas)
+      const allImages = [...existingImages, ...productImages];
+      console.log(`🖼️ Total de imágenes: ${allImages.length}`);
 
-      // Validar priceSale
+      // Determinar cover image (igual que en update)
+      let coverUrl = productData.coverUrl;
+      if (!coverUrl && allImages.length > 0) {
+        coverUrl = allImages[0].imageURL;
+      }
+
+      // Validar priceSale (igual que en update)
       let priceSale = productData.priceSale;
       const price = productData.price;
-
       if (priceSale && priceSale >= price) {
         console.warn(
           '⚠️ priceSale debe ser menor que price. Estableciendo a null'
@@ -315,14 +273,13 @@ const adminProductCtl: AdminProductController = {
         priceSale = null;
       }
 
-      // Crear el DTO con los datos corregidos
+      // Crear el DTO con la misma lógica del update
       const createProductDto = new CreateProductDto({
         ...productData,
-        gender: productData.gender,
         priceSale: priceSale,
-        images: productImages,
+        images: allImages,
         coverUrl: coverUrl,
-        // Asegurar que los labels sean objetos
+        // Asegurar que los labels sean objetos (igual que en update)
         saleLabel:
           typeof productData.saleLabel === 'object'
             ? productData.saleLabel
@@ -334,6 +291,12 @@ const adminProductCtl: AdminProductController = {
       });
 
       console.log('💾 Guardando producto en base de datos...');
+      console.log('📊 Datos procesados:', {
+        tags: createProductDto.tags,
+        colors: createProductDto.colors,
+        sizes: createProductDto.sizes,
+        gender: createProductDto.gender,
+      });
 
       // Crear el producto
       const product = new Product({
@@ -366,7 +329,6 @@ const adminProductCtl: AdminProductController = {
         return;
       }
 
-      // Manejar errores de validación de Mongoose
       if (error.name === 'ValidationError') {
         const errors = Object.values(error.errors).map(
           (err: any) => err.message
