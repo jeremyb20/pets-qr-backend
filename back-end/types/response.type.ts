@@ -34,3 +34,23 @@ export interface UserFilters {
     $lte?: Date;
   };
 }
+
+export interface PetQueryParams {
+  page?: string;
+  limit?: string;
+  search?: string;
+  petStatus?: string;
+  startDate?: string;
+  endDate?: string;
+  id?: string;
+}
+
+export interface PetFilters {
+  idParental?: string;
+  petName?: { $regex: string; $options: string };
+  petStatus?: number;
+  createdAt?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
+}

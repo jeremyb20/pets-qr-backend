@@ -9,6 +9,13 @@ import hbs from 'nodemailer-express-handlebars';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import 'dotenv/config';
+import {
+  ApiResponse,
+  ErrorResponse,
+  PetFilters,
+  PetQueryParams,
+} from '@/types/response.type';
+import { PetProfile } from '@/types/pet.types';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -61,6 +68,7 @@ interface UserController {
   getUserProfileByIdScanner(req: Request, res: Response): Promise<void>;
   getMyPetCode(req: Request, res: Response): Promise<void>;
   getMyPetInfo(req: Request, res: Response): Promise<void>;
+  getAllPetsByUser(req: Request, res: Response): Promise<void>;
   editProfileInfo(req: Request, res: Response): Promise<void>;
   editPetProfile(req: Request, res: Response): Promise<void>;
   editPhotoProfile(req: Request, res: Response): Promise<void>;
@@ -152,6 +160,7 @@ const userCtl: UserController = {
             id: user._id,
             role: user.role,
             userStatus: user.userStatus,
+            memberId: user.memberId,
           },
           process.env.SECRET as string,
           {
@@ -167,6 +176,7 @@ const userCtl: UserController = {
             role: user.role,
             email: user.email,
             theme: user.theme,
+            memberId: user.memberId,
           },
         });
       } else {
@@ -200,6 +210,7 @@ const userCtl: UserController = {
         userState: user.userStatus,
         role: user.role,
         theme: user.theme,
+        memberId: user.memberId,
       };
 
       res.status(200).send({
@@ -213,6 +224,151 @@ const userCtl: UserController = {
         msg: 'Internal server error',
         error: (error as Error).message,
       });
+    }
+  },
+
+  getAllPetsByUser: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const {
+        page = '1',
+        limit = '10',
+        search = '',
+        petStatus = '',
+        startDate = '',
+        endDate = '',
+        id = '',
+      } = req.query as PetQueryParams;
+
+      if (!id) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'id is required to fetch user pets',
+        };
+        res.status(400).json(errorResponse);
+        return;
+      }
+
+      const userExists = await User.findOne({ _id: id }).select('_id');
+      if (!userExists) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'User not found with the provided id',
+        };
+        res.status(404).json(errorResponse);
+        return;
+      }
+
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      let petFilter: any = {};
+
+      if (search) {
+        petFilter.$or = [
+          { petName: { $regex: search, $options: 'i' } },
+          { ownerPetName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      if (petStatus && petStatus !== 'all') {
+        petFilter.petStatus = petStatus;
+      }
+
+      if (startDate || endDate) {
+        petFilter.createdAt = {};
+        if (startDate) petFilter.createdAt.$gte = new Date(startDate);
+        if (endDate) petFilter.createdAt.$lte = new Date(endDate);
+      }
+
+      const startTime = Date.now();
+
+      // Obtener todas las mascotas del usuario (sin paginación para contar)
+      const allUserPets = await User.findOne({ _id: id })
+        .populate({
+          path: 'pets',
+          match: petFilter,
+          select: '_id',
+        })
+        .select('pets')
+        .lean();
+
+      const totalPets = allUserPets?.pets?.length || 0;
+
+      // Obtener las mascotas con paginación
+      const userWithPets = await User.findOne({ _id: id })
+        .populate({
+          path: 'pets',
+          match: petFilter,
+          select: `
+          petName petStatus email phone country ownerPetName 
+          birthDate phoneVeterinarian veterinarianContact photo 
+          lat lng isDigitalIdentificationActive permissions newPetProfile
+          petStatusReport petViewCounter photo_id createdAt updatedAt
+        `,
+          options: {
+            skip: skip,
+            limit: limitNum,
+            sort: { createdAt: -1 },
+          },
+        })
+        .select('pets')
+        .lean();
+
+      const dbQueryTime = Date.now() - startTime;
+      console.log(`📊 MongoDB pets query took: ${dbQueryTime}ms`);
+      const payload: PetProfile[] = (userWithPets?.pets || []).map(
+        (pet: any) => ({
+          _id: pet._id.toString(),
+          idParental: id,
+          petName: pet.petName || '',
+          petStatus: pet.petStatus || 'No-Perdido',
+          email: pet.email,
+          phone: pet.phone,
+          country: pet.country,
+          ownerPetName: pet.ownerPetName,
+          birthDate: pet.birthDate,
+          phoneVeterinarian: pet.phoneVeterinarian,
+          veterinarianContact: pet.veterinarianContact,
+          photo: pet.photo,
+          lat: pet.lat,
+          lng: pet.lng,
+          isDigitalIdentificationActive: !!pet.isDigitalIdentificationActive,
+          permissions: pet.permissions || [],
+          petStatusReport: pet.petStatusReport || [],
+          petViewCounter: pet.petViewCounter || [],
+          photo_id: pet.photo_id,
+          createdAt: pet.createdAt,
+          updatedAt: pet.updatedAt,
+        })
+      );
+
+      const response: ApiResponse<PetProfile[]> = {
+        success: true,
+        payload,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalPets,
+          pages: Math.ceil(totalPets / limitNum),
+        },
+      };
+
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ User pets request completed in ${totalTime}ms`);
+      console.log(`📈 Found ${totalPets} pets for user ${id}`);
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('❌ Error fetching user pets:', error);
+
+      const errorResponse: ErrorResponse = {
+        success: false,
+        message: 'An error occurred while fetching user pets.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      };
+      res.status(500).json(errorResponse);
     }
   },
 
