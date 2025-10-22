@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 // Importar modelos NUEVOS - ajusta las rutas según tu estructura
-const User = require('../models/User');
-const Pet = require('../models/Pet');
+const User = require('../models/User.model');
+const Pet = require('../models/Pet.model');
 
 // Importar modelo VIEJO desde la nueva ubicación
 const OldPet = require('../models/old/pet'); // ⬅️ Ruta corregida

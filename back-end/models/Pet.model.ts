@@ -1,135 +1,3 @@
-// // models/Pet.js
-// const mongoose = require('mongoose');
-
-// const PetSchema = new mongoose.Schema(
-//   {
-//     // Referencia al dueño
-//     owner: {
-//       type: mongoose.Schema.Types.ObjectId,
-//       ref: 'User',
-//       required: true,
-//     },
-//     // Información básica de la mascota
-//     petName: {
-//       type: String,
-//       required: true,
-//     },
-//     genderSelected: {
-//       type: String,
-//       required: false,
-//     },
-//     race: {
-//       type: String,
-//       required: false,
-//     },
-//     weight: {
-//       type: String,
-//       required: false,
-//     },
-//     petStatus: {
-//       type: String,
-//       default: 'active',
-//     },
-//     birthDate: {
-//       type: String,
-//       required: false,
-//     },
-//     favoriteActivities: {
-//       type: String,
-//       required: false,
-//     },
-//     healthAndRequirements: {
-//       type: String,
-//       required: false,
-//     },
-//     // Información de contacto veterinario
-//     phoneVeterinarian: {
-//       type: String,
-//       required: false,
-//     },
-//     veterinarianContact: {
-//       type: String,
-//       required: false,
-//     },
-//     // Fotos
-//     photo: {
-//       type: String,
-//       required: false,
-//     },
-//     photo_id: {
-//       type: String,
-//       required: false,
-//     },
-//     // Ubicación
-//     address: {
-//       type: String,
-//       required: false,
-//     },
-//     lat: {
-//       type: String,
-//       required: false,
-//     },
-//     lng: {
-//       type: String,
-//       required: false,
-//     },
-//     // Redes sociales
-//     linkTwitter: String,
-//     linkFacebook: String,
-//     linkInstagram: String,
-//     // Identificación digital
-//     isDigitalIdentificationActive: {
-//       type: Boolean,
-//       default: false,
-//     },
-//     // Contador de vistas
-//     petViewCounter: [
-//       {
-//         lat: String,
-//         lng: String,
-//         dateViewed: String,
-//       },
-//     ],
-//     // Permisos específicos de esta mascota
-//     permissions: {
-//       showPhoneInfo: { type: Boolean, default: true },
-//       showEmailInfo: { type: Boolean, default: true },
-//       showLinkTwitter: { type: Boolean, default: true },
-//       showLinkFacebook: { type: Boolean, default: true },
-//       showLinkInstagram: { type: Boolean, default: true },
-//       showOwnerPetName: { type: Boolean, default: true },
-//       showBirthDate: { type: Boolean, default: true },
-//       showAddressInfo: { type: Boolean, default: true },
-//       showAgeInfo: { type: Boolean, default: true },
-//       showVeterinarianContact: { type: Boolean, default: true },
-//       showPhoneVeterinarian: { type: Boolean, default: true },
-//       showHealthAndRequirements: { type: Boolean, default: true },
-//       showFavoriteActivities: { type: Boolean, default: true },
-//       showLocationInfo: { type: Boolean, default: true },
-//     },
-//     // Reportes de estado
-//     petStatusReport: [
-//       {
-//         lastPlaceLost: String,
-//         date: String,
-//         petStatus: String,
-//         descriptionLost: String,
-//       },
-//     ],
-//   },
-//   {
-//     timestamps: true,
-//   }
-// );
-
-// // Índices
-// PetSchema.index({ owner: 1 });
-// PetSchema.index({ petStatus: 1 });
-// PetSchema.index({ isDigitalIdentificationActive: 1 });
-// PetSchema.index({ 'petViewCounter.dateViewed': -1 });
-
-// module.exports = mongoose.model('Pet', PetSchema);
-
 import { Schema, model, Document, Types } from 'mongoose';
 
 // Interfaces para los subdocumentos
@@ -192,6 +60,7 @@ export interface IPet extends Document {
   petStatusReport: IPetStatusReport[];
   createdAt: Date;
   updatedAt: Date;
+  qrCode?: Types.ObjectId;
 }
 
 const PetSchema = new Schema<IPet>(
@@ -299,6 +168,11 @@ const PetSchema = new Schema<IPet>(
         descriptionLost: String,
       },
     ],
+    qrCode: {
+      type: Schema.Types.ObjectId,
+      ref: 'QrCode',
+      default: null,
+    },
   },
   {
     timestamps: true,

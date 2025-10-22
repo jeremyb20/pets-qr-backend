@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import adminCtl from '../controllers/admin/admin.controller';
 import adminProductCtl from '../controllers/admin/admin-products.controller';
+import qrCodeController from '../controllers/qrcode.controller';
 import verification from '../middlewares/config-legacy';
 import { isAdmin } from '../middlewares/roleMiddlewares';
 import { uploadProductImages } from '../middlewares/uploadMiddleware';
@@ -117,6 +118,27 @@ router.delete(
   authenticateToken,
   isAdmin,
   adminProductCtl.deleteProductReview
+);
+
+router.get(
+  '/getAllQrCodeList',
+  authenticateToken,
+  isAdmin,
+  qrCodeController.getAllQrCodeList
+);
+
+router.get(
+  '/getQRStats',
+  authenticateToken,
+  isAdmin,
+  qrCodeController.getQRStats
+);
+
+router.put(
+  '/updateQRCode',
+  authenticateToken,
+  isAdmin,
+  qrCodeController.updateQRCode
 );
 
 export default router;

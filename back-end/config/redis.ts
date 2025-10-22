@@ -1,60 +1,3 @@
-// // config/redis.js
-// const { Redis } = require('@upstash/redis');
-
-// const redisClient = new Redis({
-//   url: process.env.UPSTASH_REDIS_REST_URL,
-//   token: process.env.UPSTASH_REDIS_REST_TOKEN,
-// });
-
-// class CacheService {
-//   constructor() {
-//     this.client = redisClient;
-//   }
-
-//   async get(key) {
-//     try {
-//       const data = await this.client.get(key);
-//       console.log(`✅ Cache GET: ${key}`, data ? 'HIT' : 'MISS');
-//       if (typeof data === 'string') {
-//         return JSON.parse(data);
-//       }
-
-//       // Upstash ya devuelve los datos parseados, NO necesitas JSON.parse
-//       return data;
-//     } catch (error) {
-//       console.error('❌ Cache GET error:', error.message);
-//       return null;
-//     }
-//   }
-
-//   async setex(key, seconds, value) {
-//     try {
-//       // Upstash maneja la serialización automáticamente
-//       await this.client.setex(key, seconds, value);
-//       console.log(`✅ Cache SET: ${key} for ${seconds}s`);
-//       return true;
-//     } catch (error) {
-//       console.error('❌ Cache SET error:', error.message);
-//       return false;
-//     }
-//   }
-
-//   async del(key) {
-//     try {
-//       await this.client.del(key);
-//       console.log(`✅ Cache DEL: ${key}`);
-//       return true;
-//     } catch (error) {
-//       console.error('❌ Cache DEL error:', error.message);
-//       return false;
-//     }
-//   }
-// }
-
-// const cacheService = new CacheService();
-
-// module.exports = { redisClient, cacheService };
-
 import { Redis } from '@upstash/redis';
 
 const redisClient = new Redis({
@@ -64,32 +7,44 @@ const redisClient = new Redis({
 
 class CacheService {
   private client: Redis;
+  private enabled: boolean;
+  private timeout: number;
 
   constructor() {
     this.client = redisClient;
+    this.enabled = process.env.REDIS_ENABLED !== 'false'; // Default: enabled
+    this.timeout = 100; // ms timeout for cache operations
   }
 
   async get(key: string): Promise<any> {
+    if (!this.enabled) return null;
+
     try {
-      const data = await this.client.get(key);
+      const data = await Promise.race([
+        this.client.get(key),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Cache timeout')), this.timeout)
+        ),
+      ]);
+
       console.log(`✅ Cache GET: ${key}`, data ? 'HIT' : 'MISS');
-
-      if (typeof data === 'string') {
-        return JSON.parse(data);
-      }
-
-      // Upstash ya devuelve los datos parseados, NO necesitas JSON.parse
       return data;
     } catch (error) {
       console.error('❌ Cache GET error:', (error as Error).message);
-      return null;
+      return null; // Fail silently - proceed without cache
     }
   }
 
   async setex(key: string, seconds: number, value: any): Promise<boolean> {
+    if (!this.enabled) return false;
+
     try {
-      // Upstash maneja la serialización automáticamente
-      await this.client.setex(key, seconds, value);
+      await Promise.race([
+        this.client.setex(key, seconds, value),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Cache timeout')), this.timeout)
+        ),
+      ]);
       console.log(`✅ Cache SET: ${key} for ${seconds}s`);
       return true;
     } catch (error) {

@@ -14,8 +14,8 @@ import {
   ErrorResponse,
   PetFilters,
   PetQueryParams,
-} from '@/types/response.type';
-import { PetProfile } from '@/types/pet.types';
+} from '../types/response.type';
+import { PetProfile } from '../types/pet.types';
 
 const cloudinaryV2 = cloudinary.v2;
 
