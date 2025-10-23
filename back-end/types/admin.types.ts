@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 export interface AdminProductController {
   getAllProductList(
@@ -56,7 +57,11 @@ export interface AdminController {
   ): Promise<void>;
   getNewCodes(req: Request, res: Response): Promise<void>;
   deleteUserById(req: Request, res: Response): Promise<void>;
-  editUser(req: Request, res: Response, next?: NextFunction): Promise<void>;
+  updateUserById(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
   editUserSecondLevel(req: Request, res: Response): Promise<void>;
   deletePetByIdForAdmin(
     req: Request,
@@ -90,7 +95,7 @@ export interface AdminController {
 export interface PetProfile {
   _id: any;
   petName?: string;
-  idParental?: string;
+  idParental?: Types.ObjectId;
   email?: string;
   phone?: string;
   photo?: string;

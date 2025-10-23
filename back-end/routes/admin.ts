@@ -18,11 +18,16 @@ router.get(
   adminCtl.getAllRegisteredUsers
 );
 
+router.put(
+  '/updateUserById',
+  authenticateToken,
+  isAdmin,
+  adminCtl.updateUserById
+);
+
 router.get('/getNewCodes', verification, adminCtl.getNewCodes);
 
 router.delete('/deleteUserById?:id', verification, adminCtl.deleteUserById);
-
-router.put('/editUser', verification, adminCtl.editUser);
 
 router.put('/editUserSecondLevel', verification, adminCtl.editUserSecondLevel);
 

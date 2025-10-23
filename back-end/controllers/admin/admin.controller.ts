@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
-import User from '../../models/User.model';
+import User, { IUser } from '../../models/User.model';
 import { cacheService } from '../../config/redis';
 import 'dotenv/config';
 import {
@@ -10,6 +10,7 @@ import {
   UserQueryParams,
 } from '../../types/response.type';
 import { AdminController, PetProfile } from '../../types/admin.types';
+import { FlattenMaps } from 'mongoose';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -108,7 +109,9 @@ const adminCtl: AdminController = {
       const [totalUsers, users] = await Promise.all([
         User.countDocuments(filter),
         User.find(filter)
-          .select('_id email userStatus role createdAt updatedAt pets')
+          .select(
+            '_id email userStatus name role createdAt updatedAt pets phone address country'
+          )
           .populate({
             path: 'pets',
             select:
@@ -123,7 +126,7 @@ const adminCtl: AdminController = {
       const dbQueryTime = Date.now() - startTime;
       console.log(`📊 MongoDB query took: ${dbQueryTime}ms`);
 
-      const payload = users.map((item: any) => {
+      const payload = users.map((item: FlattenMaps<IUser>) => {
         const petsArray: PetProfile[] = [];
 
         if (item.pets && item.pets.length > 0) {
@@ -154,6 +157,10 @@ const adminCtl: AdminController = {
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
           userStatus: item.userStatus,
+          phone: item.phone,
+          address: item.address,
+          country: item.country,
+          name: item.name,
           role: item.role,
           pets: petsArray.length > 0 ? petsArray : null,
         };
@@ -188,6 +195,42 @@ const adminCtl: AdminController = {
       const errorResponse: ErrorResponse = {
         success: false,
         message: 'An error occurred while fetching users.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      };
+      res.status(500).json(errorResponse);
+    }
+  },
+
+  // Controlador actualizado
+  updateUserById: async (
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void> => {
+    const { id, email, name, phone, address, country, userStatus, role, pets } =
+      req.body;
+
+    try {
+      await User.findByIdAndUpdate(id, {
+        email,
+        name,
+        phone,
+        address,
+        country,
+        userStatus,
+        role,
+        pets,
+        updatedAt: new Date(), // Actualizar la fecha de modificación
+      });
+
+      res.status(200).send({
+        msg: 'The information was updated correctly',
+        success: true,
+      });
+    } catch (error) {
+      const errorResponse: ErrorResponse = {
+        success: false,
+        message: 'An error occurred while updating user.',
         error: process.env.NODE_ENV === 'development' ? error : undefined,
       };
       res.status(500).json(errorResponse);
@@ -231,40 +274,40 @@ const adminCtl: AdminController = {
     res.send({ success: true, msg: 'The information was updated correctly' });
   },
 
-  editUser: async (
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void> => {
-    const {
-      petName,
-      email,
-      phone,
-      age,
-      birthDate,
-      ownerPetName,
-      petStatus,
-      userState,
-      isDigitalIdentificationActive,
-    } = req.body;
-    try {
-      await User.findByIdAndUpdate(req.body.id, {
-        petName,
-        email,
-        phone,
-        age,
-        birthDate,
-        ownerPetName,
-        petStatus,
-        userState,
-        isDigitalIdentificationActive,
-      });
-      res.send({ msg: 'The information was updated correctly', success: true });
-    } catch (err) {
-      res.json({ success: false, msg: 'An error occurred in the process.' });
-      if (next) next(err);
-    }
-  },
+  // editUser: async (
+  //   req: Request,
+  //   res: Response,
+  //   next?: NextFunction
+  // ): Promise<void> => {
+  //   const {
+  //     petName,
+  //     email,
+  //     phone,
+  //     age,
+  //     birthDate,
+  //     ownerPetName,
+  //     petStatus,
+  //     userState,
+  //     isDigitalIdentificationActive,
+  //   } = req.body;
+  //   try {
+  //     await User.findByIdAndUpdate(req.body.id, {
+  //       petName,
+  //       email,
+  //       phone,
+  //       age,
+  //       birthDate,
+  //       ownerPetName,
+  //       petStatus,
+  //       userState,
+  //       isDigitalIdentificationActive,
+  //     });
+  //     res.send({ msg: 'The information was updated correctly', success: true });
+  //   } catch (err) {
+  //     res.json({ success: false, msg: 'An error occurred in the process.' });
+  //     if (next) next(err);
+  //   }
+  // },
 
   editUserSecondLevel: async (req: Request, res: Response): Promise<void> => {
     const { isDigitalIdentificationActive } = req.body;

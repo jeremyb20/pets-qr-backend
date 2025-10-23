@@ -11,26 +11,27 @@ interface IUserPermissions {
 // Interface principal del documento User
 export interface IUser extends Document {
   _id: Types.ObjectId;
+  idParental?: Types.ObjectId;
   memberId: string;
   name: string;
   email: string;
   username: string;
   password: string;
-  phone?: string;
-  country?: string;
+  phone: string;
+  country: string;
   theme: string;
   photoProfile?: string;
   photo_id_profile?: string;
-  address?: string;
+  address: string;
+  userStatus: number;
+  role: number;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   token?: string;
-  randomCode?: string;
   isActivated: boolean;
   stateActivation?: string;
+  randomCode?: string;
   hostName?: string;
-  userStatus: number;
-  role: number;
   pets: Types.ObjectId[];
   permissions: {
     showPhoneInfo: boolean;
