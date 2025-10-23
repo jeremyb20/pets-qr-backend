@@ -19,6 +19,7 @@ import adminRoutes from './back-end/routes/admin';
 import userRoutes from './back-end/routes/users';
 import catalogRoutes from './back-end/routes/catalog';
 import notificationRoutes from './back-end/routes/notifications';
+import seoRoutes from './back-end/routes/seo';
 
 // Definir tipos para Multer
 interface MulterFile extends Express.Multer.File {}
@@ -92,24 +93,58 @@ const upload = multer({
   },
 });
 
-// app.use(upload.single('image'));
+// Health check endpoint (PRIMERO)
+app.get('/health', (req: Request, res: Response): void => {
+  res.status(200).json({
+    success: true,
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
 
-// Rutas de la API
+// 1. RUTAS DE API (DEBEN IR ANTES DEL CATCH-ALL)
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/seo', seoRoutes);
+
+// 2. Servir archivos estáticos para el frontend (SOLO si existe)
+app.use(express.static(path.join(__dirname, '../dist/plaquitas-cr')));
+
+// 3. Ruta catch-all para SPA (PERO EXCLUYENDO /api/)
+app.get('*', (req: Request, res: Response, next: NextFunction): void => {
+  // EXCLUIR rutas que empiecen con /api/
+  if (req.path.startsWith('/api/')) {
+    console.log(`❌ API route not found: ${req.path}`);
+    res.status(404).json({
+      success: false,
+      message: 'API endpoint not found',
+      path: req.path,
+    });
+    return;
+  }
+
+  // Si no es una ruta de API, intentar servir el SPA
+  const spaPath = path.join(__dirname, '../dist/plaquitas-cr/index.html');
+
+  // Verificar si el archivo existe antes de enviarlo
+  const fs = require('fs');
+  if (fs.existsSync(spaPath)) {
+    res.sendFile(spaPath);
+  } else {
+    console.log(`❌ SPA file not found: ${spaPath}`);
+    res.status(404).json({
+      success: false,
+      message: 'SPA file not found',
+      path: req.path,
+    });
+  }
+});
 
 // Inicializar el programador de notificaciones
 new NotificationScheduler();
-
-// Servir archivos estáticos para el frontend
-app.use(express.static(path.join(__dirname, '../dist/plaquitas-cr')));
-
-// Ruta catch-all para SPA
-app.get('/*', (req: Request, res: Response): void => {
-  res.sendFile(path.join(__dirname, '../dist/plaquitas-cr/index.html'));
-});
 
 // Manejo de errores global
 app.use(
@@ -129,18 +164,9 @@ app.use(
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 );
-
-// Health check endpoint
-app.get('/health', (req: Request, res: Response): void => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
 
 export default app;

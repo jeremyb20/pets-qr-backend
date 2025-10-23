@@ -6,6 +6,7 @@ import verification from '../middlewares/config-legacy';
 import { isAdmin } from '../middlewares/roleMiddlewares';
 import { uploadProductImages } from '../middlewares/uploadMiddleware';
 import { authenticateToken } from '../middlewares/authMiddleware';
+import adminSeoCtrl from '../controllers/admin/admin-seo.controller';
 
 const router = Router();
 
@@ -146,4 +147,23 @@ router.put(
   qrCodeController.updateQRCode
 );
 
+// SEO
+
+router.get(
+  '/getAllSeoList',
+  authenticateToken,
+  isAdmin,
+  adminSeoCtrl.getAllSeoList
+);
+
+router.post('/createSeo', authenticateToken, isAdmin, adminSeoCtrl.createSeo);
+
+router.put(
+  '/updateSeoById',
+  authenticateToken,
+  isAdmin,
+  adminSeoCtrl.updateSeoById
+);
+
+router.get('/getSeoById', adminSeoCtrl.getSeoById);
 export default router;
