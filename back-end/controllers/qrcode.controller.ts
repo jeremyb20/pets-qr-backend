@@ -197,7 +197,7 @@ const qrCodeController = {
         msg: 'Usuario y mascota registrados exitosamente',
         user: {
           _id: user._id,
-          name: user.name,
+          name: user.profile.name,
           email: user.email,
           memberId: user.memberId,
         },
@@ -327,7 +327,7 @@ const qrCodeController = {
         success: true,
         qrCodes: qrCodes,
         user: {
-          name: user?.name,
+          name: user?.profile.name,
           email: user?.email,
           totalPets: user?.pets.length,
           pets: user?.pets,

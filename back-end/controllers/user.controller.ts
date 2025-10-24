@@ -69,6 +69,7 @@ interface UserController {
   getMyPetCode(req: Request, res: Response): Promise<void>;
   getMyPetInfo(req: Request, res: Response): Promise<void>;
   getAllPetsByUser(req: Request, res: Response): Promise<void>;
+  updateMyProfile(req: Request, res: Response): Promise<void>;
   editProfileInfo(req: Request, res: Response): Promise<void>;
   editPetProfile(req: Request, res: Response): Promise<void>;
   editPhotoProfile(req: Request, res: Response): Promise<void>;
@@ -175,8 +176,8 @@ const userCtl: UserController = {
             userStatus: user.userStatus,
             role: user.role,
             email: user.email,
-            theme: user.theme,
             memberId: user.memberId,
+            configuration: user.configuration,
           },
         });
       } else {
@@ -201,16 +202,14 @@ const userCtl: UserController = {
 
       const userData = {
         _id: user._id,
-        address: user.address,
-        phone: user.phone,
         email: user.email,
         updatedAt: user.updatedAt,
         createdAt: user.createdAt,
-        country: user.country,
         userState: user.userStatus,
         role: user.role,
-        theme: user.theme,
         memberId: user.memberId,
+        configuration: user.configuration,
+        profile: user.profile,
       };
 
       res.status(200).send({
@@ -372,6 +371,92 @@ const userCtl: UserController = {
     }
   },
 
+  updateMyProfile: async (
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void> => {
+    const {
+      email,
+      name,
+      phone,
+      country,
+      userStatus,
+      role,
+      pets,
+      address,
+      zipCode,
+      state,
+      city,
+      photoProfile,
+      isPublic,
+      // Nuevos campos para configuration
+      configuration,
+      profile,
+    } = req.body;
+    const id = (req as any).user?.id;
+
+    try {
+      // Construir el objeto de actualización
+      const updateData: any = {
+        email,
+        userStatus,
+        role,
+        pets,
+        updatedAt: new Date(),
+      };
+
+      // Si se envían datos de profile, actualizarlos
+      if (profile) {
+        updateData.profile = profile;
+      } else {
+        // Actualizar campos individuales de profile si se envían por separado
+        const profileUpdates: any = {};
+        if (name !== undefined) profileUpdates.name = name;
+        if (phone !== undefined) profileUpdates.phone = phone;
+        if (address !== undefined) profileUpdates.address = address;
+        if (country !== undefined) profileUpdates.country = country;
+        if (zipCode !== undefined) profileUpdates.zipCode = zipCode;
+        if (state !== undefined) profileUpdates.state = state;
+        if (city !== undefined) profileUpdates.city = city;
+        if (isPublic !== undefined) profileUpdates.isPublic = isPublic;
+        if (photoProfile !== undefined)
+          profileUpdates.photoProfile = photoProfile;
+
+        if (Object.keys(profileUpdates).length > 0) {
+          updateData.$set = {
+            ...updateData.$set,
+            ...Object.fromEntries(
+              Object.entries(profileUpdates).map(([key, value]) => [
+                `profile.${key}`,
+                value,
+              ])
+            ),
+          };
+        }
+      }
+
+      // Si se envían datos de configuration, actualizarlos
+      if (configuration) {
+        updateData.configuration = configuration;
+      }
+
+      await User.findByIdAndUpdate(id, updateData);
+
+      res.status(200).send({
+        msg: 'The information was updated correctly',
+        success: true,
+      });
+    } catch (error) {
+      const errorResponse: ErrorResponse = {
+        success: false,
+        message: 'An error occurred while updating user.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      };
+      res.status(500).json(errorResponse);
+    }
+  },
+
   getUserProfileById: async (req: Request, res: Response): Promise<void> => {
     const user = await User.findById({ _id: req.query.id });
     if (user) {
@@ -386,7 +471,6 @@ const userCtl: UserController = {
         email: user.email,
         petName: (user as any).petName,
         petStatus: (user as any).petStatus,
-        phone: user.phone,
         photo: (user as any).photo,
         photo_id: (user as any).photo_id,
         updatedAt: user.updatedAt,
@@ -396,7 +480,8 @@ const userCtl: UserController = {
         _id: user._id,
         race: (user as any).race,
         weight: (user as any).weight,
-        country: user.country,
+        phone: user.profile.phone,
+        country: user.profile.country,
       };
       res.status(200).send({
         success: true,
@@ -468,7 +553,7 @@ const userCtl: UserController = {
           res.status(200).send({ success: true, payload: data });
         } else {
           const userData = {
-            phone: user.phone,
+            phone: user.profile.phone,
             _id: user._id,
             photo: (user as any).photo,
             address: (user as any).address,

@@ -13,6 +13,8 @@ router.get('/me', authenticateToken, userCtl.me);
 
 router.get('/getAllPetsByUser', authenticateToken, userCtl.getAllPetsByUser);
 
+router.put('/updateMyProfile', authenticateToken, userCtl.updateMyProfile);
+
 router.get('/getUserProfileById?:id', verification, userCtl.getUserProfileById);
 
 router.get(

@@ -1,6 +1,32 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// Interface para el perfil del usuario
+interface IUserProfile {
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone: string;
+  country: string;
+  name: string;
+  username: string;
+  photoProfile?: string;
+  photo_id_profile?: string;
+  isPublic?: boolean;
+}
+
+// Interface para la configuración del tema
+interface IUserThemeConfig {
+  fontSizeScale: number;
+  themeColorPresets: string;
+  themeContrast: string;
+  themeDirection: string;
+  themeLayout: string;
+  themeMode: string;
+  themeStretch: boolean;
+}
+
 // Interface para los permisos
 interface IUserPermissions {
   showPhoneInfo: boolean;
@@ -8,21 +34,19 @@ interface IUserPermissions {
   showPersonalInfo: boolean;
 }
 
+// Interface para la configuración completa
+interface IUserConfiguration {
+  theme: IUserThemeConfig;
+  permissions: IUserPermissions; // ← Permissions movido aquí
+}
+
 // Interface principal del documento User
 export interface IUser extends Document {
   _id: Types.ObjectId;
   idParental?: Types.ObjectId;
   memberId: string;
-  name: string;
   email: string;
-  username: string;
   password: string;
-  phone: string;
-  country: string;
-  theme: string;
-  photoProfile?: string;
-  photo_id_profile?: string;
-  address: string;
   userStatus: number;
   role: number;
   resetPasswordToken?: string;
@@ -33,11 +57,8 @@ export interface IUser extends Document {
   randomCode?: string;
   hostName?: string;
   pets: Types.ObjectId[];
-  permissions: {
-    showPhoneInfo: boolean;
-    showEmailInfo: boolean;
-    showPersonalInfo: boolean;
-  };
+  configuration: IUserConfiguration; // ← Permissions ahora está aquí
+  profile: IUserProfile;
   createdAt: Date;
   updatedAt: Date;
 
@@ -48,6 +69,114 @@ export interface IUser extends Document {
   ): void;
 }
 
+// Subesquema para el perfil
+const UserProfileSchema = new Schema<IUserProfile>({
+  phone: {
+    type: String,
+    default: '',
+  },
+  country: {
+    type: String,
+    default: '',
+  },
+  name: {
+    type: String,
+    default: '',
+  },
+  username: {
+    type: String,
+    default: '',
+  },
+  photoProfile: {
+    type: String,
+    default: '',
+  },
+  photo_id_profile: {
+    type: String,
+    default: '',
+  },
+  city: {
+    type: String,
+    default: '',
+  },
+  state: {
+    type: String,
+    default: '',
+  },
+  zipCode: {
+    type: String,
+    default: '',
+  },
+  address: {
+    type: String,
+    default: '',
+  },
+  isPublic: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+// Subesquema para la configuración del tema
+const UserThemeConfigSchema = new Schema<IUserThemeConfig>({
+  fontSizeScale: {
+    type: Number,
+    default: 0.85,
+  },
+  themeColorPresets: {
+    type: String,
+    default: 'default',
+  },
+  themeContrast: {
+    type: String,
+    default: 'default',
+  },
+  themeDirection: {
+    type: String,
+    default: 'ltr',
+  },
+  themeLayout: {
+    type: String,
+    default: 'vertical',
+  },
+  themeMode: {
+    type: String,
+    default: 'dark',
+  },
+  themeStretch: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+// Subesquema para los permisos
+const UserPermissionsSchema = new Schema<IUserPermissions>({
+  showPhoneInfo: {
+    type: Boolean,
+    default: true,
+  },
+  showEmailInfo: {
+    type: Boolean,
+    default: true,
+  },
+  showPersonalInfo: {
+    type: Boolean,
+    default: true,
+  },
+});
+
+// Esquema para la configuración completa
+const UserConfigurationSchema = new Schema<IUserConfiguration>({
+  theme: {
+    type: UserThemeConfigSchema,
+    default: () => ({}),
+  },
+  permissions: {
+    type: UserPermissionsSchema,
+    default: () => ({}),
+  },
+});
+
 const UserSchema = new Schema<IUser>(
   {
     memberId: {
@@ -56,16 +185,7 @@ const UserSchema = new Schema<IUser>(
       required: true,
       index: true,
     },
-    name: {
-      type: String,
-      required: true,
-    },
     email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    username: {
       type: String,
       required: true,
       unique: true,
@@ -73,30 +193,6 @@ const UserSchema = new Schema<IUser>(
     password: {
       type: String,
       required: true,
-    },
-    phone: {
-      type: String,
-      required: false,
-    },
-    country: {
-      type: String,
-      required: false,
-    },
-    theme: {
-      type: String,
-      default: 'dark',
-    },
-    photoProfile: {
-      type: String,
-      required: false,
-    },
-    photo_id_profile: {
-      type: String,
-      required: false,
-    },
-    address: {
-      type: String,
-      required: false,
     },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
@@ -122,10 +218,15 @@ const UserSchema = new Schema<IUser>(
         ref: 'Pet',
       },
     ],
-    permissions: {
-      showPhoneInfo: { type: Boolean, default: true },
-      showEmailInfo: { type: Boolean, default: true },
-      showPersonalInfo: { type: Boolean, default: true },
+    // Campo de configuración (ahora incluye theme y permissions)
+    configuration: {
+      type: UserConfigurationSchema,
+      default: () => ({}),
+    },
+    // Campo de perfil
+    profile: {
+      type: UserProfileSchema,
+      default: () => ({}),
     },
   },
   {
@@ -133,7 +234,7 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
-// Métodos de instancia
+// Método para comparar contraseñas
 UserSchema.methods.comparePassword = function (
   candidatePassword: string,
   callback: (err: any, isMatch?: boolean) => void
@@ -142,43 +243,6 @@ UserSchema.methods.comparePassword = function (
     if (err) return callback(err);
     callback(null, isMatch);
   });
-};
-
-// Static methods
-UserSchema.statics.getUserById = async function (
-  id: string,
-  callback: (err: any, user?: IUser) => void
-) {
-  try {
-    const user = await this.findById(id);
-    callback(null, user);
-  } catch (err) {
-    callback(err);
-  }
-};
-
-UserSchema.statics.getUserByUsername = async function (
-  username: string,
-  callback: (err: any, user?: IUser) => void
-) {
-  try {
-    const user = await this.findOne({ username });
-    callback(null, user);
-  } catch (err) {
-    callback(err);
-  }
-};
-
-UserSchema.statics.getUserByEmail = async function (
-  email: string,
-  callback: (err: any, user?: IUser) => void
-) {
-  try {
-    const user = await this.findOne({ email });
-    callback(null, user);
-  } catch (err) {
-    callback(err);
-  }
 };
 
 export default model<IUser>('User', UserSchema);

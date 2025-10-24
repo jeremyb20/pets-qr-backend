@@ -109,9 +109,7 @@ const adminCtl: AdminController = {
       const [totalUsers, users] = await Promise.all([
         User.countDocuments(filter),
         User.find(filter)
-          .select(
-            '_id email userStatus name role createdAt updatedAt pets phone address country'
-          )
+          .select('_id email userStatus role createdAt updatedAt pets profile')
           .populate({
             path: 'pets',
             select:
@@ -157,10 +155,11 @@ const adminCtl: AdminController = {
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
           userStatus: item.userStatus,
-          phone: item.phone,
-          address: item.address,
-          country: item.country,
-          name: item.name,
+          // phone: item.phone,
+          // address: item.address,
+          // country: item.country,
+          // name: item.name,
+          profile: item.profile,
           role: item.role,
           pets: petsArray.length > 0 ? petsArray : null,
         };
@@ -201,27 +200,66 @@ const adminCtl: AdminController = {
     }
   },
 
-  // Controlador actualizado
   updateUserById: async (
     req: Request,
     res: Response,
     next?: NextFunction
   ): Promise<void> => {
-    const { id, email, name, phone, address, country, userStatus, role, pets } =
-      req.body;
+    const {
+      id,
+      email,
+      name,
+      phone,
+      address,
+      country,
+      userStatus,
+      role,
+      pets,
+      // Nuevos campos para configuration
+      configuration,
+      profile,
+    } = req.body;
 
     try {
-      await User.findByIdAndUpdate(id, {
+      // Construir el objeto de actualización
+      const updateData: any = {
         email,
-        name,
-        phone,
-        address,
-        country,
         userStatus,
         role,
         pets,
-        updatedAt: new Date(), // Actualizar la fecha de modificación
-      });
+        updatedAt: new Date(),
+      };
+
+      // Si se envían datos de profile, actualizarlos
+      if (profile) {
+        updateData.profile = profile;
+      } else {
+        // Actualizar campos individuales de profile si se envían por separado
+        const profileUpdates: any = {};
+        if (name !== undefined) profileUpdates.name = name;
+        if (phone !== undefined) profileUpdates.phone = phone;
+        if (address !== undefined) profileUpdates.address = address;
+        if (country !== undefined) profileUpdates.country = country;
+
+        if (Object.keys(profileUpdates).length > 0) {
+          updateData.$set = {
+            ...updateData.$set,
+            ...Object.fromEntries(
+              Object.entries(profileUpdates).map(([key, value]) => [
+                `profile.${key}`,
+                value,
+              ])
+            ),
+          };
+        }
+      }
+
+      // Si se envían datos de configuration, actualizarlos
+      if (configuration) {
+        updateData.configuration = configuration;
+      }
+
+      await User.findByIdAndUpdate(id, updateData);
 
       res.status(200).send({
         msg: 'The information was updated correctly',

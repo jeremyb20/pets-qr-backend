@@ -17,6 +17,7 @@
     "export-all": "node back-end/scripts/export-all.js",
     "migrate-data": "node back-end/scripts/migrateData-with-compass.js",
     "migrate-qrcodes": "ts-node back-end/scripts/migrateOldQRCodes.ts",
+    "migrate-users-schema": "ts-node back-end/scripts/migrate-users-schema.ts",
     "migrate-qrcodes:prod": "npm run build && node dist/scripts/migrateOldQRCodes.js",
     "dev:js": "node index.js",
     "fly:deploy": "npm run build && fly deploy",
