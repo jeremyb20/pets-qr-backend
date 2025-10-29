@@ -36,6 +36,7 @@ interface IPetPermissions {
 // Interface principal del documento Pet
 export interface IPet extends Document {
   owner: Types.ObjectId;
+  memberPetId: string;
   petName: string;
   genderSelected?: string;
   race?: string;
@@ -61,6 +62,8 @@ export interface IPet extends Document {
   createdAt: Date;
   updatedAt: Date;
   qrCode?: Types.ObjectId;
+  phone: string;
+  ownerPetName: string;
 }
 
 const PetSchema = new Schema<IPet>(
@@ -69,6 +72,18 @@ const PetSchema = new Schema<IPet>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    memberPetId: {
+      type: String,
+      required: false,
+    },
+    phone: {
+      type: String,
+      required: false,
+    },
+    ownerPetName: {
+      type: String,
+      required: false,
     },
     petName: {
       type: String,

@@ -28,11 +28,16 @@ export interface UserQueryParams {
 export interface UserFilters {
   isActivated?: boolean;
   email?: { $regex: string; $options: string };
+  memberId?: { $regex: string; $options: string };
   userStatus?: number;
   createdAt?: {
     $gte?: Date;
     $lte?: Date;
   };
+  $or?: Array<{
+    email?: { $regex: string; $options: string };
+    memberId?: { $regex: string; $options: string };
+  }>;
 }
 
 export interface PetQueryParams {

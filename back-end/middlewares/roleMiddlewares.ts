@@ -23,3 +23,5 @@ export const isVeterinarianOrGroomer = requireRole([
   ROLES.VETERINARIAN,
   ROLES.GROOMER,
 ]);
+
+export const isAdminOrUser = requireRole([ROLES.ADMIN, ROLES.USER]);

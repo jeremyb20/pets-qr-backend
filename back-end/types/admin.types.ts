@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { Types } from 'mongoose';
 
 export interface AdminProductController {
   getAllProductList(
@@ -90,20 +89,4 @@ export interface AdminController {
   ): Promise<void>;
   updateLocationPet(req: Request, res: Response): Promise<void>;
   sortNewPetProfile(req: Request, res: Response): Promise<void>;
-}
-
-export interface PetProfile {
-  _id: any;
-  petName?: string;
-  idParental?: Types.ObjectId;
-  email?: string;
-  phone?: string;
-  photo?: string;
-  age?: string;
-  birthDate?: string;
-  ownerPetName?: string;
-  petStatus?: string;
-  petViewCounter?: any[];
-  photo_id?: string;
-  isDigitalIdentificationActive?: boolean;
 }

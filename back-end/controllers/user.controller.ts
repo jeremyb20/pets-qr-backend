@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
 import User, { IUser } from '../models/User.model';
-import Pet from '../models/Pet.model';
+import Pet, { IPet } from '../models/Pet.model';
 import fs from 'fs-extra';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
@@ -16,6 +16,7 @@ import {
   PetQueryParams,
 } from '../types/response.type';
 import { PetProfile } from '../types/pet.types';
+import QrCode from '../models/QrCode.model';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -65,7 +66,9 @@ interface UserController {
   authenticate(req: Request, res: Response): Promise<void>;
   me(req: Request, res: Response): Promise<void>;
   getUserProfileById(req: Request, res: Response): Promise<void>;
+  updatePetById(req: Request, res: Response): Promise<void>;
   getUserProfileByIdScanner(req: Request, res: Response): Promise<void>;
+  getProfileById(req: Request, res: Response): Promise<void>;
   getMyPetCode(req: Request, res: Response): Promise<void>;
   getMyPetInfo(req: Request, res: Response): Promise<void>;
   getAllPetsByUser(req: Request, res: Response): Promise<void>;
@@ -368,6 +371,175 @@ const userCtl: UserController = {
         error: process.env.NODE_ENV === 'development' ? error : undefined,
       };
       res.status(500).json(errorResponse);
+    }
+  },
+
+  getProfileById: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+
+      // Buscar en el modelo Pet por memberPetId
+      const pet = await Pet.findOne({ memberPetId: id }).select(
+        'petName photo birthDate petStatus memberPetId owner permissions petViewCounter isDigitalIdentificationActive createdAt updatedAt'
+      );
+
+      // Si se encuentra la mascota (QR ya convertido en perfil)
+      if (pet) {
+        // Buscar el usuario por separado
+        const user = await User.findById(pet.owner)
+          .select('username email profile')
+          .lean();
+
+        // Convertir el documento de Mongoose a objeto plano
+        const petObject = pet.toObject ? pet.toObject() : pet;
+
+        // Combinar los datos de forma correcta
+        const petWithOwner = {
+          ...petObject,
+          owner: user
+            ? {
+                _id: user._id,
+                username: user.profile?.username || '',
+                email: user.email,
+                // Extraer solo los campos específicos del profile que necesitas
+                name: user.profile?.name || '',
+                phone: user.profile?.phone || '',
+                address: user.profile?.address || '',
+                city: user.profile?.city || '',
+                state: user.profile?.state || '',
+                country: user.profile?.country || '',
+                photoProfile: user.profile?.photoProfile || '',
+                // Agrega otros campos específicos del profile que necesites
+              }
+            : null,
+        };
+
+        res.status(200).json({
+          success: true,
+          payload: petWithOwner,
+          type: 'pet_profile',
+        });
+        return;
+      }
+
+      // Si no se encuentra en Pet, verificar si existe como QR no registrado
+      const qrCode = await QrCode.findOne({ randomCode: id }).select(
+        'randomCode isAssigned assignedPet createdAt'
+      );
+
+      // Si existe el QR (no registrado aún)
+      if (qrCode) {
+        const QRdata = {
+          randomCode: qrCode.randomCode,
+          assignedPet: qrCode.assignedPet,
+          createdAt: qrCode.createdAt,
+        };
+        res.status(200).json({
+          success: true,
+          payload: null,
+          qrCode: QRdata,
+          type: 'qr_code_unregistered',
+        });
+        return;
+      }
+
+      // No se encuentra ni en Pet ni en QrCode
+      res.status(404).json({
+        success: false,
+        msg: 'Código o mascota no encontrada',
+        type: 'not_found',
+      });
+    } catch (error) {
+      console.error('Error in getProfileById:', error);
+      res.status(500).json({
+        success: false,
+        msg: 'Ocurrió un error al buscar la información.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      });
+    }
+  },
+
+  updatePetById: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const {
+        petName,
+        petStatus,
+        phone,
+        ownerPetName,
+        birthDate,
+        phoneVeterinarian,
+        veterinarianContact,
+        photo,
+        lat,
+        lng,
+        isDigitalIdentificationActive,
+        permissions,
+        petStatusReport,
+        petViewCounter,
+        photo_id,
+        id,
+        weight,
+        genderSelected,
+        address,
+        favoriteActivities,
+        healthAndRequirements,
+        race,
+      } = req.body;
+
+      const pet = await Pet.findById(id);
+
+      if (!pet) {
+        res.status(404).json({
+          success: false,
+          msg: 'Pet not found',
+        });
+        return;
+      }
+
+      const updateData = {
+        petName,
+        petStatus,
+        phone,
+        ownerPetName,
+        birthDate,
+        phoneVeterinarian,
+        veterinarianContact,
+        photo,
+        lat,
+        lng,
+        isDigitalIdentificationActive,
+        permissions,
+        petStatusReport,
+        petViewCounter,
+        photo_id,
+        weight,
+        genderSelected,
+        address,
+        favoriteActivities,
+        healthAndRequirements,
+        race,
+        updatedAt: new Date(),
+      } as unknown as IPet;
+
+      Object.keys(updateData).forEach((key) => {
+        if ((updateData as any)[key] === undefined) {
+          delete (updateData as any)[key];
+        }
+      });
+
+      await Pet.findByIdAndUpdate(id, updateData);
+
+      res.status(200).json({
+        success: true,
+        msg: 'The information was updated correctly',
+      });
+    } catch (error) {
+      console.error('Error in updatePetById:', error);
+      res.status(500).json({
+        success: false,
+        msg: 'An error occurred while updating pet.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      });
     }
   },
 

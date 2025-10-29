@@ -1,4 +1,4 @@
-// back-end/models/QrCode.ts
+// back-end/models/QrCode.model.ts
 import { Schema, model, Types } from 'mongoose';
 import { IQrCode } from '../interfaces/IQrCode';
 

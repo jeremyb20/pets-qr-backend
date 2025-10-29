@@ -9,8 +9,28 @@ import {
   UserFilters,
   UserQueryParams,
 } from '../../types/response.type';
-import { AdminController, PetProfile } from '../../types/admin.types';
-import { FlattenMaps } from 'mongoose';
+import { AdminController } from '../../types/admin.types';
+import {
+  AnyObject,
+  ClientSession,
+  Document,
+  DocumentSetOptions,
+  Error,
+  FlattenMaps,
+  MergeType,
+  Model,
+  ModifiedPathsSnapshot,
+  pathsToSkip,
+  PopulateOptions,
+  Query,
+  QueryOptions,
+  SaveOptions,
+  ToObjectOptions,
+  Types,
+  UpdateQuery,
+  UpdateWithAggregationPipeline,
+} from 'mongoose';
+import { IPet } from '@/models/Pet.model';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -24,10 +44,10 @@ const adminCtl: AdminController = {
       const object: any[] = [];
       users.forEach((item: any) => {
         if (!item.isActivated) {
-          const newPetObject: PetProfile[] = [];
+          const newPetObject: IPet[] = [];
           if (item.newPetProfile.length > 0) {
             item.newPetProfile.forEach((element: any) => {
-              const pet: PetProfile = {
+              const pet: any = {
                 _id: item._id,
                 idParental: element._id,
                 petName: element.petName,
@@ -82,7 +102,10 @@ const adminCtl: AdminController = {
 
       // Búsqueda por email
       if (search) {
-        filter.email = { $regex: search, $options: 'i' };
+        filter.$or = [
+          { email: { $regex: search, $options: 'i' } },
+          { memberId: { $regex: search, $options: 'i' } },
+        ];
       }
 
       // Filtro por status
@@ -109,11 +132,13 @@ const adminCtl: AdminController = {
       const [totalUsers, users] = await Promise.all([
         User.countDocuments(filter),
         User.find(filter)
-          .select('_id email userStatus role createdAt updatedAt pets profile')
+          .select(
+            '_id email userStatus role createdAt updatedAt pets profile memberId'
+          )
           .populate({
             path: 'pets',
             select:
-              'petName email phone photo age birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive',
+              'petName memberPetId phone photo birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive permissions weight genderSelected race favoriteActivities healthAndRequirements address phoneVeterinarian veterinarianContact',
           })
           .skip(skip)
           .limit(limitNum)
@@ -125,15 +150,15 @@ const adminCtl: AdminController = {
       console.log(`📊 MongoDB query took: ${dbQueryTime}ms`);
 
       const payload = users.map((item: FlattenMaps<IUser>) => {
-        const petsArray: PetProfile[] = [];
+        const petsArray: IPet[] = [];
 
         if (item.pets && item.pets.length > 0) {
           item.pets.forEach((pet: any) => {
-            const petProfile: PetProfile = {
+            const petProfile = {
               _id: pet._id,
-              idParental: item._id,
+              owner: item._id,
               petName: pet.petName,
-              email: pet.email,
+              memberPetId: pet.memberPetId,
               phone: pet.phone,
               photo: pet.photo,
               age: pet.age,
@@ -144,21 +169,30 @@ const adminCtl: AdminController = {
               photo_id: pet.photo_id,
               isDigitalIdentificationActive:
                 !!pet.isDigitalIdentificationActive,
+              permissions: pet.permissions,
+              petStatusReport: [],
+              createdAt: item.createdAt,
+              updatedAt: item.updatedAt,
+              weight: pet.weight || null,
+              genderSelected: pet.genderSelected || null,
+              race: pet.race || null,
+              favoriteActivities: pet.favoriteActivities || null,
+              healthAndRequirements: pet.healthAndRequirements || null,
+              address: pet.address || null,
+              phoneVeterinarian: pet.phoneVeterinarian || null,
+              veterinarianContact: pet.veterinarianContact || null,
             };
-            petsArray.push(petProfile);
+            petsArray.push(petProfile as unknown as IPet);
           });
         }
 
         return {
           id: item._id,
           email: item.email,
+          memberId: item.memberId,
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
           userStatus: item.userStatus,
-          // phone: item.phone,
-          // address: item.address,
-          // country: item.country,
-          // name: item.name,
           profile: item.profile,
           role: item.role,
           pets: petsArray.length > 0 ? petsArray : null,

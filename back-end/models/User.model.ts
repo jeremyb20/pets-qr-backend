@@ -46,6 +46,7 @@ export interface IUser extends Document {
   idParental?: Types.ObjectId;
   memberId: string;
   email: string;
+  username: string;
   password: string;
   userStatus: number;
   role: number;
