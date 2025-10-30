@@ -304,10 +304,7 @@ const userCtl: UserController = {
           path: 'pets',
           match: petFilter,
           select: `
-          petName petStatus email phone country ownerPetName 
-          birthDate phoneVeterinarian veterinarianContact photo 
-          lat lng isDigitalIdentificationActive permissions newPetProfile
-          petStatusReport petViewCounter photo_id createdAt updatedAt
+         petName memberPetId phone photo birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive permissions weight genderSelected race favoriteActivities healthAndRequirements address phoneVeterinarian veterinarianContact
         `,
           options: {
             skip: skip,
@@ -343,6 +340,12 @@ const userCtl: UserController = {
           photo_id: pet.photo_id,
           createdAt: pet.createdAt,
           updatedAt: pet.updatedAt,
+          race: pet.race || '',
+          weight: pet.weight || '',
+          genderSelected: pet.genderSelected || '',
+          favoriteActivities: pet.favoriteActivities || '',
+          healthAndRequirements: pet.healthAndRequirements || '',
+          address: pet.address || '',
         })
       );
 
@@ -380,7 +383,8 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        'petName photo birthDate petStatus memberPetId owner permissions petViewCounter isDigitalIdentificationActive createdAt updatedAt'
+        // 'petName photo phone genderSelected weight race birthDate petStatus memberPetId owner permissions petViewCounter isDigitalIdentificationActive createdAt updatedAt favoriteActivities healthAndRequirements '
+        ' memberPetId petName genderSelected race weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo  address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive  petViewCounter  permissions  petStatusReport  createdAt updatedAt  phone ownerPetName'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
