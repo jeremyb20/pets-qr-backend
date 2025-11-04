@@ -10,26 +10,7 @@ import {
   UserQueryParams,
 } from '../../types/response.type';
 import { AdminController } from '../../types/admin.types';
-import {
-  AnyObject,
-  ClientSession,
-  Document,
-  DocumentSetOptions,
-  Error,
-  FlattenMaps,
-  MergeType,
-  Model,
-  ModifiedPathsSnapshot,
-  pathsToSkip,
-  PopulateOptions,
-  Query,
-  QueryOptions,
-  SaveOptions,
-  ToObjectOptions,
-  Types,
-  UpdateQuery,
-  UpdateWithAggregationPipeline,
-} from 'mongoose';
+import { FlattenMaps } from 'mongoose';
 import { IPet } from '@/models/Pet.model';
 
 const cloudinaryV2 = cloudinary.v2;

@@ -12,11 +12,21 @@ import 'dotenv/config';
 import {
   ApiResponse,
   ErrorResponse,
+  MedicalRecordQueryParams,
   PetFilters,
   PetQueryParams,
+  SuccessResponse,
 } from '../types/response.type';
-import { PetProfile } from '../types/pet.types';
+import {
+  isDewormingInput,
+  isMedicalVisitInput,
+  isVaccineInput,
+  MedicalRecordInput,
+  MedicalRecordResponse,
+  PetProfile,
+} from '../types/pet.types';
 import QrCode from '../models/QrCode.model';
+import { Types } from 'mongoose';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -69,6 +79,9 @@ interface UserController {
   updatePetById(req: Request, res: Response): Promise<void>;
   getUserProfileByIdScanner(req: Request, res: Response): Promise<void>;
   getProfileById(req: Request, res: Response): Promise<void>;
+  getMedicalRecordsByPet(req: Request, res: Response): Promise<void>;
+  createMedicalRecord(req: Request, res: Response): Promise<void>;
+  updateMedicalRecord(req: Request, res: Response): Promise<void>;
   getMyPetCode(req: Request, res: Response): Promise<void>;
   getMyPetInfo(req: Request, res: Response): Promise<void>;
   getAllPetsByUser(req: Request, res: Response): Promise<void>;
@@ -304,7 +317,25 @@ const userCtl: UserController = {
           path: 'pets',
           match: petFilter,
           select: `
-         petName memberPetId phone photo birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive permissions weight genderSelected race favoriteActivities healthAndRequirements address phoneVeterinarian veterinarianContact
+         petName 
+         memberPetId 
+         phone 
+         photo 
+         birthDate 
+         ownerPetName 
+         petStatus 
+         petViewCounter 
+         photo_id 
+         isDigitalIdentificationActive 
+         permissions 
+         weight 
+         genderSelected 
+         race 
+         favoriteActivities 
+         healthAndRequirements 
+         address 
+         phoneVeterinarian 
+         veterinarianContact
         `,
           options: {
             skip: skip,
@@ -346,6 +377,7 @@ const userCtl: UserController = {
           favoriteActivities: pet.favoriteActivities || '',
           healthAndRequirements: pet.healthAndRequirements || '',
           address: pet.address || '',
+          memberPetId: pet.memberPetId || '',
         })
       );
 
@@ -460,6 +492,551 @@ const userCtl: UserController = {
         msg: 'Ocurrió un error al buscar la información.',
         error: process.env.NODE_ENV === 'development' ? error : undefined,
       });
+    }
+  },
+
+  getMedicalRecordsByPet: async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const {
+        page = '1',
+        limit = '10',
+        search = '',
+        type = '',
+        startDate = '',
+        endDate = '',
+        petId = '',
+      } = req.query as MedicalRecordQueryParams;
+
+      // Validar que petId esté presente
+      if (!petId) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'petId is required to fetch medical records',
+        };
+        res.status(400).json(errorResponse);
+        return;
+      }
+
+      // Validar que la mascota exista usando memberPetId
+      const petExists = await Pet.findOne({ memberPetId: petId }).select('_id');
+      if (!petExists) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'Pet not found with the provided memberPetId',
+        };
+        res.status(404).json(errorResponse);
+        return;
+      }
+
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      const startTime = Date.now();
+
+      // Construir el pipeline de agregación usando memberPetId
+      const pipeline: any[] = [
+        { $match: { memberPetId: petId } },
+        { $unwind: '$medicalRecord' },
+      ];
+
+      // Filtro por tipo de registro médico
+      let typeFilter = {};
+      if (type) {
+        switch (type) {
+          case 'vaccine':
+            typeFilter = {
+              'medicalRecord.vaccines': { $exists: true, $ne: [] },
+            };
+            break;
+          case 'deworming':
+            typeFilter = {
+              'medicalRecord.deworming': { $exists: true, $ne: [] },
+            };
+            break;
+          case 'medical_visit':
+            typeFilter = {
+              'medicalRecord.datesOfMedicalVisits': { $exists: true, $ne: [] },
+            };
+            break;
+        }
+        pipeline.push({ $match: typeFilter });
+      }
+
+      // Pipeline para contar el total (sin paginación)
+      const countPipeline = [
+        { $match: { memberPetId: petId } },
+        {
+          $project: {
+            vaccineCount: {
+              $size: { $ifNull: ['$medicalRecord.vaccines', []] },
+            },
+            dewormingCount: {
+              $size: { $ifNull: ['$medicalRecord.deworming', []] },
+            },
+            visitCount: {
+              $size: { $ifNull: ['$medicalRecord.datesOfMedicalVisits', []] },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalVaccines: { $sum: '$vaccineCount' },
+            totalDeworming: { $sum: '$dewormingCount' },
+            totalVisits: { $sum: '$visitCount' },
+          },
+        },
+      ];
+
+      // Obtener conteos totales
+      const countResult = await Pet.aggregate(countPipeline);
+      let totalRecords = 0;
+
+      if (countResult.length > 0) {
+        const counts = countResult[0];
+        switch (type) {
+          case 'vaccine':
+            totalRecords = counts.totalVaccines;
+            break;
+          case 'deworming':
+            totalRecords = counts.totalDeworming;
+            break;
+          case 'medical_visit':
+            totalRecords = counts.totalVisits;
+            break;
+          default:
+            // Si no hay tipo específico, sumar todos
+            totalRecords =
+              counts.totalVaccines + counts.totalDeworming + counts.totalVisits;
+        }
+      }
+
+      // Pipeline para obtener los registros con paginación
+      const recordsPipeline = [
+        { $match: { memberPetId: petId } },
+        {
+          $project: {
+            vaccines: {
+              $map: {
+                input: { $ifNull: ['$medicalRecord.vaccines', []] },
+                as: 'vaccine',
+                in: {
+                  _id: '$$vaccine._id',
+                  type: 'vaccine',
+                  date: '$$vaccine.dateOfApplication',
+                  name: '$$vaccine.vaccineName',
+                  nextDate: '$$vaccine.nextVaccineDate',
+                  observations: '$$vaccine.observations',
+                  createdAt: '$$vaccine.createdAt',
+                  updatedAt: '$$vaccine.updatedAt',
+                },
+              },
+            },
+            deworming: {
+              $map: {
+                input: { $ifNull: ['$medicalRecord.deworming', []] },
+                as: 'deworm',
+                in: {
+                  _id: '$$deworm._id',
+                  type: 'deworming',
+                  date: '$$deworm.dateOfApplication',
+                  name: '$$deworm.dewormerName',
+                  nextDate: '$$deworm.nextDewormingDate',
+                  observations: '$$deworm.observations',
+                  createdAt: '$$deworm.createdAt',
+                  updatedAt: '$$deworm.updatedAt',
+                },
+              },
+            },
+            medical_visits: {
+              $map: {
+                input: { $ifNull: ['$medicalRecord.datesOfMedicalVisits', []] },
+                as: 'visit',
+                in: {
+                  _id: '$$visit._id',
+                  type: 'medical_visit',
+                  date: '$$visit.visitDate',
+                  name: '$$visit.reasonForVisit',
+                  veterinarianName: '$$visit.veterinarianName',
+                  observations: '$$visit.observations',
+                  createdAt: '$$visit.createdAt',
+                  updatedAt: '$$visit.updatedAt',
+                },
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            allRecords: {
+              $concatArrays: ['$vaccines', '$deworming', '$medical_visits'],
+            },
+          },
+        },
+        { $unwind: '$allRecords' },
+        { $replaceRoot: { newRoot: '$allRecords' } },
+      ];
+
+      // Aplicar filtros adicionales
+      const matchStage: any = {};
+
+      if (type) {
+        matchStage['type'] = type;
+      }
+
+      if (search) {
+        matchStage['$or'] = [
+          { name: { $regex: search, $options: 'i' } },
+          { observations: { $regex: search, $options: 'i' } },
+          { veterinarianName: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      if (startDate || endDate) {
+        matchStage.date = {};
+        if (startDate) matchStage.date.$gte = new Date(startDate);
+        if (endDate) matchStage.date.$lte = new Date(endDate);
+      }
+
+      if (Object.keys(matchStage).length > 0) {
+        recordsPipeline.push({ $match: matchStage });
+      }
+
+      // Ordenar por fecha (más reciente primero) y aplicar paginación
+      (recordsPipeline as any[]).push(
+        { $sort: { date: -1 } },
+        { $skip: skip },
+        { $limit: limitNum }
+      );
+
+      // Ejecutar la consulta
+      const records = await Pet.aggregate(recordsPipeline);
+
+      const dbQueryTime = Date.now() - startTime;
+      console.log(`📊 MongoDB medical records query took: ${dbQueryTime}ms`);
+
+      const payload: MedicalRecordResponse[] = records.map((record: any) => ({
+        _id: record._id?.toString() || new Types.ObjectId().toString(),
+        type: record.type,
+        date: record.date,
+        name: record.name,
+        nextDate: record.nextDate,
+        veterinarianName: record.veterinarianName,
+        observations: record.observations,
+        createdAt: record.createdAt || new Date().toISOString(),
+        updatedAt: record.updatedAt || new Date().toISOString(),
+      }));
+
+      const response: ApiResponse<MedicalRecordResponse[]> = {
+        success: true,
+        payload,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalRecords,
+          pages: Math.ceil(totalRecords / limitNum),
+        },
+      };
+
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ Medical records request completed in ${totalTime}ms`);
+      console.log(`📈 Found ${totalRecords} medical records for pet ${petId}`);
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('❌ Error fetching medical records:', error);
+
+      const errorResponse: ErrorResponse = {
+        success: false,
+        message: 'An error occurred while fetching medical records.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      };
+      res.status(500).json(errorResponse);
+    }
+  },
+
+  createMedicalRecord: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { type, petId, data } = req.body as {
+        type: 'vaccine' | 'deworming' | 'medical_visit';
+        petId: string;
+        data: MedicalRecordInput;
+      };
+
+      // Validaciones básicas
+      if (!type || !petId || !data) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'Type, petId and data are required',
+        };
+        res.status(400).json(errorResponse);
+        return;
+      }
+
+      // Validar que la mascota exista
+      const pet = await Pet.findOne({ memberPetId: petId });
+      if (!pet) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'Pet not found with the provided memberPetId',
+        };
+        res.status(404).json(errorResponse);
+        return;
+      }
+
+      // Inicializar medicalRecord si no existe
+      if (!pet.medicalRecord) {
+        pet.medicalRecord = {
+          vaccines: [],
+          deworming: [],
+          datesOfMedicalVisits: [],
+        };
+      }
+
+      const timestamp = new Date();
+      let newRecord: any;
+      let updateOperation: any = {};
+      let successMessage = '';
+
+      switch (type) {
+        case 'vaccine':
+          // Validar que los datos sean del tipo correcto usando type guard
+          if (!isVaccineInput(data)) {
+            const errorResponse: ErrorResponse = {
+              success: false,
+              message:
+                'dateOfApplication, nextVaccineDate and vaccineName are required for vaccines',
+            };
+            res.status(400).json(errorResponse);
+            return;
+          }
+
+          newRecord = {
+            dateOfApplication: data.dateOfApplication,
+            nextVaccineDate: data.nextVaccineDate,
+            vaccineName: data.vaccineName,
+            observations: data.observations || '',
+            _id: new Types.ObjectId(),
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+
+          updateOperation = {
+            $push: {
+              'medicalRecord.vaccines': newRecord,
+            },
+          };
+          successMessage = 'Vaccine record created successfully';
+          break;
+
+        case 'deworming':
+          // Validar que los datos sean del tipo correcto usando type guard
+          if (!isDewormingInput(data)) {
+            const errorResponse: ErrorResponse = {
+              success: false,
+              message:
+                'dateOfApplication, nextDewormingDate and dewormerName are required for deworming',
+            };
+            res.status(400).json(errorResponse);
+            return;
+          }
+
+          newRecord = {
+            dateOfApplication: data.dateOfApplication,
+            nextDewormingDate: data.nextDewormingDate,
+            dewormerName: data.dewormerName,
+            observations: data.observations || '',
+            _id: new Types.ObjectId(),
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+
+          updateOperation = {
+            $push: {
+              'medicalRecord.deworming': newRecord,
+            },
+          };
+          successMessage = 'Deworming record created successfully';
+          break;
+
+        case 'medical_visit':
+          // Validar que los datos sean del tipo correcto usando type guard
+          if (!isMedicalVisitInput(data)) {
+            const errorResponse: ErrorResponse = {
+              success: false,
+              message:
+                'visitDate, reasonForVisit and veterinarianName are required for medical visits',
+            };
+            res.status(400).json(errorResponse);
+            return;
+          }
+
+          newRecord = {
+            visitDate: data.visitDate,
+            reasonForVisit: data.reasonForVisit,
+            veterinarianName: data.veterinarianName,
+            observations: data.observations || '',
+            _id: new Types.ObjectId(),
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+
+          updateOperation = {
+            $push: {
+              'medicalRecord.datesOfMedicalVisits': newRecord,
+            },
+          };
+          successMessage = 'Medical visit record created successfully';
+          break;
+
+        default:
+          const errorResponse: ErrorResponse = {
+            success: false,
+            message: 'Invalid medical record type',
+          };
+          res.status(400).json(errorResponse);
+          return;
+      }
+
+      // Actualizar la mascota con el nuevo registro
+      const updatedPet = await Pet.findOneAndUpdate(
+        { memberPetId: petId },
+        updateOperation,
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedPet) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'Failed to create medical record',
+        };
+        res.status(500).json(errorResponse);
+        return;
+      }
+
+      const response: SuccessResponse = {
+        success: true,
+        message: successMessage,
+        data: newRecord,
+      };
+
+      console.log(`✅ Medical record created for pet ${petId}, type: ${type}`);
+      res.status(201).json(response);
+    } catch (error) {
+      console.error('❌ Error creating medical record:', error);
+
+      const errorResponse: ErrorResponse = {
+        success: false,
+        message: 'An error occurred while creating the medical record',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      };
+      res.status(500).json(errorResponse);
+    }
+  },
+
+  updateMedicalRecord: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { type, petId, recordId, data } = req.body as {
+        type: 'vaccine' | 'deworming' | 'medical_visit';
+        petId: string;
+        recordId: string;
+        data: Partial<MedicalRecordInput>;
+      };
+
+      // Validaciones básicas
+      if (!type || !petId || !recordId || !data) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'Type, petId, recordId and data are required',
+        };
+        res.status(400).json(errorResponse);
+        return;
+      }
+
+      // Validar que la mascota exista
+      const pet = await Pet.findOne({ memberPetId: petId });
+      if (!pet) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'Pet not found with the provided memberPetId',
+        };
+        res.status(404).json(errorResponse);
+        return;
+      }
+
+      let updateField = '';
+      switch (type) {
+        case 'vaccine':
+          updateField = 'medicalRecord.vaccines';
+          break;
+        case 'deworming':
+          updateField = 'medicalRecord.deworming';
+          break;
+        case 'medical_visit':
+          updateField = 'medicalRecord.datesOfMedicalVisits';
+          break;
+        default:
+          const errorResponse: ErrorResponse = {
+            success: false,
+            message: 'Invalid medical record type',
+          };
+          res.status(400).json(errorResponse);
+          return;
+      }
+
+      // Construir el objeto de actualización dinámicamente
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      Object.keys(data).forEach((key) => {
+        if (data[key as keyof MedicalRecordInput] !== undefined) {
+          updateData[`${updateField}.$.${key}`] =
+            data[key as keyof MedicalRecordInput];
+        }
+      });
+
+      // Actualizar el registro específico
+      const updatedPet = await Pet.findOneAndUpdate(
+        {
+          memberPetId: petId,
+          [`${updateField}._id`]: new Types.ObjectId(recordId),
+        },
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedPet) {
+        const errorResponse: ErrorResponse = {
+          success: false,
+          message: 'Medical record not found or update failed',
+        };
+        res.status(404).json(errorResponse);
+        return;
+      }
+
+      const response: SuccessResponse = {
+        success: true,
+        message: 'Medical record updated successfully',
+      };
+
+      console.log(
+        `✅ Medical record updated for pet ${petId}, type: ${type}, recordId: ${recordId}`
+      );
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('❌ Error updating medical record:', error);
+
+      const errorResponse: ErrorResponse = {
+        success: false,
+        message: 'An error occurred while updating the medical record',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      };
+      res.status(500).json(errorResponse);
     }
   },
 

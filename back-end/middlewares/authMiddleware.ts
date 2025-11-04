@@ -24,7 +24,7 @@ export const authenticateToken = (
     if (!authHeader) {
       res.status(401).json({
         success: false,
-        msg: 'Authorization header is required',
+        message: 'Authorization header is required',
       });
       return;
     }
@@ -32,7 +32,7 @@ export const authenticateToken = (
     if (!authHeader.startsWith('Bearer ')) {
       res.status(401).json({
         success: false,
-        msg: 'Invalid authorization format. Use: Bearer <token>',
+        message: 'Invalid authorization format. Use: Bearer <token>',
       });
       return;
     }
@@ -42,7 +42,7 @@ export const authenticateToken = (
     if (!token) {
       res.status(401).json({
         success: false,
-        msg: 'Token not provided',
+        message: 'Token not provided',
       });
       return;
     }
@@ -63,7 +63,7 @@ export const authenticateToken = (
 
           res.status(401).json({
             success: false,
-            msg: errorMsg,
+            message: errorMsg,
           });
           return;
         }
@@ -76,7 +76,7 @@ export const authenticateToken = (
     console.error('Authentication error:', error);
     res.status(500).json({
       success: false,
-      msg: 'Internal authentication error',
+      message: 'Internal authentication error',
     });
   }
 };
@@ -90,7 +90,7 @@ export const requireAuth = (
   if (!req.user) {
     res.status(401).json({
       success: false,
-      msg: 'Authentication required',
+      message: 'Authentication required',
     });
     return;
   }

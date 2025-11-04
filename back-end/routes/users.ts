@@ -2,6 +2,7 @@ import { Router } from 'express';
 import userCtl from '../controllers/user.controller';
 import verification from '../middlewares/config-legacy';
 import { authenticateToken } from '../middlewares/authMiddleware';
+import { isAdminOrUser } from '../middlewares/roleMiddlewares';
 
 const router = Router();
 

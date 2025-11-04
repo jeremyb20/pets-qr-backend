@@ -33,6 +33,36 @@ interface IPetPermissions {
   showLocationInfo: boolean;
 }
 
+interface IVaccinesControl {
+  dateOfApplication: string;
+  nextVaccineDate: string;
+  vaccineName: string;
+  observations: string;
+  _id?: Types.ObjectId;
+}
+
+interface IDewormingControl {
+  dateOfApplication: string;
+  nextDewormingDate: string;
+  dewormerName: string;
+  observations: string;
+  _id?: Types.ObjectId;
+}
+
+interface IMedicalVisits {
+  visitDate: string;
+  reasonForVisit: string;
+  veterinarianName: string;
+  observations: string;
+  _id?: Types.ObjectId;
+}
+
+interface IMedicalRecord {
+  vaccines: IVaccinesControl[]; // ← Array para historial de vacunas
+  deworming: IDewormingControl[]; // ← Array para historial de desparasitación
+  datesOfMedicalVisits: IMedicalVisits[]; // ← Array para historial de visitas médicas
+}
+
 // Interface principal del documento Pet
 export interface IPet extends Document {
   owner: Types.ObjectId;
@@ -64,7 +94,86 @@ export interface IPet extends Document {
   qrCode?: Types.ObjectId;
   phone: string;
   ownerPetName: string;
+  medicalRecord: IMedicalRecord; // ← Objeto con tres arrays
 }
+
+const VaccineSchema = new Schema<IVaccinesControl>({
+  dateOfApplication: {
+    type: String,
+    required: false,
+  },
+  nextVaccineDate: {
+    type: String,
+    required: false,
+  },
+  vaccineName: {
+    type: String,
+    required: false,
+  },
+  observations: {
+    type: String,
+    required: false,
+  },
+});
+
+const DewormingSchema = new Schema<IDewormingControl>({
+  dateOfApplication: {
+    type: String,
+    required: false,
+  },
+  nextDewormingDate: {
+    type: String,
+    required: false,
+  },
+  dewormerName: {
+    type: String,
+    required: false,
+  },
+  observations: {
+    type: String,
+    required: false,
+  },
+});
+
+const DatesOfMedicalVisitsSchema = new Schema<IMedicalVisits>({
+  visitDate: {
+    type: String,
+    required: false,
+  },
+  reasonForVisit: {
+    type: String,
+    required: false,
+  },
+  veterinarianName: {
+    type: String,
+    required: false,
+  },
+  observations: {
+    type: String,
+    required: false,
+  },
+});
+
+const MedicalRecordSchema = new Schema<IMedicalRecord>({
+  vaccines: [
+    {
+      type: VaccineSchema,
+      default: [],
+    },
+  ],
+  deworming: [
+    {
+      type: DewormingSchema,
+      default: [],
+    },
+  ],
+  datesOfMedicalVisits: [
+    {
+      type: DatesOfMedicalVisitsSchema,
+      default: [],
+    },
+  ],
+});
 
 const PetSchema = new Schema<IPet>(
   {
@@ -188,6 +297,14 @@ const PetSchema = new Schema<IPet>(
       ref: 'QrCode',
       default: null,
     },
+    medicalRecord: {
+      type: MedicalRecordSchema,
+      default: () => ({
+        vaccines: [],
+        deworming: [],
+        datesOfMedicalVisits: [],
+      }),
+    },
   },
   {
     timestamps: true,
@@ -200,19 +317,18 @@ PetSchema.index({ petStatus: 1 });
 PetSchema.index({ isDigitalIdentificationActive: 1 });
 PetSchema.index({ 'petViewCounter.dateViewed': -1 });
 
-// Método estático para buscar mascotas por dueño
+// Métodos estáticos para el modelo
 PetSchema.statics.findByOwner = function (
   ownerId: Types.ObjectId
 ): Promise<IPet[]> {
   return this.find({ owner: ownerId }).sort({ createdAt: -1 }).exec();
 };
 
-// Método estático para buscar mascotas activas
 PetSchema.statics.findActivePets = function (): Promise<IPet[]> {
   return this.find({ petStatus: 'active' }).populate('owner').exec();
 };
 
-// Método de instancia para marcar como perdida
+// Métodos de instancia para la mascota
 PetSchema.methods.markAsLost = function (lostData: {
   lastPlaceLost: string;
   descriptionLost: string;
@@ -230,13 +346,11 @@ PetSchema.methods.markAsLost = function (lostData: {
   return this.save();
 };
 
-// Método de instancia para marcar como encontrada
 PetSchema.methods.markAsFound = function (): Promise<IPet> {
   this.petStatus = 'active';
   return this.save();
 };
 
-// Método de instancia para agregar vista
 PetSchema.methods.addView = function (location: {
   lat: string;
   lng: string;
@@ -249,6 +363,60 @@ PetSchema.methods.addView = function (location: {
 
   this.petViewCounter.push(view);
   return this.save();
+};
+
+// Métodos para manejar el registro médico
+PetSchema.methods.addVaccine = function (
+  vaccineData: IVaccinesControl
+): Promise<IPet> {
+  this.medicalRecord.vaccines.push(vaccineData);
+  return this.save();
+};
+
+PetSchema.methods.addDeworming = function (
+  dewormingData: IDewormingControl
+): Promise<IPet> {
+  this.medicalRecord.deworming.push(dewormingData);
+  return this.save();
+};
+
+PetSchema.methods.addMedicalVisit = function (
+  visitData: IMedicalVisits
+): Promise<IPet> {
+  this.medicalRecord.datesOfMedicalVisits.push(visitData);
+  return this.save();
+};
+
+// Métodos para obtener registros médicos ordenados
+PetSchema.methods.getVaccinesByDate = function (): IVaccinesControl[] {
+  return this.medicalRecord.vaccines.sort(
+    (
+      a: { dateOfApplication: string | number | Date },
+      b: { dateOfApplication: string | number | Date }
+    ) =>
+      new Date(b.dateOfApplication).getTime() -
+      new Date(a.dateOfApplication).getTime()
+  );
+};
+
+PetSchema.methods.getDewormingByDate = function (): IDewormingControl[] {
+  return this.medicalRecord.deworming.sort(
+    (
+      a: { dateOfApplication: string | number | Date },
+      b: { dateOfApplication: string | number | Date }
+    ) =>
+      new Date(b.dateOfApplication).getTime() -
+      new Date(a.dateOfApplication).getTime()
+  );
+};
+
+PetSchema.methods.getMedicalVisitsByDate = function (): IMedicalVisits[] {
+  return this.medicalRecord.datesOfMedicalVisits.sort(
+    (
+      a: { visitDate: string | number | Date },
+      b: { visitDate: string | number | Date }
+    ) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime()
+  );
 };
 
 export default model<IPet>('Pet', PetSchema);

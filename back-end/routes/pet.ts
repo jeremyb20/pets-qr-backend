@@ -14,4 +14,22 @@ router.put(
   isAdminOrUser,
   userCtl.updatePetById
 );
+
+router.get(
+  '/getMedicalRecordsByPet',
+  authenticateToken,
+  userCtl.getMedicalRecordsByPet
+);
+
+router.post(
+  '/createMedicalRecord',
+  authenticateToken,
+  userCtl.createMedicalRecord
+);
+
+router.put(
+  '/updateMedicalRecord',
+  authenticateToken,
+  userCtl.updateMedicalRecord
+);
 export default router;

@@ -9,6 +9,11 @@ export interface ApiResponse<T> {
   };
 }
 
+export interface SuccessResponse {
+  success: true;
+  message: string;
+  data?: any;
+}
 export interface ErrorResponse {
   success: false;
   message: string;
@@ -40,14 +45,23 @@ export interface UserFilters {
   }>;
 }
 
-export interface PetQueryParams {
+export interface ApiQueryParams {
   page?: string;
   limit?: string;
   search?: string;
-  petStatus?: string;
+  status?: string;
   startDate?: string;
   endDate?: string;
+}
+
+export interface PetQueryParams extends ApiQueryParams {
+  petStatus?: string;
   id?: string;
+}
+
+export interface MedicalRecordQueryParams extends PetQueryParams {
+  type?: 'vaccine' | 'deworming' | 'medical_visit';
+  petId?: string;
 }
 
 export interface PetFilters {
