@@ -23,7 +23,6 @@ import {
   isVaccineInput,
   MedicalRecordInput,
   MedicalRecordResponse,
-  PetProfile,
 } from '../types/pet.types';
 import QrCode from '../models/QrCode.model';
 import { Types } from 'mongoose';
@@ -45,31 +44,22 @@ interface AuthRequest {
   password: string;
 }
 
-interface RegisterRequest {
-  email: string;
-  phone: string;
-  isActivated: boolean;
-  password: string;
-  country: string;
-  userState: number;
-}
-
-interface EditProfileRequest {
-  _id: string;
-  address?: string;
-  birthDate?: string;
-  favoriteActivities?: string;
-  healthAndRequirements?: string;
-  ownerPetName?: string;
-  phoneVeterinarian?: string;
-  veterinarianContact?: string;
-  petName?: string;
-  petStatus?: string;
-  genderSelected?: string;
-  race?: string;
-  weight?: string;
-  country?: string;
-}
+// interface EditProfileRequest {
+//   _id: string;
+//   address?: string;
+//   birthDate?: string;
+//   favoriteActivities?: string;
+//   healthAndRequirements?: string;
+//   ownerPetName?: string;
+//   phoneVeterinarian?: string;
+//   veterinarianContact?: string;
+//   petName?: string;
+//   petStatus?: string;
+//   genderSelected?: string;
+//   breed?: string;
+//   weight?: string;
+//   country?: string;
+// }
 
 interface UserController {
   authenticateLegacy(req: Request, res: Response): Promise<void>;
@@ -330,7 +320,7 @@ const userCtl: UserController = {
          permissions 
          weight 
          genderSelected 
-         race 
+         breed 
          favoriteActivities 
          healthAndRequirements 
          address 
@@ -348,40 +338,38 @@ const userCtl: UserController = {
 
       const dbQueryTime = Date.now() - startTime;
       console.log(`📊 MongoDB pets query took: ${dbQueryTime}ms`);
-      const payload: PetProfile[] = (userWithPets?.pets || []).map(
-        (pet: any) => ({
-          _id: pet._id.toString(),
-          idParental: id,
-          petName: pet.petName || '',
-          petStatus: pet.petStatus || 'No-Perdido',
-          email: pet.email,
-          phone: pet.phone,
-          country: pet.country,
-          ownerPetName: pet.ownerPetName,
-          birthDate: pet.birthDate,
-          phoneVeterinarian: pet.phoneVeterinarian,
-          veterinarianContact: pet.veterinarianContact,
-          photo: pet.photo,
-          lat: pet.lat,
-          lng: pet.lng,
-          isDigitalIdentificationActive: !!pet.isDigitalIdentificationActive,
-          permissions: pet.permissions || [],
-          petStatusReport: pet.petStatusReport || [],
-          petViewCounter: pet.petViewCounter || [],
-          photo_id: pet.photo_id,
-          createdAt: pet.createdAt,
-          updatedAt: pet.updatedAt,
-          race: pet.race || '',
-          weight: pet.weight || '',
-          genderSelected: pet.genderSelected || '',
-          favoriteActivities: pet.favoriteActivities || '',
-          healthAndRequirements: pet.healthAndRequirements || '',
-          address: pet.address || '',
-          memberPetId: pet.memberPetId || '',
-        })
-      );
+      const payload: IPet[] = (userWithPets?.pets || []).map((pet: any) => ({
+        _id: pet._id.toString(),
+        idParental: id,
+        petName: pet.petName || '',
+        petStatus: pet.petStatus || 'No-Perdido',
+        email: pet.email,
+        phone: pet.phone,
+        country: pet.country,
+        ownerPetName: pet.ownerPetName,
+        birthDate: pet.birthDate,
+        phoneVeterinarian: pet.phoneVeterinarian,
+        veterinarianContact: pet.veterinarianContact,
+        photo: pet.photo,
+        lat: pet.lat,
+        lng: pet.lng,
+        isDigitalIdentificationActive: !!pet.isDigitalIdentificationActive,
+        permissions: pet.permissions || [],
+        petStatusReport: pet.petStatusReport || [],
+        petViewCounter: pet.petViewCounter || [],
+        photo_id: pet.photo_id,
+        createdAt: pet.createdAt,
+        updatedAt: pet.updatedAt,
+        breed: pet.breed || '',
+        weight: pet.weight || '',
+        genderSelected: pet.genderSelected || '',
+        favoriteActivities: pet.favoriteActivities || '',
+        healthAndRequirements: pet.healthAndRequirements || '',
+        address: pet.address || '',
+        memberPetId: pet.memberPetId || '',
+      }));
 
-      const response: ApiResponse<PetProfile[]> = {
+      const response: ApiResponse<IPet[]> = {
         success: true,
         payload,
         pagination: {
@@ -415,8 +403,8 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        // 'petName photo phone genderSelected weight race birthDate petStatus memberPetId owner permissions petViewCounter isDigitalIdentificationActive createdAt updatedAt favoriteActivities healthAndRequirements '
-        ' memberPetId petName genderSelected race weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo  address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive  petViewCounter  permissions  petStatusReport  createdAt updatedAt  phone ownerPetName'
+        // 'petName photo phone genderSelected weight breed birthDate petStatus memberPetId owner permissions petViewCounter isDigitalIdentificationActive createdAt updatedAt favoriteActivities healthAndRequirements '
+        ' memberPetId petName genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo  address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive  petViewCounter  permissions  petStatusReport  createdAt updatedAt  phone ownerPetName'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
@@ -1064,7 +1052,7 @@ const userCtl: UserController = {
         address,
         favoriteActivities,
         healthAndRequirements,
-        race,
+        breed,
       } = req.body;
 
       const pet = await Pet.findById(id);
@@ -1098,7 +1086,7 @@ const userCtl: UserController = {
         address,
         favoriteActivities,
         healthAndRequirements,
-        race,
+        breed,
         updatedAt: new Date(),
       } as unknown as IPet;
 
@@ -1231,7 +1219,7 @@ const userCtl: UserController = {
         newPetProfile: (user as any).newPetProfile,
         genderSelected: (user as any).genderSelected,
         _id: user._id,
-        race: (user as any).race,
+        breed: (user as any).breed,
         weight: (user as any).weight,
         phone: user.profile.phone,
         country: user.profile.country,
@@ -1321,7 +1309,7 @@ const userCtl: UserController = {
             genderSelected: (user as any).genderSelected,
             isDigitalIdentificationActive: (user as any)
               .isDigitalIdentificationActive,
-            race: (user as any).race,
+            breed: (user as any).breed,
             weight: (user as any).weight,
           };
           res.status(200).send({
@@ -1370,10 +1358,9 @@ const userCtl: UserController = {
       petName,
       petStatus,
       genderSelected,
-      race,
+      breed,
       weight,
-      country,
-    } = req.body as EditProfileRequest;
+    } = req.body as IPet;
 
     try {
       await User.findByIdAndUpdate(req.body._id, {
@@ -1387,9 +1374,8 @@ const userCtl: UserController = {
         petName,
         petStatus,
         genderSelected,
-        race,
+        breed,
         weight,
-        country,
       });
       res.send({ msg: 'The information was updated correctly', success: true });
     } catch (error) {
@@ -1414,7 +1400,7 @@ const userCtl: UserController = {
       petStatus,
       genderSelected,
       phone,
-      race,
+      breed,
       weight,
       country,
     } = req.body;
@@ -1435,7 +1421,7 @@ const userCtl: UserController = {
             'newPetProfile.$.petStatus': petStatus,
             'newPetProfile.$.genderSelected': genderSelected,
             'newPetProfile.$.phone': phone,
-            'newPetProfile.$.race': race,
+            'newPetProfile.$.breed': breed,
             'newPetProfile.$.weight': weight,
             'newPetProfile.$.country': country,
           },

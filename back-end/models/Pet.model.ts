@@ -64,12 +64,12 @@ interface IMedicalRecord {
 }
 
 // Interface principal del documento Pet
-export interface IPet extends Document {
-  owner: Types.ObjectId;
+export interface IPet {
+  owner?: Types.ObjectId;
   memberPetId: string;
   petName: string;
   genderSelected?: string;
-  race?: string;
+  breed?: string;
   weight?: string;
   petStatus: string;
   birthDate?: string;
@@ -94,7 +94,7 @@ export interface IPet extends Document {
   qrCode?: Types.ObjectId;
   phone: string;
   ownerPetName: string;
-  medicalRecord: IMedicalRecord; // ← Objeto con tres arrays
+  medicalRecord?: IMedicalRecord; // ← Objeto con tres arrays
 }
 
 const VaccineSchema = new Schema<IVaccinesControl>({
@@ -202,7 +202,7 @@ const PetSchema = new Schema<IPet>(
       type: String,
       required: false,
     },
-    race: {
+    breed: {
       type: String,
       required: false,
     },

@@ -35,7 +35,7 @@ export interface IRegisterUserWithQR {
   petData: {
     petName: string;
     genderSelected?: string;
-    race?: string;
+    breed?: string;
     weight?: string;
     birthDate?: string;
   };
@@ -46,7 +46,7 @@ export interface IAddPetWithQR {
   petData: {
     petName: string;
     genderSelected?: string;
-    race?: string;
+    breed?: string;
     weight?: string;
     birthDate?: string;
   };

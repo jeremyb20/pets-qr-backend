@@ -158,7 +158,7 @@ const PetSchema = new Schema(
               type: String,
               require: false,
             },
-            race: {
+            breed: {
               type: String,
               require: false,
             },

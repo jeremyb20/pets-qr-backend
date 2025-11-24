@@ -119,7 +119,7 @@ const adminCtl: AdminController = {
           .populate({
             path: 'pets',
             select:
-              'petName memberPetId phone photo birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive permissions weight genderSelected race favoriteActivities healthAndRequirements address phoneVeterinarian veterinarianContact',
+              'petName memberPetId phone photo birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive permissions weight genderSelected breed favoriteActivities healthAndRequirements address phoneVeterinarian veterinarianContact',
           })
           .skip(skip)
           .limit(limitNum)
@@ -156,7 +156,7 @@ const adminCtl: AdminController = {
               updatedAt: item.updatedAt,
               weight: pet.weight || null,
               genderSelected: pet.genderSelected || null,
-              race: pet.race || null,
+              breed: pet.breed || null,
               favoriteActivities: pet.favoriteActivities || null,
               healthAndRequirements: pet.healthAndRequirements || null,
               address: pet.address || null,
@@ -535,7 +535,7 @@ const adminCtl: AdminController = {
       phoneVeterinarian,
       photo,
       photo_id,
-      race,
+      breed,
       userState,
       veterinarianContact,
       weight,
@@ -578,7 +578,7 @@ const adminCtl: AdminController = {
       phoneVeterinarian,
       photo,
       photo_id,
-      race,
+      breed,
       userState,
       veterinarianContact,
       weight,
