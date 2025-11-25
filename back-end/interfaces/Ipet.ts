@@ -96,3 +96,20 @@ export interface IPet {
   ownerPetName: string;
   medicalRecord?: IMedicalRecord; // ← Objeto con tres arrays
 }
+
+export interface AddPetToExistingUserRequest {
+  code: string;
+  userCredentials: {
+    email: string;
+    password: string;
+  };
+  petData: {
+    petName: string;
+    breed: string;
+    genderSelected: string;
+    birthDate?: string;
+    weight?: string;
+    favoriteActivities?: string;
+    healthAndRequirements?: string;
+  };
+}

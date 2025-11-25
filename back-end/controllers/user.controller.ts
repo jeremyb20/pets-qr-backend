@@ -27,7 +27,7 @@ import {
 import QrCode from '../models/QrCode.model';
 import { Types } from 'mongoose';
 import { IUser, RegistrationRequest } from '../interfaces/IUser';
-import { IPet } from '../interfaces/Ipet';
+import { AddPetToExistingUserRequest, IPet } from '../interfaces/Ipet';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -62,6 +62,11 @@ interface UserController {
     next?: NextFunction
   ): Promise<void>;
   registerNewPetByQRcode(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
+  addPetToExistingUser(
     req: Request,
     res: Response,
     next?: NextFunction
@@ -1720,6 +1725,7 @@ const userCtl: UserController = {
     }
   },
 
+  // Registra nuevo usuario con una nueva mascota con el codigo
   registerNewPetByQRcode: async (
     req: Request,
     res: Response,
@@ -1727,7 +1733,6 @@ const userCtl: UserController = {
   ): Promise<void> => {
     try {
       const { code, userData, petData }: RegistrationRequest = req.body;
-      console.log(req.body, 'req.body');
 
       // Validación básica de los datos de entrada
       if (!code || !userData || !petData) {
@@ -1977,6 +1982,219 @@ const userCtl: UserController = {
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
+      });
+    }
+  },
+
+  // Registra una mascota a un usuario ya existente
+  addPetToExistingUser: async (
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void> => {
+    try {
+      const { code, userCredentials, petData }: AddPetToExistingUserRequest =
+        req.body;
+
+      // Validación básica de los datos de entrada
+      if (!code || !userCredentials || !petData) {
+        res.status(400).json({
+          success: false,
+          message:
+            'Datos incompletos. Se requiere código, userCredentials y petData.',
+        });
+        return;
+      }
+
+      // Paso 1: Validar si el código QR existe y está disponible
+      const qrCode = await QrCode.findOne({ randomCode: code });
+
+      if (!qrCode) {
+        res.status(404).json({
+          success: false,
+          message: 'Código QR no encontrado.',
+        });
+        return;
+      }
+
+      if (qrCode.status !== 'available') {
+        res.status(400).json({
+          success: false,
+          message: `El código QR no está disponible. Estado actual: ${qrCode.status}`,
+        });
+        return;
+      }
+
+      // Paso 2: Verificar credenciales del usuario (email y password)
+      const existingUser = await User.findOne({
+        email: userCredentials.email.toLowerCase(),
+      }).select('+password'); // Incluir password para la comparación
+
+      if (!existingUser) {
+        res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado.',
+        });
+        return;
+      }
+
+      // Verificar contraseña
+      const isPasswordValid = await bcrypt.compare(
+        userCredentials.password,
+        existingUser.password
+      );
+
+      if (!isPasswordValid) {
+        res.status(401).json({
+          success: false,
+          message: 'Credenciales inválidas.',
+        });
+        return;
+      }
+
+      // Verificar que el usuario esté activo
+      if (Number(existingUser.userStatus) === 5) {
+        res.status(403).json({
+          success: false,
+          message: 'La cuenta de usuario no está activa.',
+        });
+        return;
+      }
+
+      // Paso 3: Verificar que el usuario no tenga ya una mascota con el mismo código
+      const existingPetWithSameCode = await Pet.findOne({
+        memberPetId: code,
+        owner: existingUser._id,
+      });
+
+      if (existingPetWithSameCode) {
+        res.status(409).json({
+          success: false,
+          message: 'Ya tienes una mascota registrada con este código.',
+        });
+        return;
+      }
+
+      // Paso 4: Verificar límite de mascotas por usuario (opcional)
+      const userPetsCount = await Pet.countDocuments({
+        owner: existingUser._id,
+      });
+      const MAX_PETS_PER_USER = 10; // Puedes ajustar este límite
+
+      if (userPetsCount >= MAX_PETS_PER_USER) {
+        res.status(400).json({
+          success: false,
+          message: `Has alcanzado el límite máximo de ${MAX_PETS_PER_USER} mascotas por usuario.`,
+        });
+        return;
+      }
+
+      // Paso 5: Crear la nueva mascota y asociarla al usuario existente
+      const newPet = new Pet({
+        owner: existingUser._id,
+        memberPetId: code,
+        petName: petData.petName,
+        breed: petData.breed,
+        genderSelected: petData.genderSelected,
+        birthDate: petData.birthDate || null,
+        weight: petData.weight || null,
+        favoriteActivities: petData.favoriteActivities || null,
+        healthAndRequirements: petData.healthAndRequirements || null,
+        phone: existingUser.profile.phone, // Usar el teléfono del usuario existente
+        ownerPetName: existingUser.profile.name,
+        petStatus: 'active',
+        permissions: {
+          showPhoneInfo: true,
+          showEmailInfo: true,
+          showLinkTwitter: true,
+          showLinkFacebook: true,
+          showLinkInstagram: true,
+          showOwnerPetName: true,
+          showBirthDate: true,
+          showAddressInfo: true,
+          showAgeInfo: true,
+          showVeterinarianContact: true,
+          showPhoneVeterinarian: true,
+          showHealthAndRequirements: true,
+          showFavoriteActivities: true,
+          showLocationInfo: true,
+        },
+        medicalRecord: {
+          vaccines: [],
+          deworming: [],
+          datesOfMedicalVisits: [],
+        },
+        qrCode: qrCode._id,
+      });
+
+      const savedPet = await newPet.save();
+
+      // Paso 6: Actualizar el usuario para agregar la nueva mascota
+      existingUser.pets.push(savedPet._id);
+      await existingUser.save();
+
+      // Paso 7: Actualizar el código QR como usado
+      await QrCode.findByIdAndUpdate(qrCode._id, {
+        status: 'used',
+        assignedTo: existingUser._id,
+        assignedPet: savedPet._id,
+        activationDate: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Paso 8: Responder con éxito
+      res.status(201).json({
+        success: true,
+        message: 'Mascota agregada exitosamente a tu cuenta',
+        data: {
+          user: {
+            id: existingUser._id,
+            name: existingUser.profile.name,
+            email: existingUser.email,
+            username: existingUser.profile.username,
+            totalPets: userPetsCount + 1,
+          },
+          pet: {
+            id: savedPet._id,
+            petName: savedPet.petName,
+            memberPetId: savedPet.memberPetId,
+            breed: savedPet.breed,
+          },
+          qrCode: {
+            code: code,
+            status: 'used',
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Error en addPetToExistingUser:', error);
+
+      // Manejar errores de duplicación de MongoDB
+      if ((error as any).code === 11000) {
+        const field = Object.keys((error as any).keyValue)[0];
+        res.status(409).json({
+          success: false,
+          message: `El ${field} ya está en uso.`,
+        });
+        return;
+      }
+
+      // Manejar errores de validación de Mongoose
+      if ((error as any).name === 'ValidationError') {
+        const errors = Object.values((error as any).errors).map(
+          (err: any) => err.message
+        );
+        res.status(400).json({
+          success: false,
+          message: 'Error de validación en los datos de la mascota',
+          errors,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor al agregar la mascota',
       });
     }
   },

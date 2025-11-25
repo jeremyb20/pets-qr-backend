@@ -48,6 +48,12 @@ router.post(
   userCtl.registerNewPetfromUserProfile
 );
 
+router.post(
+  '/addPetToExistingUser',
+  verification,
+  userCtl.addPetToExistingUser
+);
+
 router.post('/deletePetById', verification, userCtl.deletePetById);
 
 router.post('/forgot', userCtl.forgot);
