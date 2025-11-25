@@ -4,7 +4,7 @@ import adminProductCtl from '../controllers/admin/admin-products.controller';
 import qrCodeController from '../controllers/qrcode.controller';
 import verification from '../middlewares/config-legacy';
 import { isAdmin } from '../middlewares/roleMiddlewares';
-import { uploadProductImages } from '../middlewares/uploadMiddleware';
+import { uploadImages } from '../middlewares/uploadMiddleware';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import adminSeoCtrl from '../controllers/admin/admin-seo.controller';
 
@@ -75,16 +75,12 @@ router.get(
   isAdmin,
   adminProductCtl.getProductById
 );
-router.post(
-  '/createProduct',
-  uploadProductImages,
-  adminProductCtl.createProduct
-);
+router.post('/createProduct', uploadImages, adminProductCtl.createProduct);
 router.put(
   '/updateProduct',
   authenticateToken,
   isAdmin,
-  uploadProductImages,
+  uploadImages,
   adminProductCtl.updateProduct
 );
 router.delete(

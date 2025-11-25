@@ -3,6 +3,10 @@ import userCtl from '../controllers/user.controller';
 import verification from '../middlewares/config-legacy';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { isAdminOrUser } from '../middlewares/roleMiddlewares';
+import {
+  uploadImages,
+  uploadSingleImage,
+} from '../middlewares/uploadMiddleware';
 
 const router = Router();
 
@@ -51,6 +55,7 @@ router.post(
 router.post(
   '/addPetToExistingUser',
   verification,
+  uploadSingleImage,
   userCtl.addPetToExistingUser
 );
 
