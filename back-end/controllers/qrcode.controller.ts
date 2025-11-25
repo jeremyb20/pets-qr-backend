@@ -27,7 +27,7 @@ const qrCodeController = {
       if (!quantity || quantity <= 0) {
         res.json({
           success: false,
-          msg: 'La cantidad debe ser mayor a 0',
+          message: 'La cantidad debe ser mayor a 0',
         });
         return;
       }
@@ -57,14 +57,14 @@ const qrCodeController = {
 
       res.json({
         success: true,
-        msg: `${quantity} códigos QR generados exitosamente`,
+        message: `${quantity} códigos QR generados exitosamente`,
         codes: codes.map((code) => code.randomCode),
       });
     } catch (error) {
       console.error('Error generando códigos QR:', error);
       res.json({
         success: false,
-        msg: 'Error generando códigos QR',
+        message: 'Error generando códigos QR',
       });
     }
   },
@@ -77,7 +77,7 @@ const qrCodeController = {
       if (!randomCode) {
         res.json({
           success: false,
-          msg: 'Código QR requerido',
+          message: 'Código QR requerido',
         });
         return;
       }
@@ -87,7 +87,7 @@ const qrCodeController = {
       if (!qrCode) {
         res.json({
           success: false,
-          msg: 'Código QR no válido',
+          message: 'Código QR no válido',
         });
         return;
       }
@@ -104,7 +104,7 @@ const qrCodeController = {
       console.error('Error verificando código QR:', error);
       res.json({
         success: false,
-        msg: 'Error verificando código QR',
+        message: 'Error verificando código QR',
       });
     }
   },
@@ -126,7 +126,7 @@ const qrCodeController = {
       if (!qrCode) {
         res.json({
           success: false,
-          msg: 'Código QR no disponible o ya utilizado',
+          message: 'Código QR no disponible o ya utilizado',
         });
         return;
       }
@@ -136,7 +136,7 @@ const qrCodeController = {
       if (existingUser) {
         res.json({
           success: false,
-          msg: 'El email ya está registrado',
+          message: 'El email ya está registrado',
         });
         return;
       }
@@ -194,7 +194,7 @@ const qrCodeController = {
 
       res.json({
         success: true,
-        msg: 'Usuario y mascota registrados exitosamente',
+        message: 'Usuario y mascota registrados exitosamente',
         user: {
           _id: user._id,
           name: user.profile.name,
@@ -214,7 +214,7 @@ const qrCodeController = {
       console.error('Error en registro completo:', error);
       res.json({
         success: false,
-        msg: 'Error en el proceso de registro',
+        message: 'Error en el proceso de registro',
       });
     }
   },
@@ -228,7 +228,7 @@ const qrCodeController = {
       if (!userId) {
         res.json({
           success: false,
-          msg: 'Usuario no autenticado',
+          message: 'Usuario no autenticado',
         });
         return;
       }
@@ -242,7 +242,7 @@ const qrCodeController = {
       if (!qrCode) {
         res.json({
           success: false,
-          msg: 'Código QR no disponible',
+          message: 'Código QR no disponible',
         });
         return;
       }
@@ -252,7 +252,7 @@ const qrCodeController = {
       if (!user) {
         res.json({
           success: false,
-          msg: 'Usuario no encontrado',
+          message: 'Usuario no encontrado',
         });
         return;
       }
@@ -281,7 +281,7 @@ const qrCodeController = {
 
       res.json({
         success: true,
-        msg: 'Mascota registrada exitosamente',
+        message: 'Mascota registrada exitosamente',
         pet: {
           _id: pet._id,
           petName: pet.petName,
@@ -292,7 +292,7 @@ const qrCodeController = {
       console.error('Error agregando mascota:', error);
       res.json({
         success: false,
-        msg: 'Error registrando mascota',
+        message: 'Error registrando mascota',
       });
     }
   },
@@ -305,7 +305,7 @@ const qrCodeController = {
       if (!userId) {
         res.json({
           success: false,
-          msg: 'Usuario no autenticado',
+          message: 'Usuario no autenticado',
         });
         return;
       }
@@ -337,7 +337,7 @@ const qrCodeController = {
       console.error('Error obteniendo QR codes:', error);
       res.json({
         success: false,
-        msg: 'Error obteniendo códigos QR',
+        message: 'Error obteniendo códigos QR',
       });
     }
   },
@@ -357,7 +357,7 @@ const qrCodeController = {
       if (!qrCode) {
         res.json({
           success: false,
-          msg: 'Código QR no encontrado',
+          message: 'Código QR no encontrado',
         });
         return;
       }
@@ -365,7 +365,7 @@ const qrCodeController = {
       if (qrCode.status !== 'activated') {
         res.json({
           success: false,
-          msg: 'Código QR no activado',
+          message: 'Código QR no activado',
         });
         return;
       }
@@ -418,7 +418,7 @@ const qrCodeController = {
       console.error('Error escaneando QR:', error);
       res.json({
         success: false,
-        msg: 'Error escaneando código QR',
+        message: 'Error escaneando código QR',
       });
     }
   },
@@ -495,7 +495,7 @@ const qrCodeController = {
       console.error('Error obteniendo estadísticas:', error);
       res.status(500).json({
         success: false,
-        msg: 'Error obteniendo estadísticas',
+        message: 'Error obteniendo estadísticas',
       });
     }
   },
@@ -617,7 +617,7 @@ const qrCodeController = {
       if (!qrCode) {
         res.json({
           success: false,
-          msg: 'Código QR no encontrado',
+          message: 'Código QR no encontrado',
         });
         return;
       }
@@ -633,13 +633,13 @@ const qrCodeController = {
 
       res.json({
         success: true,
-        msg: 'Código QR actualizado exitosamente',
+        message: 'Código QR actualizado exitosamente',
       });
     } catch (error) {
       console.error('Error actualizando código QR:', error);
       // res.json({
       //   success: false,
-      //   msg: 'Error actualizando código QR',
+      //   message: 'Error actualizando código QR',
       // });
       const errorResponse: ErrorResponse = {
         success: false,

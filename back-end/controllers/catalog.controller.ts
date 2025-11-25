@@ -59,9 +59,9 @@
 //         });
 //         await catalog.save();
 //         await fs.unlink(req.file.path);
-//         res.send({msg: 'The information was updated correctly', success: true});
+//         res.send({message: 'The information was updated correctly', success: true});
 //     } catch (error) {
-//         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+//         res.json({success: false, message: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
 //     }
 // }
 
@@ -74,15 +74,15 @@
 //             res.send({ success: false, payload: [], mesaje: 'Product not available' });
 //         }
 //     } catch (error) {
-//         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+//         res.json({success: false, message: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
 //     }
 // }
 // catalogCtl.editCatalog = async (req, res) => {
 //     try {
 //         await Catalog.findByIdAndUpdate(req.body._id, req.body);
-//         res.send({msg: 'The information was updated correctly', success: true});
+//         res.send({message: 'The information was updated correctly', success: true});
 //     } catch (error) {
-//         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+//         res.json({success: false, message: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
 //     }
 // }
 
@@ -92,9 +92,9 @@
 //         if(photo.image_id){
 //             await cloudinary.uploader.destroy(photo.image_id);
 //         }
-//         res.send({msg: 'The information was updated correctly', success: true});
+//         res.send({message: 'The information was updated correctly', success: true});
 //     } catch (error) {
-//         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+//         res.json({success: false, message: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
 //     }
 // }
 
@@ -107,9 +107,9 @@
 //         }
 //         await fs.unlink(req.file.path);
 //         await Catalog.findOneAndUpdate({ _id: req.body._id }, { $push: { images: dataImage } });
-//         res.send({msg: 'The information was updated correctly', success: true, payload: dataImage});
+//         res.send({message: 'The information was updated correctly', success: true, payload: dataImage});
 //     } catch (error) {
-//         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+//         res.json({success: false, message: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
 //     }
 // }
 
@@ -123,10 +123,10 @@
 //         if(req.body.imageCloud) {
 //             await cloudinary.uploader.destroy(req.body.imageCloud);
 //         }
-//         res.send({msg: 'The information was updated correctly', success: true});
+//         res.send({message: 'The information was updated correctly', success: true});
 
 //     } catch (error) {
-//         res.json({success: false, msg: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
+//         res.json({success: false, message: 'An error occurred in the process.', error: JSON.parse(JSON.stringify(error))});
 //     }
 // }
 
@@ -283,11 +283,14 @@ const catalogCtl: CatalogController = {
         await fs.unlink(req.file.path);
       }
 
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -308,7 +311,7 @@ const catalogCtl: CatalogController = {
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -317,11 +320,14 @@ const catalogCtl: CatalogController = {
   editCatalog: async (req: Request, res: Response): Promise<void> => {
     try {
       await Catalog.findByIdAndUpdate(req.body._id, req.body);
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -335,11 +341,14 @@ const catalogCtl: CatalogController = {
       if (photo && photo.images && photo.images.length > 0) {
         await cloudinaryV2.uploader.destroy(photo.images[0].image_id);
       }
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -367,14 +376,14 @@ const catalogCtl: CatalogController = {
       );
 
       res.send({
-        msg: 'The information was updated correctly',
+        message: 'The information was updated correctly',
         success: true,
         payload: dataImage,
       });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -392,11 +401,14 @@ const catalogCtl: CatalogController = {
         await cloudinaryV2.uploader.destroy(req.body.imageCloud);
       }
 
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }

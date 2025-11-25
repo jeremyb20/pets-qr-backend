@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
-import User, { IUser } from '../../models/User.model';
+import User from '../../models/User.model';
 import { cacheService } from '../../config/redis';
 import 'dotenv/config';
 import {
@@ -11,7 +11,8 @@ import {
 } from '../../types/response.type';
 import { AdminController } from '../../types/admin.types';
 import { FlattenMaps } from 'mongoose';
-import { IPet } from '@/models/Pet.model';
+import { IUser } from '../../interfaces/IUser';
+import { IPet } from '../../interfaces/Ipet';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -20,7 +21,10 @@ const adminCtl: AdminController = {
   getAllUsersLegacy: async (_req: Request, res: Response): Promise<void> => {
     const users = await User.find();
     if (users.length == 0) {
-      res.send({ success: false, msg: 'An error occurred in the process.' });
+      res.send({
+        success: false,
+        message: 'An error occurred in the process.',
+      });
     } else {
       const object: any[] = [];
       users.forEach((item: any) => {
@@ -277,7 +281,7 @@ const adminCtl: AdminController = {
       await User.findByIdAndUpdate(id, updateData);
 
       res.status(200).send({
-        msg: 'The information was updated correctly',
+        message: 'The information was updated correctly',
         success: true,
       });
     } catch (error) {
@@ -295,7 +299,7 @@ const adminCtl: AdminController = {
     if (users.length == 0) {
       res
         .status(200)
-        .send({ success: false, msg: 'An error occurred in the process.' });
+        .send({ success: false, message: 'An error occurred in the process.' });
     } else {
       const object: any[] = [];
       users.forEach((item: any) => {
@@ -324,7 +328,10 @@ const adminCtl: AdminController = {
       await cloudinaryV2.uploader.destroy((photo as any).image_id);
     }
 
-    res.send({ success: true, msg: 'The information was updated correctly' });
+    res.send({
+      success: true,
+      message: 'The information was updated correctly',
+    });
   },
 
   // editUser: async (
@@ -355,9 +362,9 @@ const adminCtl: AdminController = {
   //       userState,
   //       isDigitalIdentificationActive,
   //     });
-  //     res.send({ msg: 'The information was updated correctly', success: true });
+  //     res.send({ message: 'The information was updated correctly', success: true });
   //   } catch (err) {
-  //     res.json({ success: false, msg: 'An error occurred in the process.' });
+  //     res.json({ success: false, message: 'An error occurred in the process.' });
   //     if (next) next(err);
   //   }
   // },
@@ -380,11 +387,14 @@ const adminCtl: AdminController = {
           }
         );
       }
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -403,12 +413,12 @@ const adminCtl: AdminController = {
           await cloudinaryV2.uploader.destroy(req.body.photo_id);
         }
 
-        res.json({ success: true, msg: 'Delete successfull.' });
+        res.json({ success: true, message: 'Delete successfull.' });
       });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -425,7 +435,7 @@ const adminCtl: AdminController = {
       if (myUser) {
         res.json({
           success: false,
-          msg: 'An error occurred in the process.',
+          message: 'An error occurred in the process.',
         });
       } else {
         let newPet = new User({
@@ -439,12 +449,12 @@ const adminCtl: AdminController = {
           try {
             res.json({
               success: true,
-              msg: 'The process was successfully completed.',
+              message: 'The process was successfully completed.',
             });
           } catch (err) {
             res.json({
               success: false,
-              msg: 'An error occurred in the process.',
+              message: 'An error occurred in the process.',
             });
             if (next) next(err);
           }
@@ -453,7 +463,7 @@ const adminCtl: AdminController = {
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
       });
     }
   },
@@ -469,9 +479,15 @@ const adminCtl: AdminController = {
         stateActivation,
         hostName: req.headers.referer,
       });
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (err) {
-      res.json({ success: false, msg: 'An error occurred in the process.' });
+      res.json({
+        success: false,
+        message: 'An error occurred in the process.',
+      });
       if (next) next(err);
     }
   },
@@ -506,7 +522,7 @@ const adminCtl: AdminController = {
       });
       res.json(object);
     } catch (error) {
-      res.json({ success: false, msg: error });
+      res.json({ success: false, message: error });
       if (next) next();
     }
   },
@@ -592,13 +608,13 @@ const adminCtl: AdminController = {
       ).then(async function (data) {
         res.json({
           success: true,
-          msg: 'Your pet has been updated successfully.',
+          message: 'Your pet has been updated successfully.',
         });
       });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -615,11 +631,14 @@ const adminCtl: AdminController = {
           },
         }
       );
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -628,11 +647,14 @@ const adminCtl: AdminController = {
   sortNewPetProfile: async (req: Request, res: Response): Promise<void> => {
     try {
       await User.findByIdAndUpdate(req.body._id, req.body);
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }

@@ -54,4 +54,6 @@ router.post('/forgot', userCtl.forgot);
 
 router.post('/reset-password', userCtl.resetPassword);
 
+router.get('/validateQrCode?:code', userCtl.validateQrCode);
+
 export default router;

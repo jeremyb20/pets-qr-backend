@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
-import User, { IUser } from '../models/User.model';
-import Pet, { IPet } from '../models/Pet.model';
+import User from '../models/User.model';
+import Pet from '../models/Pet.model';
 import fs from 'fs-extra';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
@@ -26,40 +26,15 @@ import {
 } from '../types/pet.types';
 import QrCode from '../models/QrCode.model';
 import { Types } from 'mongoose';
+import { IUser, RegistrationRequest } from '../interfaces/IUser';
+import { IPet } from '../interfaces/Ipet';
 
 const cloudinaryV2 = cloudinary.v2;
-
-// Interfaces para los tipos
-interface UserResponse {
-  success: boolean;
-  msg?: string;
-  message?: string;
-  payload?: any;
-  token?: string;
-  error?: any;
-}
 
 interface AuthRequest {
   email: string;
   password: string;
 }
-
-// interface EditProfileRequest {
-//   _id: string;
-//   address?: string;
-//   birthDate?: string;
-//   favoriteActivities?: string;
-//   healthAndRequirements?: string;
-//   ownerPetName?: string;
-//   phoneVeterinarian?: string;
-//   veterinarianContact?: string;
-//   petName?: string;
-//   petStatus?: string;
-//   genderSelected?: string;
-//   breed?: string;
-//   weight?: string;
-//   country?: string;
-// }
 
 interface UserController {
   authenticateLegacy(req: Request, res: Response): Promise<void>;
@@ -96,6 +71,11 @@ interface UserController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
+  validateQrCode(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
   deletePetById(
     req: Request,
     res: Response,
@@ -116,7 +96,7 @@ const userCtl: UserController = {
     (User as any).getUserByUsername(email, (err: any, pet: IUser) => {
       if (err) throw err;
       if (!pet) {
-        res.json({ success: false, msg: 'Email not found' });
+        res.json({ success: false, message: 'Email not found' });
         return;
       }
 
@@ -143,7 +123,7 @@ const userCtl: UserController = {
               },
             });
           } else {
-            res.json({ success: false, msg: 'Wrong password' });
+            res.json({ success: false, message: 'Wrong password' });
           }
         }
       );
@@ -155,7 +135,7 @@ const userCtl: UserController = {
       const { email, password } = req.body as AuthRequest;
       const user = await User.findOne({ email });
       if (!user) {
-        res.json({ success: false, msg: 'Email not found' });
+        res.json({ success: false, message: 'Email not found' });
         return;
       }
 
@@ -187,11 +167,13 @@ const userCtl: UserController = {
           },
         });
       } else {
-        res.json({ success: false, msg: 'Wrong password' });
+        res.json({ success: false, message: 'Wrong password' });
       }
     } catch (error) {
       console.error('Error in authenticate method:', error);
-      res.status(500).json({ success: false, msg: 'Internal server error' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Internal server error' });
     }
   },
 
@@ -201,7 +183,7 @@ const userCtl: UserController = {
       if (!user) {
         res.status(404).send({
           success: false,
-          msg: 'User not found',
+          message: 'User not found',
         });
         return;
       }
@@ -226,7 +208,7 @@ const userCtl: UserController = {
       console.error('Error in /me endpoint:', error);
       res.status(500).send({
         success: false,
-        msg: 'Internal server error',
+        message: 'Internal server error',
         error: (error as Error).message,
       });
     }
@@ -470,14 +452,14 @@ const userCtl: UserController = {
       // No se encuentra ni en Pet ni en QrCode
       res.status(404).json({
         success: false,
-        msg: 'Código o mascota no encontrada',
+        message: 'Código o mascota no encontrada',
         type: 'not_found',
       });
     } catch (error) {
       console.error('Error in getProfileById:', error);
       res.status(500).json({
         success: false,
-        msg: 'Ocurrió un error al buscar la información.',
+        message: 'Ocurrió un error al buscar la información.',
         error: process.env.NODE_ENV === 'development' ? error : undefined,
       });
     }
@@ -1060,7 +1042,7 @@ const userCtl: UserController = {
       if (!pet) {
         res.status(404).json({
           success: false,
-          msg: 'Pet not found',
+          message: 'Pet not found',
         });
         return;
       }
@@ -1100,13 +1082,13 @@ const userCtl: UserController = {
 
       res.status(200).json({
         success: true,
-        msg: 'The information was updated correctly',
+        message: 'The information was updated correctly',
       });
     } catch (error) {
       console.error('Error in updatePetById:', error);
       res.status(500).json({
         success: false,
-        msg: 'An error occurred while updating pet.',
+        message: 'An error occurred while updating pet.',
         error: process.env.NODE_ENV === 'development' ? error : undefined,
       });
     }
@@ -1185,7 +1167,7 @@ const userCtl: UserController = {
       await User.findByIdAndUpdate(id, updateData);
 
       res.status(200).send({
-        msg: 'The information was updated correctly',
+        message: 'The information was updated correctly',
         success: true,
       });
     } catch (error) {
@@ -1229,7 +1211,7 @@ const userCtl: UserController = {
         payload: userData,
       });
     } else {
-      res.status(200).send({ success: false, msg: 'User not found' });
+      res.status(200).send({ success: false, message: 'User not found' });
     }
   },
 
@@ -1258,19 +1240,21 @@ const userCtl: UserController = {
               };
               res.status(200).send({ success: true, payload: userReceived });
             } else {
-              res.status(200).send({ success: false, msg: 'User not found' });
+              res
+                .status(200)
+                .send({ success: false, message: 'User not found' });
             }
           }
         } else {
-          res.status(200).send({ success: false, msg: 'User not found' });
+          res.status(200).send({ success: false, message: 'User not found' });
         }
       } else {
-        res.status(200).send({ success: false, msg: 'User not found' });
+        res.status(200).send({ success: false, message: 'User not found' });
       }
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -1319,7 +1303,7 @@ const userCtl: UserController = {
         }
       }
     } else {
-      res.status(200).send({ success: false, msg: 'User not found' });
+      res.status(200).send({ success: false, message: 'User not found' });
     }
   },
 
@@ -1338,11 +1322,11 @@ const userCtl: UserController = {
         res.status(200).send({
           success: petInfo ? true : false,
           payload: petInfo ? petInfo : null,
-          msg: petInfo ? '' : 'User not found',
+          message: petInfo ? '' : 'User not found',
         });
       }
     } else {
-      res.status(200).send({ success: false, msg: 'User not found' });
+      res.status(200).send({ success: false, message: 'User not found' });
     }
   },
 
@@ -1377,11 +1361,14 @@ const userCtl: UserController = {
         breed,
         weight,
       });
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -1427,11 +1414,14 @@ const userCtl: UserController = {
           },
         }
       );
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -1470,11 +1460,14 @@ const userCtl: UserController = {
         );
         await fs.unlink((req.file as any).path);
       }
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -1484,11 +1477,14 @@ const userCtl: UserController = {
     const { theme } = req.body;
     try {
       await User.findByIdAndUpdate(req.body._id, { theme });
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
@@ -1507,18 +1503,18 @@ const userCtl: UserController = {
         },
         { new: true }
       );
-      res.send({ msg: 'The information was updated correctly', success: true });
+      res.send({
+        message: 'The information was updated correctly',
+        success: true,
+      });
     } catch (error) {
       res.json({
         success: false,
-        msg: 'An error occurred in the process.',
+        message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
       });
     }
   },
-
-  // Los métodos restantes (registerNewPet, registerNewPetByQRcode, etc.)
-  // seguirían el mismo patrón de conversión...
 
   registerNewPet: async (
     req: Request,
@@ -1531,7 +1527,7 @@ const userCtl: UserController = {
     if (emailFound) {
       res.json({
         success: false,
-        msg: 'The email already exists in the system',
+        message: 'The email already exists in the system',
       });
       return;
     } else {
@@ -1619,13 +1615,13 @@ const userCtl: UserController = {
         //     smtpTransport.sendMail(mailOptions, function (err) {
         //       res.json({
         //         success: true,
-        //         msg: 'Your pet has been created successfully.',
+        //         message: 'Your pet has been created successfully.',
         //       });
         //     });
         //   } catch (error) {
         //     res.json({
         //       success: false,
-        //       msg: 'The email already exists in the system',
+        //       message: 'The email already exists in the system',
         //       error: JSON.parse(JSON.stringify(error)),
         //     });
         //     next(error);
@@ -1703,13 +1699,13 @@ const userCtl: UserController = {
           smtpTransport.sendMail(mailOptions, function (err) {
             res.json({
               success: true,
-              msg: 'Your pet has been created successfully.',
+              message: 'Your pet has been created successfully.',
             });
           });
         } catch (error) {
           res.json({
             success: false,
-            msg: 'The email already exists in the system',
+            message: 'The email already exists in the system',
             error: JSON.parse(JSON.stringify(error)),
           });
           if (next) next(error);
@@ -1717,7 +1713,7 @@ const userCtl: UserController = {
       } catch (error) {
         res.json({
           success: false,
-          msg: 'An error occurred in the process.',
+          message: 'An error occurred in the process.',
           error: JSON.parse(JSON.stringify(error)),
         });
       }
@@ -1729,137 +1725,260 @@ const userCtl: UserController = {
     res: Response,
     next?: NextFunction
   ): Promise<void> => {
-    // Implementación similar a los métodos anteriores...
-    //   const code = await User.findById({ _id: req.body._id });
-    //   if (code.randomCode === req.body.codeGenerator) {
-    //     const emailFound = await User.findOne({ email: req.body.email });
-    //     if (emailFound) {
-    //       res.json({
-    //         success: false,
-    //         msg: 'The email already exists in the system',
-    //       });
-    //     } else {
-    //       try {
-    //         const { email, userState, phone, isActivated, password, _id, country } =
-    //           req.body;
-    //         const newPet = {
-    //           _id,
-    //           email,
-    //           userState,
-    //           password,
-    //           isActivated,
-    //           phone,
-    //           country,
-    //           theme: 'theme-default-light',
-    //         };
-    //         User.newPetGeneratorCode(newPet, async (_err, pPet, _done) => {
-    //           await User.findByIdAndUpdate(pPet._id, {
-    //             email: pPet.email,
-    //             password: pPet.password,
-    //             userState: pPet.userState,
-    //             isActivated: pPet.isActivated,
-    //             phone: pPet.phone,
-    //             country: pPet.country,
-    //             newPetProfile: [],
-    //           })
-    //             .then(async function (data, err) {
-    //               try {
-    //                 await fs.unlink(req.file.path);
-    //                 var smtpTransport = nodemailer.createTransport({
-    //                   host: process.env.ZOHO_HOST,
-    //                   port: process.env.ZOHO_PORT,
-    //                   secure: true,
-    //                   logger: true,
-    //                   debug: true,
-    //                   auth: {
-    //                     user: process.env.ZOHO_USER,
-    //                     pass: process.env.ZOHO_PASSWORD,
-    //                   },
-    //                   tls: {
-    //                     // do not fail on invalid certs
-    //                     rejectUnauthorized: false,
-    //                   },
-    //                 });
-    //                 const handlebarOptions = {
-    //                   viewEngine: {
-    //                     extName: '.handlebars',
-    //                     partialsDir: path.resolve(__dirname, 'views'),
-    //                     defaultLayout: false,
-    //                   },
-    //                   viewPath: path.resolve(__dirname, 'views'),
-    //                   extName: '.handlebars',
-    //                 };
-    //                 smtpTransport.use('compile', hbs(handlebarOptions));
-    //                 smtpTransport.verify(function (error, success) {
-    //                   if (error) {
-    //                     console.log(error);
-    //                   } else {
-    //                     console.log('Server is ready to take our messages');
-    //                   }
-    //                 });
-    //                 var mailOptions = {
-    //                   to: email,
-    //                   from: 'soporte@localpetsandfamily.com',
-    //                   subject: 'Registro Exitoso en Plaquitas para mascotas CR',
-    //                   template: 'email-new-pet',
-    //                   context: {
-    //                     text1: 'Hola \n\n',
-    //                     text2:
-    //                       '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
-    //                     text3:
-    //                       'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
-    //                     email: email,
-    //                     text4:
-    //                       'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
-    //                     text5:
-    //                       'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
-    //                     text6:
-    //                       'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
-    //                     text7: '¡Bienvenido a bordo! ',
-    //                     text8: 'Atentamente,',
-    //                     text9: 'El Equipo de Plaquitas para mascotas CR',
-    //                     textLink: 'Iniciar Sesión',
-    //                     link:
-    //                       req.headers.host == 'localhost:8080'
-    //                         ? 'http://localhost:4200/login-pets'
-    //                         : req.headers.referer + '/login',
-    //                   },
-    //                 };
-    //                 smtpTransport.sendMail(mailOptions, function (err) {
-    //                   res.json({
-    //                     success: true,
-    //                     msg: 'Your pet has been created successfully.',
-    //                   });
-    //                 });
-    //               } catch (error) {
-    //                 res.json({
-    //                   success: false,
-    //                   msg: 'An error occurred in the process.',
-    //                   error: JSON.parse(JSON.stringify(error)),
-    //                 });
-    //                 next(error);
-    //               }
-    //             })
-    //             .catch((error) => {
-    //               res.json({
-    //                 success: false,
-    //                 msg: 'An error occurred in the process.',
-    //                 error: JSON.parse(JSON.stringify(error)),
-    //               });
-    //             });
-    //         });
-    //       } catch (error) {
-    //         res.json({
-    //           success: false,
-    //           msg: 'An error occurred in the process.',
-    //           error: JSON.parse(JSON.stringify(error)),
-    //         });
-    //       }
-    //     }
-    //   } else {
-    //     await fs.unlink(req.file.path);
-    //     res.json({ success: false, msg: 'Invalid code' });
-    //   }
+    try {
+      const { code, userData, petData }: RegistrationRequest = req.body;
+      console.log(req.body, 'req.body');
+
+      // Validación básica de los datos de entrada
+      if (!code || !userData || !petData) {
+        res.status(400).json({
+          success: false,
+          message: 'Datos incompletos. Se requiere código, userData y petData.',
+        });
+        return;
+      }
+
+      // Paso 1: Validar si el código QR existe y está disponible
+      const qrCode = await QrCode.findOne({ randomCode: code });
+
+      if (!qrCode) {
+        res.status(404).json({
+          success: false,
+          message: 'Código QR no encontrado.',
+        });
+        return;
+      }
+
+      if (qrCode.status !== 'available') {
+        res.status(400).json({
+          success: false,
+          message: `El código QR no está disponible. Estado actual: ${qrCode.status}`,
+        });
+        return;
+      }
+
+      // Paso 2: Verificar si el correo electrónico ya existe
+      const existingUser = await User.findOne({
+        email: userData.email.toLowerCase(),
+      });
+
+      if (existingUser) {
+        res.status(409).json({
+          success: false,
+          message: 'El correo electrónico ya está registrado.',
+        });
+        return;
+      }
+
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        res.status(400).json({
+          success: false,
+          message: 'El formato del correo electrónico no es válido.',
+        });
+        return;
+      }
+
+      // Paso 3: Crear la cuenta de usuario
+      const hashedPassword = await bcrypt.hash(userData.password, 12);
+
+      // Función para generar memberId único
+      const generateMemberId = async (): Promise<string> => {
+        let memberId: string;
+        let isUnique = false;
+        let attempts = 0;
+
+        while (!isUnique && attempts < 100) {
+          memberId = Math.floor(100000 + Math.random() * 900000).toString();
+          const existingUser = await User.findOne({ memberId });
+          if (!existingUser) isUnique = true;
+          attempts++;
+        }
+
+        if (!isUnique) throw new Error('No se pudo generar memberId único');
+        return memberId!;
+      };
+
+      // Función para generar username único
+      const generateUsername = async (
+        baseUsername: string
+      ): Promise<string> => {
+        let username = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+        let isUnique = false;
+        let attempts = 0;
+        let finalUsername = username;
+
+        while (!isUnique && attempts < 100) {
+          const existingUser = await User.findOne({ username: finalUsername });
+          if (!existingUser) {
+            isUnique = true;
+          } else {
+            finalUsername = `${username}${Math.floor(
+              1000 + Math.random() * 9000
+            )}`;
+            attempts++;
+          }
+        }
+
+        if (!isUnique) throw new Error('No se pudo generar username único');
+        return finalUsername;
+      };
+
+      // Generar IDs únicos
+      const memberId = await generateMemberId();
+      const baseUsername = userData.email.split('@')[0];
+      const username = await generateUsername(baseUsername);
+
+      const newUser = new User({
+        memberId: memberId,
+        email: userData.email.toLowerCase(),
+        password: hashedPassword,
+        userStatus: 1,
+        role: 1,
+        isActivated: false,
+        pets: [],
+        configuration: {
+          theme: {
+            fontSizeScale: 0.85,
+            themeColorPresets: 'default',
+            themeContrast: 'default',
+            themeDirection: 'ltr',
+            themeLayout: 'vertical',
+            themeMode: 'dark',
+            themeStretch: false,
+          },
+          permissions: {
+            showPhoneInfo: true,
+            showEmailInfo: true,
+            showPersonalInfo: true,
+          },
+        },
+        profile: {
+          name: `${userData.firstName} ${userData.lastName}`,
+          username: username, // Username único generado
+          phone: userData.phone,
+          country: userData.country,
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          isPublic: false,
+        },
+      });
+
+      const savedUser = await newUser.save();
+
+      // Paso 4: Crear la mascota y asociarla al usuario
+      const newPet = new Pet({
+        owner: savedUser._id,
+        memberPetId: code,
+        petName: petData.petName,
+        breed: petData.breed,
+        genderSelected: petData.genderSelected,
+        birthDate: petData.birthDate || null,
+        weight: petData.weight || null,
+        favoriteActivities: petData.favoriteActivities || null,
+        healthAndRequirements: petData.healthAndRequirements || null,
+        phone: userData.phone,
+        ownerPetName: `${userData.firstName} ${userData.lastName}`,
+        petStatus: 'active',
+        permissions: {
+          showPhoneInfo: true,
+          showEmailInfo: true,
+          showLinkTwitter: true,
+          showLinkFacebook: true,
+          showLinkInstagram: true,
+          showOwnerPetName: true,
+          showBirthDate: true,
+          showAddressInfo: true,
+          showAgeInfo: true,
+          showVeterinarianContact: true,
+          showPhoneVeterinarian: true,
+          showHealthAndRequirements: true,
+          showFavoriteActivities: true,
+          showLocationInfo: true,
+        },
+        medicalRecord: {
+          vaccines: [],
+          deworming: [],
+          datesOfMedicalVisits: [],
+        },
+        qrCode: qrCode._id,
+      });
+
+      const savedPet = await newPet.save();
+
+      // Paso 5: Actualizar el usuario para agregar la mascota
+      savedUser.pets.push(savedPet._id);
+      await savedUser.save();
+
+      // Eliminar el código QR
+      // await QrCode.findByIdAndDelete(qrCode._id);
+
+      // codigo usado
+      await QrCode.findByIdAndUpdate(qrCode._id, {
+        status: 'used',
+        assignedTo: savedUser._id,
+        assignedPet: savedPet._id,
+        activationDate: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Paso 6: Responder con éxito
+      res.status(201).json({
+        success: true,
+        message: 'Registro completado exitosamente',
+        data: {
+          user: {
+            id: savedUser._id,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: savedUser.email,
+            username: savedUser.profile.username,
+          },
+          pet: {
+            id: savedPet._id,
+            petName: savedPet.petName,
+            memberPetId: savedPet.memberPetId,
+          },
+          qrCode: {
+            code: code,
+            status: 'deleted',
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Error en registerNewPetByQRcode:', error);
+
+      // Manejar errores de duplicación de MongoDB
+      if ((error as any).code === 11000) {
+        const field = Object.keys((error as any).keyValue)[0];
+        res.status(409).json({
+          success: false,
+          message: `El ${field} ya está en uso.`,
+        });
+        return;
+      }
+
+      // Manejar errores de validación de Mongoose
+      if ((error as any).name === 'ValidationError') {
+        const errors = Object.values((error as any).errors).map(
+          (err: any) => err.message
+        );
+        res.status(400).json({
+          success: false,
+          message: 'Error de validación',
+          errors,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+      });
+    }
   },
 
   registerNewPetfromUserProfile: async (
@@ -1930,18 +2049,137 @@ const userCtl: UserController = {
     //       await fs.unlink(req.file.path);
     //       res.json({
     //         success: true,
-    //         msg: 'Your pet has been created successfully.',
+    //         message: 'Your pet has been created successfully.',
     //       });
     //     });
     //   } catch (error) {
     //     res.json({
     //       success: false,
-    //       msg: 'An error occurred in the process.',
+    //       message: 'An error occurred in the process.',
     //       error: JSON.parse(JSON.stringify(error)),
     //     });
     //   }
   },
 
+  // validateQrCode: async (
+  //   req: Request,
+  //   res: Response,
+  //   next?: NextFunction
+  // ): Promise<void> => {
+  //   // Implementación similar a los métodos anteriores...
+  //   try {
+  //     const { code } = req.query;
+  //     const qrCode = await QrCode.findOne({ randomCode: code });
+  //     if (qrCode) {
+  //       if (qrCode.status !== 'available') {
+  //         res.json({
+  //           success: false,
+  //           message: `El código QR no está disponible. Estado actual: "${qrCode.status}". `,
+  //         });
+  //         return;
+  //       }
+
+  //       res.json({
+  //         success: true,
+  //         message: 'QR code is valid.',
+  //         data: qrCode,
+  //       });
+  //     } else {
+  //       res.json({
+  //         success: false,
+  //         message: 'QR code is not valid.',
+  //       });
+  //     }
+  //   } catch (error) {
+  //     res.json({
+  //       success: false,
+  //       message: 'An error occurred in the process.',
+  //       error: JSON.parse(JSON.stringify(error)),
+  //     });
+  //   }
+  // },
+
+  // validateQrCode: async (
+  //   req: Request,
+  //   res: Response,
+  //   next?: NextFunction
+  // ): Promise<void> => {
+  //   try {
+  //     const { code } = req.query;
+  //     const qrCode = await QrCode.findOne({ randomCode: code });
+  //     if (!qrCode) {
+  //       res.status(404).json({
+  //         success: false,
+  //         message: 'Código QR no encontrado.',
+  //       });
+  //       return;
+  //     }
+
+  //     if (qrCode.status !== 'available') {
+  //       res.status(400).json({
+  //         success: false,
+  //         message: `El código QR no está disponible. Estado actual: "${qrCode.status}". `,
+  //       });
+  //       return;
+  //     }
+  //   } catch (error) {
+  //     res.json({
+  //       success: false,
+  //       message: 'An error occurred in the process.',
+  //       error: JSON.parse(JSON.stringify(error)),
+  //     });
+  //   }
+  // },
+
+  validateQrCode: async (
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void> => {
+    try {
+      const { code } = req.query;
+
+      if (!code) {
+        res.status(400).json({
+          success: false,
+          message: 'QR code is required.',
+        });
+        return;
+      }
+
+      const qrCode = await QrCode.findOne({ randomCode: code });
+
+      if (!qrCode) {
+        res.status(404).json({
+          success: false,
+          message: 'QR code not found.',
+        });
+        return;
+      }
+
+      if (qrCode.status !== 'available') {
+        res.status(400).json({
+          success: false,
+          message: `QR code is not available. Current status: "${qrCode.status}".`,
+        });
+        return;
+      }
+
+      // Si todo está bien
+      res.json({
+        success: true,
+        message: 'QR code is valid.',
+        data: qrCode,
+      });
+    } catch (error) {
+      console.error('Error validating QR code:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while validating the QR code.',
+        error: process.env.NODE_ENV === 'development' ? error : undefined,
+      });
+    }
+  },
   deletePetById: async (
     req: Request,
     res: Response,
@@ -1955,13 +2193,13 @@ const userCtl: UserController = {
     //       await cloudinary.uploader.destroy(req.body.photo_id);
     //       res.json({
     //         success: true,
-    //         msg: 'Your pet has been deleted successfully.',
+    //         message: 'Your pet has been deleted successfully.',
     //       });
     //     });
     //   } catch (error) {
     //     res.json({
     //       success: false,
-    //       msg: 'An error occurred in the process.',
+    //       message: 'An error occurred in the process.',
     //       error: JSON.parse(JSON.stringify(error)),
     //     });
     //   }
@@ -1985,7 +2223,7 @@ const userCtl: UserController = {
     //       function (token, done) {
     //         User.findOne({ email: email }, (err, user) => {
     //           if (!user) {
-    //             return res.json({ success: false, msg: 'Email not found' });
+    //             return res.json({ success: false, message: 'Email not found' });
     //           }
     //           if (user != null) {
     //             user.resetPasswordToken = token;
@@ -2059,7 +2297,7 @@ const userCtl: UserController = {
     //         smtpTransport.sendMail(mailOptions, function (err) {
     //           res.json({
     //             success: true,
-    //             msg:
+    //             message:
     //               'Se ha enviado un correo electrónico a ' +
     //               user.email +
     //               ' con más instrucciones. favor de revisar la carpeta de spam si no ves el correo en tu bandeja principal',
@@ -2071,7 +2309,7 @@ const userCtl: UserController = {
     //     function (err) {
     //       res.json({
     //         success: false,
-    //         msg: 'An error occurred in the process.',
+    //         message: 'An error occurred in the process.',
     //         error: JSON.parse(JSON.stringify(err)),
     //       });
     //     }
@@ -2098,7 +2336,7 @@ const userCtl: UserController = {
     //             if (!user) {
     //               return res.json({
     //                 success: false,
-    //                 msg: 'El token de restablecimiento de contraseña no es válido o ha caducado..',
+    //                 message: 'El token de restablecimiento de contraseña no es válido o ha caducado..',
     //               });
     //             } else {
     //               user.password = password;
@@ -2169,7 +2407,7 @@ const userCtl: UserController = {
     //         smtpTransport.sendMail(mailOptions, function (err) {
     //           res.json({
     //             success: true,
-    //             msg: 'Your password has been successfully updated.',
+    //             message: 'Your password has been successfully updated.',
     //           });
     //         });
     //       },
@@ -2177,7 +2415,7 @@ const userCtl: UserController = {
     //     function (err) {
     //       res.json({
     //         success: false,
-    //         msg: 'An error occurred in the process.',
+    //         message: 'An error occurred in the process.',
     //         error: JSON.parse(JSON.stringify(err)),
     //       });
     //     }

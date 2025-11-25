@@ -6,7 +6,7 @@ import Notification, {
   NotificationType,
 } from '../models/Notifications.model';
 import configureWebPush from '../config/webpush';
-import { IUser } from '../models/User.model';
+import { IUser } from '../interfaces/IUser';
 
 const webpush = configureWebPush();
 

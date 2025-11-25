@@ -234,12 +234,12 @@ const adminSeoCtrl = {
     try {
       const newSeo = new Seo(req.body);
       await newSeo.save();
-      res.status(201).send({ success: true, msg: 'SEO record created' });
+      res.status(201).send({ success: true, message: 'SEO record created' });
     } catch (error) {
       console.error('Error creating SEO record:', error);
       res.status(500).send({
         success: false,
-        msg: 'Error creating SEO record',
+        message: 'Error creating SEO record',
         error: error,
       });
     }
@@ -248,12 +248,12 @@ const adminSeoCtrl = {
     try {
       const { id } = req.body;
       await Seo.findByIdAndUpdate(id, req.body);
-      res.status(200).send({ success: true, msg: 'SEO record updated' });
+      res.status(200).send({ success: true, message: 'SEO record updated' });
     } catch (error) {
       console.error('Error updating SEO record:', error);
       res.status(500).send({
         success: false,
-        msg: 'Error updating SEO record',
+        message: 'Error updating SEO record',
         error: error,
       });
     }
@@ -263,7 +263,7 @@ const adminSeoCtrl = {
     try {
       const { id } = req.query;
       if (!id) {
-        res.status(400).send({ success: false, msg: 'SEO ID is required' });
+        res.status(400).send({ success: false, message: 'SEO ID is required' });
         return;
       }
       const seo = await Seo.findById(id);
@@ -272,7 +272,7 @@ const adminSeoCtrl = {
       console.error('Error fetching SEO record:', error);
       res.status(500).send({
         success: false,
-        msg: 'Error fetching SEO record',
+        message: 'Error fetching SEO record',
         error: error,
       });
     }

@@ -1,74 +1,12 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
-
-// Interface para el perfil del usuario
-interface IUserProfile {
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  phone: string;
-  country: string;
-  name: string;
-  username: string;
-  photoProfile?: string;
-  photo_id_profile?: string;
-  isPublic?: boolean;
-}
-
-// Interface para la configuración del tema
-interface IUserThemeConfig {
-  fontSizeScale: number;
-  themeColorPresets: string;
-  themeContrast: string;
-  themeDirection: string;
-  themeLayout: string;
-  themeMode: string;
-  themeStretch: boolean;
-}
-
-// Interface para los permisos
-interface IUserPermissions {
-  showPhoneInfo: boolean;
-  showEmailInfo: boolean;
-  showPersonalInfo: boolean;
-}
-
-// Interface para la configuración completa
-interface IUserConfiguration {
-  theme: IUserThemeConfig;
-  permissions: IUserPermissions; // ← Permissions movido aquí
-}
-
-// Interface principal del documento User
-export interface IUser extends Document {
-  _id: Types.ObjectId;
-  idParental?: Types.ObjectId;
-  memberId: string;
-  email: string;
-  username: string;
-  password: string;
-  userStatus: number;
-  role: number;
-  resetPasswordToken?: string;
-  resetPasswordExpires?: Date;
-  token?: string;
-  isActivated: boolean;
-  stateActivation?: string;
-  randomCode?: string;
-  hostName?: string;
-  pets: Types.ObjectId[];
-  configuration: IUserConfiguration; // ← Permissions ahora está aquí
-  profile: IUserProfile;
-  createdAt: Date;
-  updatedAt: Date;
-
-  // Métodos de instancia
-  comparePassword(
-    candidatePassword: string,
-    callback: (err: any, isMatch?: boolean) => void
-  ): void;
-}
+import {
+  IUser,
+  IUserConfiguration,
+  IUserPermissions,
+  IUserProfile,
+  IUserThemeConfig,
+} from '../interfaces/IUser';
 
 // Subesquema para el perfil
 const UserProfileSchema = new Schema<IUserProfile>({
@@ -86,7 +24,6 @@ const UserProfileSchema = new Schema<IUserProfile>({
   },
   username: {
     type: String,
-    default: '',
   },
   photoProfile: {
     type: String,
