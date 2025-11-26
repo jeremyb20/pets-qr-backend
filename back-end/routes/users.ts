@@ -44,7 +44,11 @@ router.put('/updatePetViewed', userCtl.updatePetViewed);
 
 router.post('/registerNewPet', userCtl.registerNewPet);
 
-router.post('/registerNewPetByQRcode', userCtl.registerNewPetByQRcode);
+router.post(
+  '/registerNewPetByQRcode',
+  uploadSingleImage,
+  userCtl.registerNewPetByQRcode
+);
 
 router.post(
   '/registerNewPetfromUserProfile',

@@ -1743,6 +1743,13 @@ const userCtl: UserController = {
         return;
       }
 
+      // Parsear los datos si vienen como strings (desde FormData)
+      const parsedUserData =
+        typeof userData === 'string' ? JSON.parse(userData) : userData;
+
+      const parsedPetData =
+        typeof petData === 'string' ? JSON.parse(petData) : petData;
+
       // Paso 1: Validar si el código QR existe y está disponible
       const qrCode = await QrCode.findOne({ randomCode: code });
 
@@ -1764,7 +1771,7 @@ const userCtl: UserController = {
 
       // Paso 2: Verificar si el correo electrónico ya existe
       const existingUser = await User.findOne({
-        email: userData.email.toLowerCase(),
+        email: parsedUserData.email.toLowerCase(),
       });
 
       if (existingUser) {
@@ -1777,7 +1784,7 @@ const userCtl: UserController = {
 
       // Validar formato de email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(userData.email)) {
+      if (!emailRegex.test(parsedUserData.email)) {
         res.status(400).json({
           success: false,
           message: 'El formato del correo electrónico no es válido.',
@@ -1785,8 +1792,40 @@ const userCtl: UserController = {
         return;
       }
 
-      // Paso 3: Crear la cuenta de usuario
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
+      // Paso 3: Manejar la foto de la mascota si existe
+      let petPhotoUrl = null;
+      let petPhotoId = null;
+
+      if (req.file) {
+        try {
+          console.log('📸 Subiendo foto de mascota a Cloudinary...');
+
+          const result = await cloudinaryV2.uploader.upload(
+            `data:${req.file.mimetype};base64,${req.file.buffer.toString(
+              'base64'
+            )}`,
+            {
+              folder: 'mascotas_cr',
+              resource_type: 'image',
+              transformation: [
+                { width: 500, height: 500, crop: 'fill' },
+                { quality: 'auto' },
+                { format: 'webp' },
+              ],
+            }
+          );
+
+          petPhotoUrl = result.secure_url;
+          petPhotoId = result.public_id;
+          console.log(`✅ Foto subida: ${petPhotoUrl}`);
+        } catch (uploadError) {
+          console.error('❌ Error subiendo foto:', uploadError);
+          // Continuar sin foto si hay error
+        }
+      }
+
+      // Paso 4: Crear la cuenta de usuario
+      const hashedPassword = await bcrypt.hash(parsedUserData.password, 12);
 
       // Función para generar memberId único
       const generateMemberId = async (): Promise<string> => {
@@ -1832,15 +1871,15 @@ const userCtl: UserController = {
 
       // Generar IDs únicos
       const memberId = await generateMemberId();
-      const baseUsername = userData.email.split('@')[0];
+      const baseUsername = parsedUserData.email.split('@')[0];
       const username = await generateUsername(baseUsername);
 
       const newUser = new User({
         memberId: memberId,
-        email: userData.email.toLowerCase(),
+        email: parsedUserData.email.toLowerCase(),
         password: hashedPassword,
         userStatus: 1,
-        role: 1,
+        role: 3,
         isActivated: false,
         pets: [],
         configuration: {
@@ -1860,10 +1899,10 @@ const userCtl: UserController = {
           },
         },
         profile: {
-          name: `${userData.firstName} ${userData.lastName}`,
-          username: username, // Username único generado
-          phone: userData.phone,
-          country: userData.country,
+          name: `${parsedUserData.firstName} ${parsedUserData.lastName}`,
+          username: username,
+          phone: parsedUserData.phone,
+          country: parsedUserData.country,
           address: '',
           city: '',
           state: '',
@@ -1874,20 +1913,25 @@ const userCtl: UserController = {
 
       const savedUser = await newUser.save();
 
-      // Paso 4: Crear la mascota y asociarla al usuario
+      // Paso 5: Crear la mascota y asociarla al usuario
       const newPet = new Pet({
         owner: savedUser._id,
         memberPetId: code,
-        petName: petData.petName,
-        breed: petData.breed,
-        genderSelected: petData.genderSelected,
-        birthDate: petData.birthDate || null,
-        weight: petData.weight || null,
-        favoriteActivities: petData.favoriteActivities || null,
-        healthAndRequirements: petData.healthAndRequirements || null,
-        phone: userData.phone,
-        ownerPetName: `${userData.firstName} ${userData.lastName}`,
+        petName: parsedPetData.petName,
+        breed: parsedPetData.breed,
+        genderSelected: parsedPetData.genderSelected,
+        birthDate: parsedPetData.birthDate || null,
+        weight: parsedPetData.weight || null,
+        favoriteActivities: parsedPetData.favoriteActivities || null,
+        healthAndRequirements: parsedPetData.healthAndRequirements || null,
+        phone: parsedUserData.phone,
+        ownerPetName: `${parsedUserData.firstName} ${parsedUserData.lastName}`,
         petStatus: 'active',
+        // Agregar la foto si se subió exitosamente
+        ...(petPhotoUrl && {
+          photo: petPhotoUrl,
+          photo_id: petPhotoId,
+        }),
         permissions: {
           showPhoneInfo: true,
           showEmailInfo: true,
@@ -1914,14 +1958,11 @@ const userCtl: UserController = {
 
       const savedPet = await newPet.save();
 
-      // Paso 5: Actualizar el usuario para agregar la mascota
+      // Paso 6: Actualizar el usuario para agregar la mascota
       savedUser.pets.push(savedPet._id);
       await savedUser.save();
 
-      // Eliminar el código QR
-      // await QrCode.findByIdAndDelete(qrCode._id);
-
-      // codigo usado
+      // Paso 7: Actualizar el código QR como usado
       await QrCode.findByIdAndUpdate(qrCode._id, {
         status: 'used',
         assignedTo: savedUser._id,
@@ -1930,15 +1971,15 @@ const userCtl: UserController = {
         updatedAt: new Date(),
       });
 
-      // Paso 6: Responder con éxito
+      // Paso 8: Responder con éxito
       res.status(201).json({
         success: true,
         message: 'Registro completado exitosamente',
         data: {
           user: {
             id: savedUser._id,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
+            firstName: parsedUserData.firstName,
+            lastName: parsedUserData.lastName,
             email: savedUser.email,
             username: savedUser.profile.username,
           },
@@ -1946,10 +1987,11 @@ const userCtl: UserController = {
             id: savedPet._id,
             petName: savedPet.petName,
             memberPetId: savedPet.memberPetId,
+            photo: savedPet.photo, // Incluir info de la foto en la respuesta
           },
           qrCode: {
             code: code,
-            status: 'deleted',
+            status: 'used',
           },
         },
       });
