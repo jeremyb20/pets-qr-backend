@@ -2029,7 +2029,6 @@ const userCtl: UserController = {
   },
 
   // Registra una mascota a un usuario ya existente
-
   addPetToExistingUser: async (
     req: Request,
     res: Response,
@@ -2362,76 +2361,7 @@ const userCtl: UserController = {
     //   }
   },
 
-  // validateQrCode: async (
-  //   req: Request,
-  //   res: Response,
-  //   next?: NextFunction
-  // ): Promise<void> => {
-  //   // Implementación similar a los métodos anteriores...
-  //   try {
-  //     const { code } = req.query;
-  //     const qrCode = await QrCode.findOne({ randomCode: code });
-  //     if (qrCode) {
-  //       if (qrCode.status !== 'available') {
-  //         res.json({
-  //           success: false,
-  //           message: `El código QR no está disponible. Estado actual: "${qrCode.status}". `,
-  //         });
-  //         return;
-  //       }
-
-  //       res.json({
-  //         success: true,
-  //         message: 'QR code is valid.',
-  //         data: qrCode,
-  //       });
-  //     } else {
-  //       res.json({
-  //         success: false,
-  //         message: 'QR code is not valid.',
-  //       });
-  //     }
-  //   } catch (error) {
-  //     res.json({
-  //       success: false,
-  //       message: 'An error occurred in the process.',
-  //       error: JSON.parse(JSON.stringify(error)),
-  //     });
-  //   }
-  // },
-
-  // validateQrCode: async (
-  //   req: Request,
-  //   res: Response,
-  //   next?: NextFunction
-  // ): Promise<void> => {
-  //   try {
-  //     const { code } = req.query;
-  //     const qrCode = await QrCode.findOne({ randomCode: code });
-  //     if (!qrCode) {
-  //       res.status(404).json({
-  //         success: false,
-  //         message: 'Código QR no encontrado.',
-  //       });
-  //       return;
-  //     }
-
-  //     if (qrCode.status !== 'available') {
-  //       res.status(400).json({
-  //         success: false,
-  //         message: `El código QR no está disponible. Estado actual: "${qrCode.status}". `,
-  //       });
-  //       return;
-  //     }
-  //   } catch (error) {
-  //     res.json({
-  //       success: false,
-  //       message: 'An error occurred in the process.',
-  //       error: JSON.parse(JSON.stringify(error)),
-  //     });
-  //   }
-  // },
-
+  // Verifica si el QR es valido y activo
   validateQrCode: async (
     req: Request,
     res: Response,
@@ -2481,6 +2411,7 @@ const userCtl: UserController = {
       });
     }
   },
+
   deletePetById: async (
     req: Request,
     res: Response,
