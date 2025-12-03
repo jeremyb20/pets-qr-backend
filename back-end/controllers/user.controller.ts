@@ -25,7 +25,7 @@ import {
   MedicalRecordResponse,
 } from '../types/pet.types';
 import QrCode from '../models/QrCode.model';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { IUser, RegistrationRequest } from '../interfaces/IUser';
 import { IPet } from '../interfaces/Ipet';
 
@@ -1022,33 +1022,24 @@ const userCtl: UserController = {
 
   updatePetById: async (req: Request, res: Response): Promise<void> => {
     try {
-      const {
-        petName,
-        petStatus,
-        phone,
-        ownerPetName,
-        birthDate,
-        phoneVeterinarian,
-        veterinarianContact,
-        photo,
-        lat,
-        lng,
-        isDigitalIdentificationActive,
-        permissions,
-        petStatusReport,
-        petViewCounter,
-        photo_id,
-        id,
-        weight,
-        genderSelected,
-        address,
-        favoriteActivities,
-        healthAndRequirements,
-        breed,
-      } = req.body;
+      const { petData, userId, removePhoto } = req.body;
 
+      if (!petData) {
+        res.status(400).json({
+          success: false,
+          message: 'petData is required',
+        });
+        return;
+      }
+
+      // Parsear petData (viene como string desde FormData)
+      const parsedPetData =
+        typeof petData === 'string' ? JSON.parse(petData) : petData;
+
+      const { id, permissions, photo_id, ...updateFields } = parsedPetData;
+
+      // Buscar la mascota
       const pet = await Pet.findById(id);
-
       if (!pet) {
         res.status(404).json({
           success: false,
@@ -1056,50 +1047,126 @@ const userCtl: UserController = {
         });
         return;
       }
+      // Verificar que el usuario sea el dueño (si se proporciona userId)
+      if (userId && pet?.owner?.toString() !== userId) {
+        res.status(403).json({
+          success: false,
+          message: 'You are not authorized to update this pet',
+        });
+        return;
+      }
 
-      const updateData = {
-        petName,
-        petStatus,
-        phone,
-        ownerPetName,
-        birthDate,
-        phoneVeterinarian,
-        veterinarianContact,
-        photo,
-        lat,
-        lng,
-        isDigitalIdentificationActive,
-        permissions,
-        petStatusReport,
-        petViewCounter,
-        photo_id,
-        weight,
-        genderSelected,
-        address,
-        favoriteActivities,
-        healthAndRequirements,
-        breed,
-        updatedAt: new Date(),
-      } as unknown as IPet;
+      // Manejar eliminación de foto existente
+      const shouldRemovePhoto =
+        removePhoto === 'true' || (photo_id && !req.file);
 
-      Object.keys(updateData).forEach((key) => {
-        if ((updateData as any)[key] === undefined) {
-          delete (updateData as any)[key];
+      if (shouldRemovePhoto && pet.photo_id) {
+        try {
+          // Eliminar de Cloudinary
+          await cloudinaryV2.uploader.destroy(pet.photo_id);
+          console.log(`Deleted old photo from Cloudinary: ${pet.photo_id}`);
+
+          // Limpiar campos de foto
+          updateFields.photo = null;
+          updateFields.photo_id = null;
+        } catch (error) {
+          console.error('Error deleting old photo from Cloudinary:', error);
         }
-      });
+      }
 
-      await Pet.findByIdAndUpdate(id, updateData);
+      // Manejar nueva foto subida
+      if (req.file) {
+        try {
+          // Eliminar foto anterior si existe
+          if (pet.photo_id) {
+            try {
+              await cloudinaryV2.uploader.destroy(pet.photo_id);
+              console.log(`Deleted old photo from Cloudinary: ${pet.photo_id}`);
+            } catch (error) {
+              console.error('Error deleting old photo from Cloudinary:', error);
+            }
+          }
+
+          // Subir nueva foto a Cloudinary
+          const uploadResult = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinaryV2.uploader.upload_stream(
+              {
+                folder: 'pets',
+                transformation: [
+                  { width: 500, height: 500, crop: 'fill' },
+                  { quality: 'auto' },
+                  { format: 'auto' },
+                ],
+              },
+              (error, result) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve(result);
+                }
+              }
+            );
+
+            uploadStream.end(req.file!.buffer);
+          });
+
+          // Actualizar campos de foto
+          updateFields.photo = (uploadResult as any).secure_url;
+          updateFields.photo_id = (uploadResult as any).public_id;
+        } catch (uploadError) {
+          console.error('Error uploading to Cloudinary:', uploadError);
+          res.status(500).json({
+            success: false,
+            message: 'Error uploading image',
+          });
+          return;
+        }
+      }
+
+      // Preparar datos finales para actualizar
+      const finalUpdateData = {
+        ...updateFields,
+        // Mantener permissions si se enviaron
+        ...(permissions && { permissions }),
+        updatedAt: new Date(),
+      };
+
+      // Actualizar la mascota
+      await Pet.findByIdAndUpdate(id, finalUpdateData, { new: true });
 
       res.status(200).json({
         success: true,
-        message: 'The information was updated correctly',
+        message: 'Pet updated successfully',
       });
     } catch (error) {
-      console.error('Error in updatePetById:', error);
+      console.error('Error en addPetToExistingUser:', error);
+
+      // Manejar errores de duplicación de MongoDB
+      if ((error as any).code === 11000) {
+        const field = Object.keys((error as any).keyValue)[0];
+        res.status(409).json({
+          success: false,
+          message: 'An error occurred while updating pet',
+        });
+        return;
+      }
+
+      // Manejar errores de validación de Mongoose
+      if ((error as any).name === 'ValidationError') {
+        const errors = Object.values((error as any).errors).map(
+          (err: any) => err.message
+        );
+        res.status(400).json({
+          success: false,
+          message: 'Error de validación en los datos de la mascota',
+          errors,
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
-        message: 'An error occurred while updating pet.',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
+        message: 'Error interno del servidor al agregar la mascota',
       });
     }
   },
@@ -2132,7 +2199,10 @@ const userCtl: UserController = {
       const userPetsCount = await Pet.countDocuments({
         owner: existingUser._id,
       });
-      const MAX_PETS_PER_USER = parseInt(process.env.MAX_PETS_PER_USER || '10', 10);
+      const MAX_PETS_PER_USER = parseInt(
+        process.env.MAX_PETS_PER_USER || '10',
+        10
+      );
 
       if (userPetsCount >= MAX_PETS_PER_USER) {
         res.status(400).json({
@@ -2219,16 +2289,7 @@ const userCtl: UserController = {
       existingUser.pets.push(savedPet._id);
       await existingUser.save();
 
-      // Paso 6: Actualizar el código QR como usado
-      await QrCode.findByIdAndUpdate(qrCode._id, {
-        status: 'used',
-        assignedTo: existingUser._id,
-        assignedPet: savedPet._id,
-        activationDate: new Date(),
-        updatedAt: new Date(),
-      });
-
-      // Paso 7: Responder con éxito
+      // Paso 6: Responder con éxito
       res.status(201).json({
         success: true,
         message: 'Mascota agregada exitosamente a tu cuenta',
