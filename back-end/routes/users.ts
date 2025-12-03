@@ -63,6 +63,13 @@ router.post(
   userCtl.addPetToExistingUser
 );
 
+router.post(
+  '/addPetToAuthenticatedUser',
+  authenticateToken,
+  uploadSingleImage,
+  userCtl.addPetToAuthenticatedUser
+);
+
 router.post('/deletePetById', verification, userCtl.deletePetById);
 
 router.post('/forgot', userCtl.forgot);

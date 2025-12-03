@@ -76,6 +76,11 @@ interface UserController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
+  addPetToAuthenticatedUser(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
   validateQrCode(
     req: Request,
     res: Response,
@@ -1122,7 +1127,7 @@ const userCtl: UserController = {
       configuration,
       profile,
     } = req.body;
-    const id = (req as any).user?.id;
+    const id = (req.user as IUser)?.id?.toString();
 
     try {
       // Construir el objeto de actualización
@@ -2127,7 +2132,7 @@ const userCtl: UserController = {
       const userPetsCount = await Pet.countDocuments({
         owner: existingUser._id,
       });
-      const MAX_PETS_PER_USER = 10;
+      const MAX_PETS_PER_USER = parseInt(process.env.MAX_PETS_PER_USER || '10', 10);
 
       if (userPetsCount >= MAX_PETS_PER_USER) {
         res.status(400).json({
@@ -2359,6 +2364,280 @@ const userCtl: UserController = {
     //       error: JSON.parse(JSON.stringify(error)),
     //     });
     //   }
+  },
+
+  // Agrega una mascota a un usuario autenticado sin codigo qr
+  addPetToAuthenticatedUser: async (
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void> => {
+    try {
+      // Para FormData, los campos vienen directamente en req.body
+      const { petData, userId } = req.body;
+
+      if (!petData || !userId) {
+        res.status(400).json({
+          success: false,
+          message: 'Datos incompletos. Se requieren petData y userId',
+        });
+        return;
+      }
+
+      // Verificar que el usuario esté autenticado y coincida con el userId
+
+      const authenticatedUser = (req.user as IUser)?.id?.toString();
+
+      if (!authenticatedUser) {
+        res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado',
+        });
+        return;
+      }
+
+      // Verificar que el userId de la solicitud coincida con el usuario autenticado
+      if (authenticatedUser !== userId.toString()) {
+        res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para agregar mascotas a este usuario',
+        });
+        return;
+      }
+
+      // Parsear petData si viene como string (puede pasar con FormData)
+      const parsedPetData =
+        typeof petData === 'string' ? JSON.parse(petData) : petData;
+
+      // Validar campos requeridos en petData
+      if (
+        !parsedPetData.petName ||
+        !parsedPetData.breed ||
+        !parsedPetData.genderSelected
+      ) {
+        res.status(400).json({
+          success: false,
+          message:
+            'Datos de mascota incompletos. Se requieren: petName, breed, genderSelected',
+        });
+        return;
+      }
+
+      // Buscar al usuario por ID
+      const existingUser = await User.findById(userId);
+
+      if (!existingUser) {
+        res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado.',
+        });
+        return;
+      }
+
+      // Verificar que el usuario esté activo
+      if (Number(existingUser.userStatus) === 5) {
+        res.status(403).json({
+          success: false,
+          message: 'La cuenta de usuario no está activa.',
+        });
+        return;
+      }
+
+      // Verificar límite de mascotas por usuario
+      const userPetsCount = await Pet.countDocuments({
+        owner: existingUser._id,
+      });
+      const MAX_PETS_PER_USER = 10;
+
+      if (userPetsCount >= MAX_PETS_PER_USER) {
+        res.status(400).json({
+          success: false,
+          message: `Has alcanzado el límite máximo de ${MAX_PETS_PER_USER} mascotas por usuario.`,
+        });
+        return;
+      }
+
+      // Generar un código único para la mascota (memberPetId)
+
+      const generateMemberId = async (): Promise<string> => {
+        let memberId: string;
+        let isUnique = false;
+        let attempts = 0;
+
+        while (!isUnique && attempts < 100) {
+          memberId = Math.floor(100000 + Math.random() * 900000).toString();
+          const existingUser = await User.findOne({ memberId });
+          if (!existingUser) isUnique = true;
+          attempts++;
+        }
+
+        if (!isUnique) throw new Error('No se pudo generar memberId único');
+        return memberId!;
+      };
+
+      const memberPetId = await generateMemberId();
+
+      // Paso 3: Manejar la foto de la mascota si existe
+      let petPhotoUrl = null;
+      let petPhotoId = null;
+
+      if (req.file) {
+        try {
+          const result = await cloudinaryV2.uploader.upload(
+            `data:${req.file.mimetype};base64,${req.file.buffer.toString(
+              'base64'
+            )}`,
+            {
+              folder: 'mascotas_cr',
+              resource_type: 'image',
+              transformation: [
+                { width: 500, height: 500, crop: 'fill' },
+                { quality: 'auto' },
+                { format: 'webp' },
+              ],
+            }
+          );
+
+          petPhotoUrl = result.secure_url;
+          petPhotoId = result.public_id;
+        } catch (uploadError) {
+          console.error('❌ Error subiendo foto:', uploadError);
+          // No fallar si hay error en la foto, continuar sin ella
+        }
+      }
+
+      // Paso 4: Crear la nueva mascota
+      const newPet = new Pet({
+        owner: existingUser._id,
+        memberPetId, // Código generado automáticamente
+        petName: parsedPetData.petName,
+        breed: parsedPetData.breed,
+        genderSelected: parsedPetData.genderSelected,
+        birthDate: parsedPetData.birthDate || null,
+        weight: parsedPetData.weight || null,
+        favoriteActivities: parsedPetData.favoriteActivities || null,
+        healthAndRequirements: parsedPetData.healthAndRequirements || null,
+        phone: existingUser.profile.phone,
+        ownerPetName: existingUser.profile.name,
+        petStatus: 'active',
+        // Agregar la foto si se subió exitosamente
+        ...(petPhotoUrl && {
+          photo: petPhotoUrl,
+          photo_id: petPhotoId,
+        }),
+        permissions: {
+          showPhoneInfo: true,
+          showEmailInfo: true,
+          showLinkTwitter: true,
+          showLinkFacebook: true,
+          showLinkInstagram: true,
+          showOwnerPetName: true,
+          showBirthDate: true,
+          showAddressInfo: true,
+          showAgeInfo: true,
+          showVeterinarianContact: true,
+          showPhoneVeterinarian: true,
+          showHealthAndRequirements: true,
+          showFavoriteActivities: true,
+          showLocationInfo: true,
+        },
+        medicalRecord: {
+          vaccines: [],
+          deworming: [],
+          datesOfMedicalVisits: [],
+        },
+        // No asociamos un QR code específico ya que es generado automáticamente
+      });
+
+      const savedPet = await newPet.save();
+
+      // Paso 5: Actualizar el usuario
+      existingUser.pets.push(savedPet._id);
+      await existingUser.save();
+
+      // Paso 6: Crear un registro de QR code para esta mascota (opcional)
+      // Si quieres mantener el mismo sistema de QR codes
+      const newQrCode = new QrCode({
+        randomCode: memberPetId,
+        status: 'assigned',
+        assignedTo: existingUser._id,
+        assignedPet: savedPet._id,
+        activationDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await newQrCode.save();
+
+      // Paso 7: Responder con éxito
+      res.status(201).json({
+        success: true,
+        message: 'Mascota agregada exitosamente a tu cuenta',
+        data: {
+          user: {
+            id: existingUser._id,
+            name: existingUser.profile.name,
+            email: existingUser.email,
+            username: existingUser.profile.username,
+            totalPets: userPetsCount + 1,
+          },
+          pet: {
+            id: savedPet._id,
+            petName: savedPet.petName,
+            memberPetId: savedPet.memberPetId, // Código generado
+            breed: savedPet.breed,
+            photo: savedPet.photo,
+            qrCode: newQrCode.randomCode, // Código del QR
+          },
+          qrCode: {
+            code: memberPetId,
+            status: 'assigned',
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Error en addPetToAuthenticatedUser:', error);
+
+      // Manejar errores de duplicación de MongoDB
+      if ((error as any).code === 11000) {
+        const field = Object.keys((error as any).keyValue)[0];
+        res.status(409).json({
+          success: false,
+          message: `El ${field} ya está en uso.`,
+        });
+        return;
+      }
+
+      // Manejar errores de validación de Mongoose
+      if ((error as any).name === 'ValidationError') {
+        const errors = Object.values((error as any).errors).map(
+          (err: any) => err.message
+        );
+        res.status(400).json({
+          success: false,
+          message: 'Error de validación en los datos de la mascota',
+          errors,
+        });
+        return;
+      }
+
+      // Manejar errores de JSON parse
+      if (
+        (error as any).name === 'SyntaxError' &&
+        (error as any).message.includes('JSON')
+      ) {
+        res.status(400).json({
+          success: false,
+          message: 'Formato JSON inválido en petData',
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor al agregar la mascota',
+      });
+    }
   },
 
   // Verifica si el QR es valido y activo
