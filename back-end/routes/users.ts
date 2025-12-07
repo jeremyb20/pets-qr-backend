@@ -13,6 +13,10 @@ const router = Router();
 router.post('/authenticate', userCtl.authenticateLegacy);
 
 router.post('/email/sign-in', userCtl.authenticate);
+router.post(
+  '/email/registerAccountWithEmail',
+  userCtl.registerAccountWithEmail
+);
 
 router.get('/me', authenticateToken, userCtl.me);
 

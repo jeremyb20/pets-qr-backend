@@ -26,7 +26,11 @@ import {
 } from '../types/pet.types';
 import QrCode from '../models/QrCode.model';
 import mongoose, { Types } from 'mongoose';
-import { IUser, RegistrationRequest } from '../interfaces/IUser';
+import {
+  IUser,
+  IUserThemeConfig,
+  RegistrationRequest,
+} from '../interfaces/IUser';
 import { IPet } from '../interfaces/Ipet';
 
 const cloudinaryV2 = cloudinary.v2;
@@ -56,6 +60,7 @@ interface UserController {
   editPhotoProfile(req: Request, res: Response): Promise<void>;
   editThemeProfile(req: Request, res: Response): Promise<void>;
   updatePetViewed(req: Request, res: Response): Promise<void>;
+  registerAccountWithEmail(req: Request, res: Response): Promise<void>;
   registerNewPet(
     req: Request,
     res: Response,
@@ -1589,6 +1594,296 @@ const userCtl: UserController = {
         success: false,
         message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
+      });
+    }
+  },
+
+  registerAccountWithEmail: async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const {
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        country,
+        username: customUsername,
+        settings,
+      } = req.body as IUser & {
+        phone: string;
+        country: string;
+        settings: IUserThemeConfig;
+      };
+
+      // Validar campos requeridos
+      if (
+        !email ||
+        !password ||
+        !firstName ||
+        !lastName ||
+        !phone ||
+        !country
+      ) {
+        res.status(400).json({
+          success: false,
+          message: 'Todos los campos son requeridos',
+        });
+        return;
+      }
+
+      // Validar términos y condiciones
+      // if (termsAccepted !== true) {
+      //   res.status(400).json({
+      //     success: false,
+      //     message: 'Debes aceptar los términos y condiciones',
+      //   });
+      //   return;
+      // }
+
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({
+          success: false,
+          message: 'El formato del correo electrónico no es válido',
+        });
+        return;
+      }
+
+      // Validar fortaleza de contraseña
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/;
+      if (!passwordRegex.test(password)) {
+        res.status(400).json({
+          success: false,
+          message:
+            'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial',
+        });
+        return;
+      }
+
+      // Paso 1: Verificar si el correo electrónico ya existe
+      const existingEmail = await User.findOne({
+        email: email.toLowerCase(),
+      });
+
+      if (existingEmail) {
+        res.status(409).json({
+          success: false,
+          message: 'El correo electrónico ya está registrado',
+        });
+        return;
+      }
+
+      // Paso 2: Generar memberId único
+      const generateMemberId = async (): Promise<string> => {
+        let memberId: string;
+        let isUnique = false;
+        let attempts = 0;
+
+        while (!isUnique && attempts < 100) {
+          memberId = Math.floor(100000 + Math.random() * 900000).toString();
+          const existingUser = await User.findOne({ memberId });
+          if (!existingUser) isUnique = true;
+          attempts++;
+        }
+
+        if (!isUnique) throw new Error('No se pudo generar memberId único');
+        return memberId!;
+      };
+
+      // Paso 3: Generar o validar username
+      const generateUsername = async (
+        baseUsername: string
+      ): Promise<string> => {
+        let username = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+        let isUnique = false;
+        let attempts = 0;
+        let finalUsername = username;
+
+        while (!isUnique && attempts < 100) {
+          const existingUser = await User.findOne({ username: finalUsername });
+          if (!existingUser) {
+            isUnique = true;
+          } else {
+            finalUsername = `${username}${Math.floor(
+              1000 + Math.random() * 9000
+            )}`;
+            attempts++;
+          }
+        }
+
+        if (!isUnique) throw new Error('No se pudo generar username único');
+        return finalUsername;
+      };
+
+      // Paso 4: Verificar si username ya existe (solo si fue proporcionado)
+      if (customUsername) {
+        const existingUsername = await User.findOne({
+          'profile.username': customUsername.toLowerCase(),
+        });
+        if (existingUsername) {
+          res.status(409).json({
+            success: false,
+            message: 'El nombre de usuario ya está en uso',
+          });
+          return;
+        }
+      }
+
+      // Generar IDs únicos
+      const memberId = await generateMemberId();
+      const username = await generateUsername(email.split('@')[0]);
+
+      // Paso 5: Encriptar contraseña
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      const defaultTheme = {
+        fontSizeScale: 0.85,
+        themeColorPresets: 'default',
+        themeContrast: 'default',
+        themeDirection: 'ltr',
+        themeLayout: 'vertical',
+        themeMode: 'dark',
+        themeStretch: false,
+      };
+
+      // Paso 7: Crear nuevo usuario
+      const newUser = new User({
+        memberId: memberId,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        userStatus: 1, // Activo
+        role: 3, // Rol de usuario normal
+        isActivated: false, // Activado automáticamente para registro normal
+        pets: [],
+        configuration: {
+          theme: settings || defaultTheme,
+          permissions: {
+            showPhoneInfo: true,
+            showEmailInfo: true,
+            showPersonalInfo: true,
+          },
+        },
+        profile: {
+          name: `${firstName} ${lastName}`,
+          firstName: firstName,
+          lastName: lastName,
+          username: username,
+          phone: phone,
+          country: country,
+          address: '',
+          city: '',
+          state: '',
+          isPublic: true,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const savedUser = await newUser.save();
+
+      // Paso 8: Generar token JWT para autenticación automática
+      const token = jwt.sign(
+        {
+          email: savedUser.email,
+          id: savedUser._id,
+          role: savedUser.role,
+          userStatus: savedUser.userStatus,
+          memberId: savedUser.memberId,
+        },
+        process.env.JWT_SECRET || process.env.SECRET || 'default-secret-key',
+        {
+          expiresIn: '7d', // Token válido por 7 días
+        }
+      );
+
+      // // Paso 9: Enviar email de verificación (opcional)
+      // try {
+      //   // Aquí puedes implementar el envío de email de verificación
+      //   console.log(`📧 Email de verificación enviado a: ${savedUser.email}`);
+
+      //   await savedUser.save();
+
+      //   // TODO: Implementar servicio de email
+      //   // await sendVerificationEmail(savedUser.email, verificationToken);
+      // } catch (emailError) {
+      //   console.error('❌ Error enviando email de verificación:', emailError);
+      //   // No fallar el registro si hay error en el email
+      // }
+
+      // Paso 10: Responder con éxito
+      res.status(201).json({
+        success: true,
+        message: 'Cuenta creada exitosamente',
+        data: {
+          user: {
+            id: savedUser._id,
+            memberId: savedUser.memberId,
+            name: savedUser.profile.name,
+            email: savedUser.email,
+            username: savedUser.profile.username,
+            phone: savedUser.profile.phone,
+            country: savedUser.profile.country,
+            role: savedUser.role,
+          },
+          token: token,
+        },
+      });
+    } catch (error) {
+      console.error('Error en registerAccount:', error);
+
+      // Manejar errores de duplicación de MongoDB
+      if ((error as any).code === 11000) {
+        const field = Object.keys((error as any).keyValue)[0];
+        let message = 'Error de duplicación';
+
+        if (field === 'email')
+          message = 'El correo electrónico ya está registrado';
+        if (field === 'memberId')
+          message = 'Error interno, por favor intenta de nuevo';
+        if (field === 'profile.username')
+          message = 'El nombre de usuario ya está en uso';
+
+        res.status(409).json({
+          success: false,
+          message: message,
+        });
+        return;
+      }
+
+      // Manejar errores de validación de Mongoose
+      if ((error as any).name === 'ValidationError') {
+        const errors = Object.values((error as any).errors).map(
+          (err: any) => err.message
+        );
+        res.status(400).json({
+          success: false,
+          message: 'Error de validación',
+          errors,
+        });
+        return;
+      }
+
+      // Manejar errores personalizados
+      if ((error as any).message.includes('No se pudo generar')) {
+        res.status(500).json({
+          success: false,
+          message: 'Error interno al generar identificadores únicos',
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error:
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
+            : undefined,
       });
     }
   },
