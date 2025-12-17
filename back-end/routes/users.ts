@@ -32,6 +32,10 @@ router.get(
   userCtl.getUserProfileByIdScanner
 );
 
+router.get('/settings', authenticateToken, userCtl.getSettings);
+
+router.put('/updateSettings', authenticateToken, userCtl.updateSettings);
+
 router.get('/getMyPetCode', userCtl.getMyPetCode);
 
 router.get('/getMyPetInfo', userCtl.getMyPetInfo);

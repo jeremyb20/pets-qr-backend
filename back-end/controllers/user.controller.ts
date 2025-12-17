@@ -47,6 +47,8 @@ interface UserController {
   getUserProfileById(req: Request, res: Response): Promise<void>;
   updatePetById(req: Request, res: Response): Promise<void>;
   getUserProfileByIdScanner(req: Request, res: Response): Promise<void>;
+  getSettings(req: Request, res: Response): Promise<void>;
+  updateSettings(req: Request, res: Response): Promise<void>;
   getProfileById(req: Request, res: Response): Promise<void>;
   getMedicalRecordsByPet(req: Request, res: Response): Promise<void>;
   createMedicalRecord(req: Request, res: Response): Promise<void>;
@@ -1342,6 +1344,73 @@ const userCtl: UserController = {
     }
   },
 
+  getSettings: async (req: Request, res: Response): Promise<void> => {
+    const user = (await User.findById((req as any).user?.id)) as IUser;
+    if (user) {
+      const data = user.configuration;
+      res.status(200).send({ success: true, payload: data });
+    } else {
+      res.status(200).send({ success: false, message: 'User not found' });
+    }
+  },
+
+  updateSettings: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req as any).user?.id;
+      const { theme, permissions } = req.body;
+
+      // Validar datos requeridos
+      if (!theme) {
+        res.status(400).json({
+          success: false,
+          message: 'Theme configuration is required',
+        });
+        return;
+      }
+
+      // Validar campos del tema
+      const validTheme = {
+        themeMode: theme.themeMode || 'light',
+        themeContrast: theme.themeContrast || 'default',
+        themeDirection: theme.themeDirection || 'ltr',
+        themeLayout: theme.themeLayout || 'vertical',
+        themeStretch: Boolean(theme.themeStretch),
+        themeColorPresets: theme.themeColorPresets || 'default',
+        fontSizeScale: theme.fontSizeScale || 1,
+        updatedAt: new Date(),
+      };
+
+      // Actualizar usuario
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            'configuration.theme': validTheme,
+            ...(permissions && { 'configuration.permissions': permissions }),
+          },
+        },
+        { new: true } // Para retornar el documento actualizado
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Configuration updated successfully',
+        payload: {
+          theme: updatedUser?.configuration?.theme || validTheme,
+          permissions:
+            updatedUser?.configuration?.permissions || permissions || {},
+          _id: updatedUser?._id,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating configuration:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while updating configuration.',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
   getMyPetCode: async (req: Request, res: Response): Promise<void> => {
     const user = await User.findById({ _id: req.query.id });
     if (user) {
