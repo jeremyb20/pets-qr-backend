@@ -40,6 +40,10 @@ const productSchema = new Schema<IProduct>(
       uppercase: true,
       // ❌ REMOVER: index: true (si lo tenías)
     },
+    productId: {
+      type: Number,
+      unique: true,
+    },
     name: {
       type: String,
       required: [true, 'El nombre del producto es requerido'],
@@ -161,14 +165,14 @@ const productSchema = new Schema<IProduct>(
     },
     priceSale: {
       type: Number,
-      validate: {
-        validator: function (value) {
-          // Permitir que priceSale sea mayor O menor que price
-          // según tu lógica de negocio
-          return value > 0; // O la validación que necesites
-        },
-        message: 'El precio de venta debe ser válido',
-      },
+      // validate: {
+      //   validator: function (value) {
+      //     // Permitir que priceSale sea mayor O menor que price
+      //     // según tu lógica de negocio
+      //     return Number(value) > 0; // O la validación que necesites
+      //   },
+      //   message: 'El precio de venta debe ser válido',
+      // },
     },
     reviews: [
       {

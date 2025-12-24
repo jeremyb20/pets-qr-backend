@@ -86,4 +86,8 @@ router.post('/reset-password', userCtl.resetPassword);
 
 router.get('/validateQrCode?:code', userCtl.validateQrCode);
 
+router.get('/getAllPublishedProductList', userCtl.getAllPublishedProductList);
+
+router.get('/getProductPublishedById', userCtl.getProductPublishedById);
+
 export default router;

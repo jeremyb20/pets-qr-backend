@@ -84,6 +84,7 @@ export interface IProductBase {
   ratings: IRating[];
   saleLabel: ILabel;
   newLabel: ILabel;
+  productId: number;
 }
 
 // Interface para el modelo (con Document)

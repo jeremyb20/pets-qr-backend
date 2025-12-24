@@ -48,6 +48,7 @@ export class CreateProductDto implements IProductCreate {
     content: string;
   };
   reviews?: Types.ObjectId[];
+  productId: number;
 
   // Campo temporal para archivos (no se guarda en BD)
   imageFiles?: Express.Multer.File[];
@@ -79,6 +80,7 @@ export class CreateProductDto implements IProductCreate {
     this.saleLabel = data.saleLabel || { enabled: false, content: '' };
     this.newLabel = data.newLabel || { enabled: false, content: '' };
     this.reviews = data.reviews || [];
+    this.productId = data.productId || 0;
 
     // Campo para archivos (no se persiste)
     this.imageFiles = (data as any).imageFiles || [];
@@ -122,7 +124,7 @@ export class UpdateProductDto implements IProductUpdate {
     content: string;
   };
   reviews?: Types.ObjectId[];
-
+  productId?: number;
   // Campo temporal para archivos nuevos
   imageFiles?: Express.Multer.File[];
   _id?: Types.ObjectId;

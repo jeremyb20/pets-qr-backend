@@ -32,6 +32,8 @@ import {
   RegistrationRequest,
 } from '../interfaces/IUser';
 import { IPet } from '../interfaces/Ipet';
+import { IProductTableFilters } from '../types/product.types';
+import { Product } from '../models/Product.model';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -100,6 +102,16 @@ interface UserController {
   ): Promise<void>;
   forgot(req: Request, res: Response, next?: NextFunction): Promise<void>;
   resetPassword(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
+  getAllPublishedProductList(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
+  getProductPublishedById(
     req: Request,
     res: Response,
     next?: NextFunction
@@ -3356,6 +3368,108 @@ const userCtl: UserController = {
     //       });
     //     }
     //   );
+  },
+
+  // Obtener lista de productos publicados con paginación, búsqueda y filtros
+
+  async getAllPublishedProductList(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        search = '',
+        ...filters
+      } = req.query;
+
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      // Construir query de búsqueda - SOLO PRODUCTOS PUBLICADOS
+      let query: any = { publish: 'published' };
+
+      // Búsqueda por texto
+      if (search) {
+        query.$and = [
+          { publish: 'published' },
+          {
+            $or: [
+              { name: { $regex: search, $options: 'i' } },
+              { sku: { $regex: search, $options: 'i' } },
+              { code: { $regex: search, $options: 'i' } },
+              { category: { $regex: search, $options: 'i' } },
+            ],
+          },
+        ];
+      }
+
+      // Filtros de tabla (solo stock, no publish)
+      const tableFilters = filters as Omit<IProductTableFilters, 'publish'>;
+
+      if (tableFilters.stock && tableFilters.stock.length > 0) {
+        query.inventoryType = { $in: tableFilters.stock };
+      }
+
+      // Ejecutar consulta
+      const [products, total] = await Promise.all([
+        Product.find(query)
+          .populate('reviews')
+          .sort({ [sortBy as string]: sortOrder === 'desc' ? -1 : 1 })
+          .skip(skip)
+          .limit(limitNum)
+          .exec(),
+        Product.countDocuments(query),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        payload: products,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+  async getProductPublishedById(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { id } = req.query;
+      const product = await Product.findOne({ productId: id })
+        .populate({
+          path: 'reviews',
+          options: { sort: { postedAt: -1 } },
+        })
+        .exec();
+
+      if (!product) {
+        res.status(404).json({
+          success: false,
+          message: 'Producto no encontrado',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        payload: product,
+      });
+    } catch (error) {
+      next(error);
+    }
   },
 };
 

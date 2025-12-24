@@ -149,7 +149,7 @@ const adminProductCtl: AdminProductController = {
   ): Promise<void> {
     try {
       const { id } = req.query;
-      const product = await Product.findById(id)
+      const product = await Product.findOne({ productId: id })
         .populate({
           path: 'reviews',
           options: { sort: { postedAt: -1 } },
@@ -169,7 +169,10 @@ const adminProductCtl: AdminProductController = {
         payload: product,
       });
     } catch (error) {
-      next(error);
+      res.status(404).json({
+        success: false,
+        message: 'Lo sentimos el producto no ha sido encontrado',
+      });
     }
   },
 
@@ -265,13 +268,29 @@ const adminProductCtl: AdminProductController = {
 
       // Validar priceSale (igual que en update)
       let priceSale = productData.priceSale;
-      const price = productData.price;
-      if (priceSale && priceSale >= price) {
-        console.warn(
-          '⚠️ priceSale debe ser menor que price. Estableciendo a null'
-        );
-        priceSale = null;
-      }
+      //   const price = productData.price;
+      // if (priceSale && priceSale >= price) {
+      //   console.warn(
+      //     '⚠️ priceSale debe ser menor que price. Estableciendo a null'
+      //   );
+      //   priceSale = null;
+      // }
+
+      const generateProductId = async (): Promise<string> => {
+        let productId: string;
+        let isUnique = false;
+        let attempts = 0;
+
+        while (!isUnique && attempts < 100) {
+          productId = Math.floor(100000 + Math.random() * 900000).toString();
+          const existingProduct = await Product.findOne({ productId });
+          if (!existingProduct) isUnique = true;
+          attempts++;
+        }
+
+        if (!isUnique) throw new Error('No se pudo generar productId único');
+        return productId!;
+      };
 
       // Crear el DTO con la misma lógica del update
       const createProductDto = new CreateProductDto({
@@ -279,6 +298,7 @@ const adminProductCtl: AdminProductController = {
         priceSale: priceSale,
         images: allImages,
         coverUrl: coverUrl,
+        productId: await generateProductId(),
         // Asegurar que los labels sean objetos (igual que en update)
         saleLabel:
           typeof productData.saleLabel === 'object'
@@ -465,13 +485,13 @@ const adminProductCtl: AdminProductController = {
 
       // Validar priceSale
       let priceSale = productData.priceSale;
-      const price = productData.price;
-      if (priceSale && priceSale >= price) {
-        console.warn(
-          '⚠️ priceSale debe ser menor que price. Estableciendo a null'
-        );
-        priceSale = null;
-      }
+      // const price = productData.price;
+      // if (priceSale && priceSale >= price) {
+      //   console.warn(
+      //     '⚠️ priceSale debe ser menor que price. Estableciendo a null'
+      //   );
+      //   priceSale = null;
+      // }
 
       // Crear el DTO con los datos actualizados
       const updateProductDto = new UpdateProductDto({
