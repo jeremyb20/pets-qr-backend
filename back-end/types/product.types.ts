@@ -85,6 +85,9 @@ export interface IProductBase {
   saleLabel: ILabel;
   newLabel: ILabel;
   productId: number;
+  country: string;
+  sellerName: string;
+  sellerWhatsApp: string;
 }
 
 // Interface para el modelo (con Document)

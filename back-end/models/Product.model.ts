@@ -193,6 +193,15 @@ const productSchema = new Schema<IProduct>(
       type: Date,
       default: Date.now,
     },
+    sellerName: {
+      type: String,
+    },
+    sellerWhatsApp: {
+      type: String,
+    },
+    country: {
+      type: String,
+    },
   },
   {
     timestamps: true,
