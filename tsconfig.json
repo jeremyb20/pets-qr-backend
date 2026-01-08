@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "CommonJS",
     "outDir": "./dist",
-    "rootDir": "./back-end",
+    "rootDir": ".",  
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -35,9 +35,10 @@
     "emitDecoratorMetadata": true
   },
   "include": [
+    "app.ts",    
+    "index.ts",   
     "back-end/**/*.ts",
-    "back-end/**/*.tsx",
-    "back-end/types/**/*.d.ts"  // ✅ Esto está correcto
+    "back-end/types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",

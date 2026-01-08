@@ -8,6 +8,7 @@ En caso de ubuntu
 curl -L https://fly.io/install.sh | sh
 
 export FLYCTL_INSTALL="/home/jeremy/.fly"
+export FLYCTL_INSTALL="/home/moonhicr/.fly"
 
 export PATH="$FLYCTL_INSTALL/bin:$PATH"
 
