@@ -13,6 +13,7 @@ export interface IUserProfile {
   photoProfile?: string;
   photo_id_profile?: string;
   isPublic?: boolean;
+  avatarProfile?: string;
 }
 
 // Interface para la configuración del tema

@@ -445,6 +445,7 @@ const userCtl: UserController = {
                 state: user.profile?.state || '',
                 country: user.profile?.country || '',
                 photoProfile: user.profile?.photoProfile || '',
+                avatarProfile: user.profile?.avatarProfile || '2',
                 // Agrega otros campos específicos del profile que necesites
               }
             : null,
@@ -1213,6 +1214,7 @@ const userCtl: UserController = {
       // Nuevos campos para configuration
       configuration,
       profile,
+      avatarProfile,
     } = req.body;
     const id = (req.user as IUser)?.id?.toString();
 
@@ -1242,6 +1244,8 @@ const userCtl: UserController = {
         if (isPublic !== undefined) profileUpdates.isPublic = isPublic;
         if (photoProfile !== undefined)
           profileUpdates.photoProfile = photoProfile;
+        if (avatarProfile !== undefined)
+          profileUpdates.avatarProfile = avatarProfile;
 
         if (Object.keys(profileUpdates).length > 0) {
           updateData.$set = {
@@ -2356,6 +2360,7 @@ const userCtl: UserController = {
           city: '',
           state: '',
           zipCode: '',
+          avatarProfile: '1',
           isPublic: false,
         },
       });

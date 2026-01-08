@@ -53,6 +53,10 @@ const UserProfileSchema = new Schema<IUserProfile>({
     type: Boolean,
     default: false,
   },
+  avatarProfile: {
+    type: String,
+    default: '2',
+  },
 });
 
 // Subesquema para la configuración del tema
