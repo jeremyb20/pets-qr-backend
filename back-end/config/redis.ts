@@ -13,7 +13,18 @@ class CacheService {
   constructor() {
     this.client = redisClient;
     this.enabled = process.env.REDIS_ENABLED !== 'false'; // Default: enabled
-    this.timeout = 100; // ms timeout for cache operations
+    this.timeout = parseInt(process.env.CACHE_TIMEOUT_MS || '5000'); // Configurable // ms timeout for cache operations
+
+    // Verificar que las variables de entorno estén configuradas
+    if (
+      !process.env.UPSTASH_REDIS_REST_URL ||
+      !process.env.UPSTASH_REDIS_REST_TOKEN
+    ) {
+      console.warn(
+        '⚠️ Upstash Redis environment variables not set. Cache will be disabled.'
+      );
+      this.enabled = false;
+    }
   }
 
   async get(key: string): Promise<any> {
@@ -28,6 +39,16 @@ class CacheService {
       ]);
 
       console.log(`✅ Cache GET: ${key}`, data ? 'HIT' : 'MISS');
+
+      // Intentar parsear JSON si es un string
+      if (typeof data === 'string') {
+        try {
+          return JSON.parse(data);
+        } catch {
+          return data; // Si no es JSON, devolver el string
+        }
+      }
+
       return data;
     } catch (error) {
       console.error('❌ Cache GET error:', (error as Error).message);
@@ -39,8 +60,16 @@ class CacheService {
     if (!this.enabled) return false;
 
     try {
+      // Serializar el valor a JSON si es un objeto
+      let stringValue = value;
+      if (typeof value === 'object' && value !== null) {
+        stringValue = JSON.stringify(value);
+      } else if (typeof value !== 'string') {
+        stringValue = String(value);
+      }
+
       await Promise.race([
-        this.client.setex(key, seconds, value),
+        this.client.setex(key, seconds, stringValue),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Cache timeout')), this.timeout)
         ),

@@ -34,6 +34,7 @@ import {
 import { IPet } from '../interfaces/Ipet';
 import { IProductTableFilters } from '../types/product.types';
 import { Product } from '../models/Product.model';
+import cacheService from '../config/redis';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -3391,6 +3392,22 @@ const userCtl: UserController = {
       const limitNum = parseInt(limit as string, 10);
       const skip = (pageNum - 1) * limitNum;
 
+      // Crear clave de caché única para esta consulta
+      const cacheKey = `products:published:page:${pageNum}:limit:${limitNum}:search:${search}:sortBy:${sortBy}:sortOrder:${sortOrder}`;
+
+      // 1. PRIMERO VERIFICAR CACHÉ
+      const cachedData = await cacheService.get(cacheKey);
+      if (cachedData) {
+        // ¡IMPORTANTE! cachedData ya es un objeto, NO usar JSON.parse
+        // const response: ApiResponse<any> = JSON.parse(cachedData); // ❌ ESTO ESTÁ MAL
+        const response: ApiResponse<any> = cachedData; // ✅ ESTO ES CORRECTO
+
+        console.log('Cache hit for key:', cacheKey);
+        res.status(200).json(response);
+        return;
+      }
+
+      // 2. SI NO HAY CACHÉ, CONSULTAR BASE DE DATOS
       // Construir query de búsqueda - SOLO PRODUCTOS PUBLICADOS
       let query: any = { publish: 'published' };
 
@@ -3427,7 +3444,7 @@ const userCtl: UserController = {
         Product.countDocuments(query),
       ]);
 
-      res.status(200).json({
+      const response: ApiResponse<typeof products> = {
         success: true,
         payload: products,
         pagination: {
@@ -3436,7 +3453,14 @@ const userCtl: UserController = {
           total,
           pages: Math.ceil(total / limitNum),
         },
-      });
+      };
+
+      // 3. GUARDAR EN CACHÉ PARA FUTURAS CONSULTAS
+      // El cacheService.setex ya serializa a JSON automáticamente
+      await cacheService.setex(cacheKey, 300, response);
+
+      // 4. ENVIAR RESPUESTA AL CLIENTE
+      res.status(200).json(response);
     } catch (error) {
       next(error);
     }
