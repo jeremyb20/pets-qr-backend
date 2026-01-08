@@ -112,6 +112,81 @@ export const notificationController = {
       });
     }
   },
+  // Eliminar suscripción de usuario
+  unsubscribe: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { endpoint } = req.body;
+      const userId = (req.user as IUser)?.id?.toString();
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado',
+        });
+        return;
+      }
+
+      if (!endpoint) {
+        res.status(400).json({
+          success: false,
+          message: 'Endpoint requerido',
+        });
+        return;
+      }
+
+      await Subscription.findOneAndDelete({
+        user: new Types.ObjectId(userId),
+        endpoint: endpoint,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Suscripción eliminada correctamente',
+      });
+    } catch (error) {
+      console.error('❌ Error en unsubscribe:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+      });
+    }
+  },
+
+  send: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req.user as IUser)?.id?.toString();
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado',
+        });
+        return;
+      }
+
+      const payload: PushNotificationPayload = {
+        title: 'Notificación de prueba',
+        body: 'Esta es una notificación de prueba enviada desde el servidor.',
+      };
+
+      const results = await notificationController.sendPushNotification(
+        new Types.ObjectId(userId),
+        payload
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Notificación de prueba enviada',
+        results,
+      });
+    } catch (error) {
+      console.error('❌ Error en send test notification:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+      });
+    }
+  },
 
   // Enviar notificación inmediata
   sendNotification: async (req: Request, res: Response): Promise<void> => {

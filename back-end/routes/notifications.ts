@@ -38,4 +38,10 @@ router.delete(
   notificationCtl.deleteNotification
 );
 
+// unsubscribe de notificaciones push
+router.post('/unsubscribe', authenticateToken, notificationCtl.unsubscribe);
+
+// send test notification
+router.post('/send', authenticateToken, notificationCtl.send);
+
 export default router;
