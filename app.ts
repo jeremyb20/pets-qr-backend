@@ -35,6 +35,8 @@ const corsOptions: CorsOptions = {
     'https://normal-actively-bug.ngrok-free.app',
     'https://*.ngrok-free.app',
     'https://*.ngrok.io',
+    'https://next-fe-seven.vercel.app',
+    'https://*.vercel.app',
   ],
   credentials: true,
   optionsSuccessStatus: 200,
