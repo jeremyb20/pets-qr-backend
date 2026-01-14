@@ -38,6 +38,8 @@
     "app.ts",    
     "index.ts",   
     "back-end/**/*.ts",
+    "back-end/**/*.handlebars",  // 👈 AÑADE ESTO
+    "back-end/views/**/*",       // 👈 Y ESTO
     "back-end/types/**/*.d.ts"
   ],
   "exclude": [
@@ -45,7 +47,6 @@
     "dist",
     "public",
     "services",
-    "back-end/views",
     "back-end/scripts/*.js",
     "**/*.test.ts",
     "**/*.spec.ts"
