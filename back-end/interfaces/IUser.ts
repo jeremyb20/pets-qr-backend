@@ -54,6 +54,7 @@ export interface IUser extends Document {
   role: number;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  passwordChangedAt?: Date;
   token?: string;
   isActivated: boolean;
   stateActivation?: string;

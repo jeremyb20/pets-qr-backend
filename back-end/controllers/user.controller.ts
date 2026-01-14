@@ -8,6 +8,7 @@ import nodemailer from 'nodemailer';
 import hbs from 'nodemailer-express-handlebars';
 import path from 'path';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import 'dotenv/config';
 import {
   ApiResponse,
@@ -35,6 +36,8 @@ import { IPet } from '../interfaces/Ipet';
 import { IProductTableFilters } from '../types/product.types';
 import { Product } from '../models/Product.model';
 import cacheService from '../config/redis';
+import { validatePasswordStrength } from '../utils/validate-password';
+import EmailService from '../services/emailService';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -117,6 +120,16 @@ interface UserController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
+  updatePassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
+  forgotPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
 }
 
 const userCtl: UserController = {
@@ -197,7 +210,7 @@ const userCtl: UserController = {
           },
         });
       } else {
-        res.json({ success: false, message: 'Wrong password' });
+        res.status(500).json({ success: false, message: 'Wrong password' });
       }
     } catch (error) {
       console.error('Error in authenticate method:', error);
@@ -3270,112 +3283,6 @@ const userCtl: UserController = {
     //   );
   },
 
-  resetPassword: async (
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void> => {
-    // Implementación similar a los métodos anteriores...
-    //   req.params.token = req.body.token;
-    //   const { token, password } = req.body;
-    //   async.waterfall(
-    //     [
-    //       function (done) {
-    //         User.findOne(
-    //           {
-    //             resetPasswordToken: token,
-    //             resetPasswordExpires: { $gt: Date.now() },
-    //           },
-    //           function (err, user) {
-    //             if (!user) {
-    //               return res.json({
-    //                 success: false,
-    //                 message: 'El token de restablecimiento de contraseña no es válido o ha caducado..',
-    //               });
-    //             } else {
-    //               user.password = password;
-    //               user.resetPasswordToken = undefined;
-    //               user.resetPasswordExpires = undefined;
-    //               bcrypt.genSalt(10, function (err, salt) {
-    //                 if (err) return next(err);
-    //                 bcrypt.hash(user.password, salt, function (err, hash) {
-    //                   if (err) return next(err);
-    //                   user.password = hash;
-    //                   user.save(function (err) {
-    //                     done(err, user);
-    //                   });
-    //                 });
-    //               });
-    //             }
-    //           }
-    //         );
-    //       },
-    //       function (user, done) {
-    //         var smtpTransport = nodemailer.createTransport({
-    //           host: process.env.ZOHO_HOST,
-    //           port: process.env.ZOHO_PORT,
-    //           secure: true,
-    //           logger: true,
-    //           debug: true,
-    //           auth: {
-    //             user: process.env.ZOHO_USER,
-    //             pass: process.env.ZOHO_PASSWORD,
-    //           },
-    //           tls: {
-    //             // do not fail on invalid certs
-    //             rejectUnauthorized: false,
-    //           },
-    //         });
-    //         const handlebarOptions = {
-    //           viewEngine: {
-    //             extName: '.handlebars',
-    //             partialsDir: path.resolve(__dirname, 'views'),
-    //             defaultLayout: false,
-    //           },
-    //           viewPath: path.resolve(__dirname, 'views'),
-    //           extName: '.handlebars',
-    //         };
-    //         smtpTransport.use('compile', hbs(handlebarOptions));
-    //         smtpTransport.verify(function (error, success) {
-    //           if (error) {
-    //             console.log(error);
-    //           } else {
-    //             console.log('Server is ready to take our messages');
-    //           }
-    //         });
-    //         var mailOptions = {
-    //           to: user.email,
-    //           from: '	soporte@localpetsandfamily.com',
-    //           subject:
-    //             'Plaquitas para mascotas CR, restablecimiento de la contraseña',
-    //           template: 'index',
-    //           context: {
-    //             text:
-    //               'La contraseña de su correo ' +
-    //               user.email +
-    //               ' ha sido actualizada satisfactoriamente.\n',
-    //             link: req.headers.referer + '/login',
-    //             textLink: 'Iniciar sesión',
-    //           },
-    //         };
-    //         smtpTransport.sendMail(mailOptions, function (err) {
-    //           res.json({
-    //             success: true,
-    //             message: 'Your password has been successfully updated.',
-    //           });
-    //         });
-    //       },
-    //     ],
-    //     function (err) {
-    //       res.json({
-    //         success: false,
-    //         message: 'An error occurred in the process.',
-    //         error: JSON.parse(JSON.stringify(err)),
-    //       });
-    //     }
-    //   );
-  },
-
   // Obtener lista de productos publicados con paginación, búsqueda y filtros
 
   async getAllPublishedProductList(
@@ -3498,6 +3405,269 @@ const userCtl: UserController = {
       });
     } catch (error) {
       next(error);
+    }
+  },
+  async updatePassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = (req.user as IUser)?.id;
+      const { oldPassword, newPassword } = req.body;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado',
+        });
+        return;
+      }
+
+      const user = await User.findById(userId).select('+password');
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado',
+        });
+        return;
+      }
+
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+      if (!isMatch) {
+        res.status(400).json({
+          success: false,
+          message: 'La contraseña actual es incorrecta',
+        });
+        return;
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+      await user.save();
+
+      res.json({
+        success: true,
+        message: 'Contraseña actualizada correctamente',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async forgotPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          message: 'Email es requerido',
+        });
+        return;
+      }
+
+      // Generar token
+      const resetToken = crypto.randomBytes(20).toString('hex');
+      const resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+      const resetPasswordExpires = new Date(Date.now() + 3600000);
+
+      // Buscar usuario
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        // Por seguridad, no revelar si el email existe o no
+        res.status(500).json({
+          success: false,
+          message: 'Email not found',
+        });
+        return;
+      }
+
+      // Actualizar usuario
+      user.resetPasswordToken = resetPasswordToken;
+      user.resetPasswordExpires = resetPasswordExpires;
+      await user.save();
+
+      // Determinar URL
+      const frontendUrl = process.env.FRONTEND_URL || req.headers.origin;
+      const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+      // Enviar email usando el servicio
+      const emailService = EmailService.getInstance();
+      const emailSent = await emailService.sendPasswordResetEmail(
+        user.email,
+        user.username || 'Usuario',
+        resetUrl
+      );
+
+      if (!emailSent) {
+        console.warn(`No se pudo enviar email de reset a ${user.email}`);
+        // Puedes decidir si quieres fallar o solo loggear el warning
+      }
+
+      // Responder al cliente
+      res.json({
+        success: true,
+        message:
+          'Se enviaron instrucciones para restablecer la contraseña a su correo electrónico. Revise su carpeta de spam si no lo ve en la bandeja principal.',
+      });
+    } catch (error) {
+      console.error('Error en forgotPassword:', error);
+      res.status(500).json({
+        success: false,
+        message:
+          'Ocurrió un error al procesar la solicitud. Por favor, intente nuevamente.',
+      });
+    }
+  },
+  async resetPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { token, newPassword, confirmPassword } = req.body;
+
+      // Validación de campos requeridos
+      if (!token || !newPassword) {
+        res.status(400).json({
+          success: false,
+          message: 'Token y nueva contraseña son requeridos',
+        });
+        return;
+      }
+
+      // Validar que las contraseñas coincidan
+      if (confirmPassword && newPassword !== confirmPassword) {
+        res.status(400).json({
+          success: false,
+          message: 'Las contraseñas no coinciden',
+        });
+        return;
+      }
+
+      // Validar fortaleza de la nueva contraseña
+      const passwordValidation = validatePasswordStrength(newPassword);
+      if (!passwordValidation.valid) {
+        res.status(400).json({
+          success: false,
+          message: passwordValidation.message,
+          requirements: passwordValidation.requirements,
+        });
+        return;
+      }
+
+      // Hash del token recibido
+      const resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+      // Buscar usuario con token válido
+      const user = await User.findOne({
+        resetPasswordToken,
+        resetPasswordExpires: { $gt: new Date() },
+      }).select('+password +resetPasswordToken +resetPasswordExpires');
+
+      if (!user) {
+        res.status(400).json({
+          success: false,
+          message:
+            'Token inválido o expirado. Por favor, solicite un nuevo enlace.',
+          code: 'INVALID_TOKEN',
+        });
+        return;
+      }
+
+      // Validar que la nueva contraseña sea diferente
+      try {
+        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        if (isSamePassword) {
+          res.status(400).json({
+            success: false,
+            message: 'La nueva contraseña debe ser diferente a la anterior',
+            code: 'SAME_PASSWORD',
+          });
+          return;
+        }
+      } catch (bcryptError) {
+        console.error('Error comparando contraseñas:', bcryptError);
+      }
+
+      // Actualizar contraseña
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+
+      // Limpiar campos de reset
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      user.passwordChangedAt = new Date();
+
+      await user.save();
+
+      // Enviar email de confirmación ASÍNCRONO (no esperar)
+      const emailService = EmailService.getInstance();
+      emailService
+        .sendPasswordChangedConfirmation(
+          user.email,
+          user.username || 'Usuario',
+          req
+        )
+        .then((success) => {
+          if (success) {
+            console.log(`Email de confirmación enviado a ${user.email}`);
+          } else {
+            console.warn(
+              `No se pudo enviar email de confirmación a ${user.email}`
+            );
+          }
+        })
+        .catch((emailError) => {
+          console.error('Error enviando email de confirmación:', emailError);
+          // NO fallar la respuesta principal por error de email
+        });
+
+      // Responder éxito inmediatamente
+      res.json({
+        success: true,
+        message: 'Contraseña restablecida exitosamente',
+        payload: {
+          userId: user._id,
+          email: user.email,
+        },
+        nextSteps: [
+          'Ahora puede iniciar sesión con su nueva contraseña',
+          'Revise su correo para la confirmación del cambio',
+          'Si no reconoce este cambio, contacte a soporte inmediatamente',
+        ],
+      });
+    } catch (error: any) {
+      console.error('Error en resetPassword:', error);
+
+      if (error.name === 'ValidationError') {
+        res.status(400).json({
+          success: false,
+          message: 'Error de validación en los datos',
+          errors: error.errors,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Error interno del servidor al restablecer la contraseña',
+          code: 'INTERNAL_ERROR',
+        });
+      }
     }
   },
 };

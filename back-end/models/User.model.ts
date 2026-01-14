@@ -138,6 +138,7 @@ const UserSchema = new Schema<IUser>(
     },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+    passwordChangedAt: Date,
     token: String,
     randomCode: String,
     isActivated: {

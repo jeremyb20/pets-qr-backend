@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restablecimiento de contraseña - PlaquitasCR</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <style>
+        *,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            width: 100%;
+            background-color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #EDEDED;
+            padding: 30px;
+        }
+        
+        .header {
+            text-align: center;
+            background-color: #EDEDED;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            max-width: 50%;
+            height: auto;
+        }
+        
+        .content {
+            background-color: #FFFFFF;
+            padding: 40px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .text-block {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #575757;
+            line-height: 1.6;
+        }
+        
+        .reset-button {
+            background-color: #4CAF50;
+            border: none;
+            color: #fff;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .reset-button:hover {
+            background-color: #45a049;
+        }
+        
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        
+        .link-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        
+        .link-text {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .footer {
+            background-color: #FFFFFF;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .support-info {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .support-info p {
+            margin-bottom: 10px;
+            color: #5E5E5E;
+            font-size: 14px;
+        }
+        
+        .phone-link {
+            color: #F14B72;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .social-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .instruction {
+            margin-bottom: 15px;
+        }
+        
+        .closing {
+            margin-top: 25px;
+            font-style: italic;
+        }
+        
+        .signature {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+        
+        .user-name {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .text-block {
+                font-size: 14px;
+            }
+            
+            .reset-button {
+                padding: 12px 24px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header con logo -->
+        <div class="header">
+            <img class="logo" src="https://res.cloudinary.com/ensamble/image/upload/v1613167406/6f34a0248653a5483ac7d7950fc13ce4_2_shgyuj.png"
+                alt="PlaquitasCR Logo" />
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="content">
+            <!-- Saludo personalizado -->
+            <p class="greeting">{{greeting}} <span class="user-name">{{userName}}</span>,</p>
+
+            <!-- Instrucción 1 -->
+            <p class="text-block instruction">
+                {{instruction1}}
+            </p>
+
+            <!-- Instrucción 2 -->
+            <p class="text-block instruction">
+                {{instruction2}}
+            </p>
+
+            <!-- Botón de acción -->
+            <div style="text-align: center;">
+                <a href="{{resetUrl}}" class="reset-button" target="_blank">
+                    {{buttonText}}
+                </a>
+            </div>
+
+            <!-- Advertencia de expiración -->
+            <div class="warning-box">
+                <strong>⚠️ Importante:</strong> {{warning}}
+            </div>
+
+            <!-- Enlace alternativo -->
+            <div class="link-box">
+                <p style="margin-bottom: 10px; font-size: 14px; color: #666;">
+                    Si el botón no funciona, copie y pegue el siguiente enlace en su navegador:
+                </p>
+                <a href="{{resetUrl}}" class="link-text">{{resetUrl}}</a>
+            </div>
+
+            <!-- Instrucción 3 -->
+            <p class="text-block instruction">
+                {{instruction3}}
+            </p>
+
+            <!-- Cierre -->
+            <p class="text-block closing">
+                {{closing}}
+            </p>
+
+            <!-- Firma -->
+            <p class="text-block signature">
+                {{signature}}
+            </p>
+        </div>
+
+        <!-- Footer con información de contacto -->
+        <div class="footer">
+            <div class="support-info">
+                <p style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 15px;">
+                    ¿Necesita ayuda?
+                </p>
+                <p>
+                    <strong>Soporte al Cliente:</strong>
+                    <a class="phone-link" href="tel:+50670160434">
+                        (+506) 7016-0434
+                    </a>
+                </p>
+                <p>
+                    <strong>Facebook:</strong>
+                    <a class="social-link" href="https://www.facebook.com/profile.php?id=100064041162056" target="_blank" rel="noopener noreferrer">
+                        @PlaquitasCR
+                    </a>
+                </p>
+                <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                    Este es un correo automático, por favor no responda a este mensaje.
+                </p>
+            </div>
+
+            <!-- Información de copyright -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #999;">
+                    © {{year}} {{companyName}}. Todos los derechos reservados.
+                </p>
+                <p style="font-size: 11px; color: #999; margin-top: 5px;">
+                    PlaquitasCR - El mejor cuidado para tu mascota
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

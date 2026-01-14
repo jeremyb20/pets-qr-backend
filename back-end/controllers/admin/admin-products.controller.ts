@@ -203,7 +203,7 @@ const adminProductCtl: AdminProductController = {
           try {
             const parsedValue = JSON.parse(productData[field]);
             productData[field] = parsedValue;
-            console.log(`✅ Parseado ${field}:`, productData[field]);
+            // console.log(`✅ Parseado ${field}:`, productData[field]);
           } catch (e) {
             console.warn(`⚠️ Error parsing ${field}:`, e);
             // Mantener el valor original si falla el parseo
@@ -416,7 +416,7 @@ const adminProductCtl: AdminProductController = {
           try {
             const parsedValue = JSON.parse(productData[field]);
             productData[field] = parsedValue;
-            console.log(`✅ Parseado ${field}:`, productData[field]);
+            // console.log(`✅ Parseado ${field}:`, productData[field]);
           } catch (e) {
             console.warn(`⚠️ Error parsing ${field}:`, e);
             // Mantener el valor original si falla el parseo

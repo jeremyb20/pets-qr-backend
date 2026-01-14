@@ -82,12 +82,16 @@ router.post('/deletePetById', verification, userCtl.deletePetById);
 
 router.post('/forgot', userCtl.forgot);
 
-router.post('/reset-password', userCtl.resetPassword);
-
 router.get('/validateQrCode?:code', userCtl.validateQrCode);
 
 router.get('/getAllPublishedProductList', userCtl.getAllPublishedProductList);
 
 router.get('/getProductPublishedById', userCtl.getProductPublishedById);
+
+router.put('/updatePassword', authenticateToken, userCtl.updatePassword);
+
+router.post('/forgotPassword', userCtl.forgotPassword);
+
+router.post('/resetPassword', userCtl.resetPassword);
 
 export default router;
