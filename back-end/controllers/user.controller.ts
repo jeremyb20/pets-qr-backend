@@ -428,40 +428,79 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        // 'petName photo phone genderSelected weight breed birthDate petStatus memberPetId owner permissions petViewCounter isDigitalIdentificationActive createdAt updatedAt favoriteActivities healthAndRequirements '
-        ' memberPetId petName genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo  address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive  petViewCounter  permissions  petStatusReport  createdAt updatedAt  phone ownerPetName'
+        'memberPetId petName genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
       if (pet) {
-        // Buscar el usuario por separado
-        const user = await User.findById(pet.owner)
-          .select('username email profile')
-          .lean();
+        let user = null;
+
+        // Asegurarnos de que tenemos el owner id
+        const ownerId = pet.owner;
+
+        if (ownerId) {
+          try {
+            // Intentar buscar el usuario usando el ObjectId directamente
+            user = await User.findById(ownerId)
+              .select('username email profile')
+              .lean();
+
+            // Si no se encuentra, podría ser que owner sea un string en lugar de ObjectId
+            if (!user && typeof ownerId === 'string') {
+              // Intentar buscar como string
+              user = await User.findOne({ _id: ownerId })
+                .select('username email profile')
+                .lean();
+            }
+
+            // Otra posibilidad: el owner podría estar en otro campo diferente
+            if (!user) {
+              console.log(
+                'Owner ID encontrado pero no coincide con usuario:',
+                ownerId
+              );
+            }
+          } catch (error) {
+            console.error('Error buscando usuario:', error);
+          }
+        }
 
         // Convertir el documento de Mongoose a objeto plano
         const petObject = pet.toObject ? pet.toObject() : pet;
 
+        // Preparar datos del owner
+        const ownerData = user
+          ? {
+              _id: user._id,
+              username: user.profile?.username || user.username || '',
+              email: user.email || '',
+              name: user.profile?.name || '',
+              phone: user.profile?.phone || '',
+              address: user.profile?.address || '',
+              city: user.profile?.city || '',
+              state: user.profile?.state || '',
+              country: user.profile?.country || '',
+              photoProfile: user.profile?.photoProfile || '',
+              avatarProfile: user.profile?.avatarProfile || '2',
+            }
+          : {
+              _id: ownerId,
+              username: '',
+              email: '',
+              name: '',
+              phone: '',
+              address: '',
+              city: '',
+              state: '',
+              country: '',
+              photoProfile: '',
+              avatarProfile: '2',
+            };
+
         // Combinar los datos de forma correcta
         const petWithOwner = {
           ...petObject,
-          owner: user
-            ? {
-                _id: user._id,
-                username: user.profile?.username || '',
-                email: user.email,
-                // Extraer solo los campos específicos del profile que necesitas
-                name: user.profile?.name || '',
-                phone: user.profile?.phone || '',
-                address: user.profile?.address || '',
-                city: user.profile?.city || '',
-                state: user.profile?.state || '',
-                country: user.profile?.country || '',
-                photoProfile: user.profile?.photoProfile || '',
-                avatarProfile: user.profile?.avatarProfile || '2',
-                // Agrega otros campos específicos del profile que necesites
-              }
-            : null,
+          owner: ownerData,
         };
 
         res.status(200).json({
