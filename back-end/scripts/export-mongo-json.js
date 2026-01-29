@@ -98,7 +98,7 @@ class MongoDBExporter {
 // USO DEL SCRIPT
 async function main() {
   // Configuración - RELLENA ESTOS DATOS
-  const connectionString = process.env.BD_CONNECTION_STRING;
+  const connectionString = process.env.BD_URL;
   const databaseName = process.env.BD_NAME;
 
   const exporter = new MongoDBExporter(connectionString, databaseName);

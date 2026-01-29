@@ -37,6 +37,8 @@ const corsOptions: CorsOptions = {
     'https://*.ngrok.io',
     'https://next-fe-seven.vercel.app',
     'https://*.vercel.app',
+    'https://plaquitascr.com', // Agrega este
+    'https://www.plaquitascr.com', // Y este si también usas www
   ],
   credentials: true,
   optionsSuccessStatus: 200,

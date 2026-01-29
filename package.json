@@ -15,7 +15,7 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint back-end/**/*.ts",
     "export-single": "node back-end/scripts/export-single.js",
-    "export-all": "node back-end/scripts/export-all.js",
+    "export-all": "node back-end/scripts/export-all.ts",
     "migrate-data": "node back-end/scripts/migrateData-with-compass.js",
     "migrate-qrcodes": "ts-node back-end/scripts/migrateOldQRCodes.ts",
     "migrate-users-schema": "ts-node back-end/scripts/migrate-users-schema.ts",
