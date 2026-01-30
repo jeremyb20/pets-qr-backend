@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
 import User from '../../models/User.model';
+import Pet from '../../models/Pet.model';
 import { cacheService } from '../../config/redis';
 import 'dotenv/config';
 import {
@@ -656,6 +657,294 @@ const adminCtl: AdminController = {
         success: false,
         message: 'An error occurred in the process.',
         error: JSON.parse(JSON.stringify(error)),
+      });
+    }
+  },
+
+  getUserStats: async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const lastYear = currentYear - 1;
+
+      const results = await User.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(lastYear, 0, 1), // Desde enero del año pasado
+            },
+          },
+        },
+        {
+          $facet: {
+            totalCount: [{ $count: 'total' }],
+
+            byType: [
+              {
+                $group: {
+                  _id: '$role',
+                  count: { $sum: 1 },
+                },
+              },
+              {
+                $sort: { count: -1 },
+              },
+            ],
+
+            byStatus: [
+              {
+                $group: {
+                  _id: '$status',
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+
+            // Cambia esto también:
+            byMonth: [
+              {
+                $group: {
+                  _id: {
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+              {
+                $match: {
+                  $or: [{ '_id.year': currentYear }, { '_id.year': lastYear }],
+                },
+              },
+              {
+                $sort: { '_id.year': 1, '_id.month': 1 },
+              },
+            ],
+          },
+        },
+      ]);
+
+      const totalUsers = results[0].totalCount[0]?.total || 0;
+      const byType = results[0].byType || [];
+      const byStatus = results[0].byStatus || [];
+      const byMonth = results[0].byMonth || [];
+
+      res.json({
+        success: true,
+        payload: {
+          totalUsers,
+          byType,
+          byStatus,
+          byMonth,
+          date: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo estadísticas de usuarios:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo estadísticas de usuarios',
+      });
+    }
+  },
+  getUserGrowth: async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const today = new Date();
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const [totalUsers, newThisMonth, newLastMonth] = await Promise.all([
+        User.countDocuments(),
+        User.countDocuments({ createdAt: { $gte: startOfMonth } }),
+        User.countDocuments({
+          createdAt: {
+            $gte: lastMonth,
+            $lt: startOfMonth,
+          },
+        }),
+      ]);
+
+      const monthlyGrowth =
+        newLastMonth > 0
+          ? (((newThisMonth - newLastMonth) / newLastMonth) * 100).toFixed(1)
+          : newThisMonth > 0
+            ? '100.0'
+            : '0.0';
+
+      res.json({
+        success: true,
+        payload: {
+          total: totalUsers,
+          newThisMonth,
+          monthlyGrowth: parseFloat(monthlyGrowth),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo crecimiento de usuarios:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo crecimiento de usuarios',
+      });
+    }
+  },
+  getPetStats: async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const lastYear = currentYear - 1;
+
+      const results = await Pet.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(lastYear, 0, 1), // Desde enero del año pasado
+            },
+          },
+        },
+        {
+          $facet: {
+            // Total de mascotas
+            totalCount: [{ $count: 'total' }],
+
+            // Mascotas por tipo/especie
+            bySpecies: [
+              {
+                $group: {
+                  _id: '$species',
+                  count: { $sum: 1 },
+                },
+              },
+              {
+                $sort: { count: -1 },
+              },
+            ],
+
+            // Mascotas por tamaño
+            bySize: [
+              {
+                $match: { size: { $exists: true, $ne: null } },
+              },
+              {
+                $group: {
+                  _id: '$size',
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+
+            // Mascotas por estado (salud)
+            byHealthStatus: [
+              {
+                $match: { healthStatus: { $exists: true, $ne: null } },
+              },
+              {
+                $group: {
+                  _id: '$healthStatus',
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+
+            // Registros por mes de los últimos 2 años
+            byMonth: [
+              {
+                $group: {
+                  _id: {
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+              {
+                $match: {
+                  $or: [{ '_id.year': currentYear }, { '_id.year': lastYear }],
+                },
+              },
+              {
+                $sort: { '_id.year': 1, '_id.month': 1 },
+              },
+            ],
+          },
+        },
+      ]);
+
+      const totalPets = results[0].totalCount[0]?.total || 0;
+      const bySpecies = results[0].bySpecies || [];
+      const bySize = results[0].bySize || [];
+      const byHealthStatus = results[0].byHealthStatus || [];
+      const byMonth = results[0].byMonth || [];
+
+      res.json({
+        success: true,
+        payload: {
+          totalPets,
+          bySpecies,
+          bySize,
+          byHealthStatus,
+          byMonth,
+          date: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo estadísticas de mascotas:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo estadísticas de mascotas',
+      });
+    }
+  },
+  getPetGrowth: async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const today = new Date();
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const [totalPets, newThisMonth, newLastMonth] = await Promise.all([
+        Pet.countDocuments(),
+        Pet.countDocuments({ createdAt: { $gte: startOfMonth } }),
+        Pet.countDocuments({
+          createdAt: {
+            $gte: lastMonth,
+            $lt: startOfMonth,
+          },
+        }),
+      ]);
+
+      const monthlyGrowth =
+        newLastMonth > 0
+          ? (((newThisMonth - newLastMonth) / newLastMonth) * 100).toFixed(1)
+          : newThisMonth > 0
+            ? '100.0'
+            : '0.0';
+
+      res.json({
+        success: true,
+        payload: {
+          total: totalPets,
+          newThisMonth,
+          monthlyGrowth: parseFloat(monthlyGrowth),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo crecimiento de mascotas:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo crecimiento de mascotas',
       });
     }
   },

@@ -45,6 +45,16 @@ export interface AdminProductController {
     res: Response,
     next: NextFunction
   ): Promise<void>;
+  getAdminProductStats(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
+  getProductGrowth(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
 }
 
 export interface AdminController {
@@ -89,4 +99,12 @@ export interface AdminController {
   ): Promise<void>;
   updateLocationPet(req: Request, res: Response): Promise<void>;
   sortNewPetProfile(req: Request, res: Response): Promise<void>;
+  getUserStats(req: Request, res: Response, next?: NextFunction): Promise<void>;
+  getUserGrowth(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
+  getPetStats(req: Request, res: Response, next?: NextFunction): Promise<void>;
+  getPetGrowth(req: Request, res: Response, next?: NextFunction): Promise<void>;
 }

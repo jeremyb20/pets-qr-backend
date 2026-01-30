@@ -162,4 +162,47 @@ router.put(
 );
 
 router.get('/getSeoById', adminSeoCtrl.getSeoById);
+
+router.get(
+  '/users/getUserStats',
+  authenticateToken,
+  isAdmin,
+  adminCtl.getUserStats
+);
+
+router.get(
+  '/users/getUserGrowth',
+  authenticateToken,
+  isAdmin,
+  adminCtl.getUserGrowth
+);
+
+router.get(
+  '/users/getPetStats',
+  authenticateToken,
+  isAdmin,
+  adminCtl.getPetStats
+);
+
+router.get(
+  '/users/getPetGrowth',
+  authenticateToken,
+  isAdmin,
+  adminCtl.getPetGrowth
+);
+
+router.get(
+  '/products/getAdminProductStats',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.getAdminProductStats
+);
+
+router.get(
+  '/products/getProductGrowth',
+  authenticateToken,
+  isAdmin,
+  adminProductCtl.getProductGrowth
+);
+
 export default router;

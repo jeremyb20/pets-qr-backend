@@ -867,6 +867,173 @@ const adminProductCtl: AdminProductController = {
       next(error);
     }
   },
+  getAdminProductStats: async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const lastYear = currentYear - 1;
+
+      const results = await Product.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(lastYear, 0, 1), // Desde enero del año pasado
+            },
+          },
+        },
+        {
+          $facet: {
+            // Total de productos
+            totalCount: [{ $count: 'total' }],
+
+            // Productos por categoría
+            byCategory: [
+              {
+                $group: {
+                  _id: '$category',
+                  count: { $sum: 1 },
+                  avgPrice: { $avg: '$price' },
+                  totalValue: { $sum: '$price' },
+                },
+              },
+              {
+                $sort: { count: -1 },
+              },
+            ],
+
+            // Productos por estado
+            byStatus: [
+              {
+                $match: { status: { $exists: true, $ne: null } },
+              },
+              {
+                $group: {
+                  _id: '$status',
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+
+            // Stock bajo (menos de 10 unidades)
+            lowStock: [
+              {
+                $match: {
+                  stock: { $lt: 10, $gte: 0 },
+                },
+              },
+              {
+                $count: 'count',
+              },
+            ],
+
+            // Productos sin stock
+            outOfStock: [
+              {
+                $match: { stock: 0 },
+              },
+              {
+                $count: 'count',
+              },
+            ],
+
+            // Registros por mes de los últimos 2 años
+            byMonth: [
+              {
+                $group: {
+                  _id: {
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+              {
+                $match: {
+                  $or: [{ '_id.year': currentYear }, { '_id.year': lastYear }],
+                },
+              },
+              {
+                $sort: { '_id.year': 1, '_id.month': 1 },
+              },
+            ],
+          },
+        },
+      ]);
+
+      const totalProducts = results[0].totalCount[0]?.total || 0;
+      const byCategory = results[0].byCategory || [];
+      const byStatus = results[0].byStatus || [];
+      const lowStock = results[0].lowStock[0]?.count || 0;
+      const outOfStock = results[0].outOfStock[0]?.count || 0;
+      const byMonth = results[0].byMonth || [];
+
+      res.json({
+        success: true,
+        payload: {
+          totalProducts,
+          byCategory,
+          byStatus,
+          lowStock,
+          outOfStock,
+          byMonth,
+          date: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo estadísticas de productos:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo estadísticas de productos',
+      });
+    }
+  },
+  getProductGrowth: async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const today = new Date();
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const [totalProducts, newThisMonth, newLastMonth] = await Promise.all([
+        Product.countDocuments(),
+        Product.countDocuments({ createdAt: { $gte: startOfMonth } }),
+        Product.countDocuments({
+          createdAt: {
+            $gte: lastMonth,
+            $lt: startOfMonth,
+          },
+        }),
+      ]);
+
+      const monthlyGrowth =
+        newLastMonth > 0
+          ? (((newThisMonth - newLastMonth) / newLastMonth) * 100).toFixed(1)
+          : newThisMonth > 0
+            ? '100.0'
+            : '0.0';
+
+      res.json({
+        success: true,
+        payload: {
+          total: totalProducts,
+          newThisMonth,
+          monthlyGrowth: parseFloat(monthlyGrowth),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo crecimiento de productos:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo crecimiento de productos',
+      });
+    }
+  },
 };
 
 export default adminProductCtl;
