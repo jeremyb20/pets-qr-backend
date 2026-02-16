@@ -50,8 +50,16 @@ export interface SeoFilters {
   status?: string;
   contentType?: string;
   'multiLanguageContent.language'?: string;
-  'multiLanguageContent.canonicalUrl'?: { $exists: boolean; $ne?: string; $eq?: string };
-  'multiLanguageContent.ogImage'?: { $exists: boolean; $ne?: string; $eq?: string };
+  'multiLanguageContent.canonicalUrl'?: {
+    $exists: boolean;
+    $ne?: string;
+    $eq?: string;
+  };
+  'multiLanguageContent.ogImage'?: {
+    $exists: boolean;
+    $ne?: string;
+    $eq?: string;
+  };
   priority?: { $gte?: number; $lte?: number };
   changeFrequency?: string;
   lastModified?: { $gte?: Date; $lte?: Date };
@@ -125,9 +133,7 @@ const SeoSchema = new Schema<ISeo>(
     pageId: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
-      trim: true,
+      unique: false,
     },
     route: {
       type: String,
