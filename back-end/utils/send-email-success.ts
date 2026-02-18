@@ -19,7 +19,7 @@ export async function sendPasswordChangedConfirmation(
 
     const mailOptions = {
       to: email,
-      from: process.env.EMAIL_FROM || 'soporte@localpetsandfamily.com',
+      from: process.env.EMAIL_FROM || 'soporte@plaquitascr.com',
       subject: 'Contraseña actualizada exitosamente - PlaquitasCR',
       html: `
         <!DOCTYPE html>

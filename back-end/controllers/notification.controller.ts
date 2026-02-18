@@ -108,7 +108,9 @@ export const notificationController = {
       console.error('❌ Error en subscribe:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -147,7 +149,9 @@ export const notificationController = {
       console.error('❌ Error en unsubscribe:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -183,7 +187,9 @@ export const notificationController = {
       console.error('❌ Error en send test notification:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -242,7 +248,9 @@ export const notificationController = {
       console.error('❌ Error en sendNotification:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -296,7 +304,9 @@ export const notificationController = {
       console.error('❌ Error en scheduleNotification:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -339,7 +349,9 @@ export const notificationController = {
       console.error('❌ Error en getUserNotifications:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -384,7 +396,9 @@ export const notificationController = {
       console.error('❌ Error en markAsRead:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -424,7 +438,9 @@ export const notificationController = {
       console.error('❌ Error en deleteNotification:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },

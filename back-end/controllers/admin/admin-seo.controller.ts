@@ -239,8 +239,8 @@ const adminSeoCtrl = {
       console.error('Error creating SEO record:', error);
       res.status(500).send({
         success: false,
-        message: 'Error creating SEO record',
-        error: error,
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
       });
     }
   },
@@ -253,8 +253,8 @@ const adminSeoCtrl = {
       console.error('Error updating SEO record:', error);
       res.status(500).send({
         success: false,
-        message: 'Error updating SEO record',
-        error: error,
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
       });
     }
   },
@@ -272,8 +272,8 @@ const adminSeoCtrl = {
       console.error('Error fetching SEO record:', error);
       res.status(500).send({
         success: false,
-        message: 'Error fetching SEO record',
-        error: error,
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
       });
     }
   },
@@ -388,8 +388,9 @@ const adminSeoCtrl = {
       console.error('❌ Error en getSeoByPageId:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },

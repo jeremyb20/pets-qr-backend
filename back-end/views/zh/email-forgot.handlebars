@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码重置 - PlaquitasCR</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <style>
+        /* Mismos estilos */
+        *,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            background-color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #EDEDED;
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            background-color: #EDEDED;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            max-width: 100px;
+            height: auto;
+        }
+
+        .content {
+            background-color: #FFFFFF;
+            padding: 40px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .text-block {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #575757;
+            line-height: 1.6;
+        }
+
+        .reset-button {
+            background-color: #4CAF50;
+            border: none;
+            color: #fff;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .reset-button:hover {
+            background-color: #45a049;
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        .link-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+
+        .link-text {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .footer {
+            background-color: #FFFFFF;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .support-info {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .support-info p {
+            margin-bottom: 10px;
+            color: #5E5E5E;
+            font-size: 14px;
+        }
+
+        .phone-link {
+            color: #F14B72;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .social-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .greeting {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .instruction {
+            margin-bottom: 15px;
+        }
+
+        .closing {
+            margin-top: 25px;
+            font-style: italic;
+        }
+
+        .signature {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+
+        .user-name {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .text-block {
+                font-size: 14px;
+            }
+
+            .reset-button {
+                padding: 12px 24px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header with logo -->
+        <div class="header">
+            <img class="logo" src="{{logoUrl}}" alt="PlaquitasCR Logo" />
+        </div>
+
+        <!-- Main content -->
+        <div class="content">
+            <!-- Personalized greeting -->
+            <p class="greeting">您好 <span class="user-name">{{userName}}</span>，</p>
+
+            <!-- Instruction 1 -->
+            <p class="text-block instruction">
+                您收到此电子邮件是因为您请求重置密码。
+            </p>
+
+            <!-- Instruction 2 -->
+            <p class="text-block instruction">
+                要完成此过程，请单击以下链接：
+            </p>
+
+            <!-- Action button -->
+            <div style="text-align: center;">
+                <a href="{{resetUrl}}" class="reset-button" target="_blank">
+                    重置密码
+                </a>
+            </div>
+
+            <!-- Expiration warning -->
+            <div class="warning-box">
+                <strong>⚠️ 重要提示：</strong> 此链接将在1小时后过期。
+            </div>
+
+            <!-- Alternative link -->
+            <div class="link-box">
+                <p style="margin-bottom: 10px; font-size: 14px; color: #666;">
+                    如果按钮不起作用，请将以下链接复制并粘贴到您的浏览器中：
+                </p>
+                <a href="{{resetUrl}}" class="link-text">{{resetUrl}}</a>
+            </div>
+
+            <!-- Instruction 3 -->
+            <p class="text-block instruction">
+                如果您未请求此重置，请忽略此电子邮件。您的密码将保持安全。
+            </p>
+
+            <!-- Closing -->
+            <p class="text-block closing">
+                感谢您使用我们的服务。
+            </p>
+
+            <!-- Signature -->
+            <p class="text-block signature">
+                PlaquitasCR团队
+            </p>
+        </div>
+
+        <!-- Footer with contact information -->
+        <div class="footer">
+            <div class="support-info">
+                <p style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 15px;">
+                    需要帮助？
+                </p>
+                <p>
+                    <strong>客户支持：</strong>
+                    <a class="phone-link" href="tel:{{phoneNumber}}">
+                        {{phoneNumber}}
+                    </a>
+                </p>
+                <p>
+                    <strong>电子邮件：</strong>
+                    <a class="social-link" href="mailto:{{supportEmail}}">
+                        {{supportEmail}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Facebook：</strong>
+                    <a class="social-link" href="{{facebookUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{facebookUsername}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Instagram：</strong>
+                    <a class="social-link" href="{{instagramUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{instagramUsername}}
+                    </a>
+                </p>
+                <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                    这是一封自动电子邮件，请勿回复此邮件。
+                </p>
+            </div>
+
+            <!-- Copyright information -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #999;">
+                    © {{year}} {{companyName}}. 版权所有。
+                </p>
+                <p style="font-size: 11px; color: #999; margin-top: 5px;">
+                    PlaquitasCR - 为您的宠物提供最好的照顾
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -76,7 +76,8 @@ export const authenticateToken = (
     console.error('Authentication error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal authentication error',
+      message: 'Internal server error, please try again later.',
+      code: 'INTERNAL_ERROR',
     });
   }
 };

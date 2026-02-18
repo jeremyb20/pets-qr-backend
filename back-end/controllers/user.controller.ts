@@ -4,9 +4,6 @@ import User from '../models/User.model';
 import Pet from '../models/Pet.model';
 import fs from 'fs-extra';
 import bcrypt from 'bcryptjs';
-import nodemailer from 'nodemailer';
-import hbs from 'nodemailer-express-handlebars';
-import path from 'path';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import 'dotenv/config';
@@ -26,7 +23,7 @@ import {
   MedicalRecordResponse,
 } from '../types/pet.types';
 import QrCode from '../models/QrCode.model';
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import {
   IUser,
   IUserThemeConfig,
@@ -47,33 +44,18 @@ interface AuthRequest {
 }
 
 interface UserController {
-  authenticateLegacy(req: Request, res: Response): Promise<void>;
   authenticate(req: Request, res: Response): Promise<void>;
   me(req: Request, res: Response): Promise<void>;
-  getUserProfileById(req: Request, res: Response): Promise<void>;
-  updatePetById(req: Request, res: Response): Promise<void>;
-  getUserProfileByIdScanner(req: Request, res: Response): Promise<void>;
+  getAllPetsByUser(req: Request, res: Response): Promise<void>;
   getSettings(req: Request, res: Response): Promise<void>;
   updateSettings(req: Request, res: Response): Promise<void>;
   getProfileById(req: Request, res: Response): Promise<void>;
   getMedicalRecordsByPet(req: Request, res: Response): Promise<void>;
   createMedicalRecord(req: Request, res: Response): Promise<void>;
   updateMedicalRecord(req: Request, res: Response): Promise<void>;
-  getMyPetCode(req: Request, res: Response): Promise<void>;
-  getMyPetInfo(req: Request, res: Response): Promise<void>;
-  getAllPetsByUser(req: Request, res: Response): Promise<void>;
+  updatePetById(req: Request, res: Response): Promise<void>;
   updateMyProfile(req: Request, res: Response): Promise<void>;
-  editProfileInfo(req: Request, res: Response): Promise<void>;
-  editPetProfile(req: Request, res: Response): Promise<void>;
-  editPhotoProfile(req: Request, res: Response): Promise<void>;
-  editThemeProfile(req: Request, res: Response): Promise<void>;
-  updatePetViewed(req: Request, res: Response): Promise<void>;
   registerAccountWithEmail(req: Request, res: Response): Promise<void>;
-  registerNewPet(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
   registerNewPetByQRcode(
     req: Request,
     res: Response,
@@ -84,11 +66,7 @@ interface UserController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
-  registerNewPetfromUserProfile(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
+
   addPetToAuthenticatedUser(
     req: Request,
     res: Response,
@@ -99,12 +77,6 @@ interface UserController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
-  deletePetById(
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void>;
-  forgot(req: Request, res: Response, next?: NextFunction): Promise<void>;
   resetPassword(
     req: Request,
     res: Response,
@@ -133,46 +105,6 @@ interface UserController {
 }
 
 const userCtl: UserController = {
-  authenticateLegacy: async (req: Request, res: Response): Promise<void> => {
-    const { email, password } = req.body as AuthRequest;
-
-    (User as any).getUserByUsername(email, (err: any, pet: IUser) => {
-      if (err) throw err;
-      if (!pet) {
-        res.json({ success: false, message: 'Email not found' });
-        return;
-      }
-
-      pet.comparePassword(
-        password,
-        (err: any, isMatch: boolean | undefined) => {
-          if (err) throw err;
-          if (isMatch) {
-            const token = jwt.sign(
-              { data: pet.email, id: pet._id },
-              process.env.SECRET as string,
-              {
-                expiresIn: 86400,
-              }
-            );
-            res.json({
-              success: true,
-              token: 'JWT ' + token,
-              payload: {
-                id: pet._id,
-                userState: (pet as any).userState,
-                email: pet.email,
-                theme: (pet as any).theme,
-              },
-            });
-          } else {
-            res.json({ success: false, message: 'Wrong password' });
-          }
-        }
-      );
-    });
-  },
-
   authenticate: async (req: Request, res: Response): Promise<void> => {
     try {
       const { email, password } = req.body as AuthRequest;
@@ -214,9 +146,12 @@ const userCtl: UserController = {
       }
     } catch (error) {
       console.error('Error in authenticate method:', error);
-      res
-        .status(500)
-        .json({ success: false, message: 'Internal server error' });
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
     }
   },
 
@@ -251,7 +186,7 @@ const userCtl: UserController = {
       console.error('Error in /me endpoint:', error);
       res.status(500).send({
         success: false,
-        message: 'Internal server error',
+        message: 'Internal server error, please try again later.',
         error: (error as Error).message,
       });
     }
@@ -412,13 +347,11 @@ const userCtl: UserController = {
       res.status(200).json(response);
     } catch (error) {
       console.error('❌ Error fetching user pets:', error);
-
-      const errorResponse: ErrorResponse = {
+      res.status(500).send({
         success: false,
-        message: 'An error occurred while fetching user pets.',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
-      };
-      res.status(500).json(errorResponse);
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
+      });
     }
   },
 
@@ -542,8 +475,9 @@ const userCtl: UserController = {
       console.error('Error in getProfileById:', error);
       res.status(500).json({
         success: false,
-        message: 'Ocurrió un error al buscar la información.',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -803,12 +737,11 @@ const userCtl: UserController = {
     } catch (error) {
       console.error('❌ Error fetching medical records:', error);
 
-      const errorResponse: ErrorResponse = {
+      res.status(500).send({
         success: false,
-        message: 'An error occurred while fetching medical records.',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
-      };
-      res.status(500).json(errorResponse);
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
+      });
     }
   },
 
@@ -982,12 +915,11 @@ const userCtl: UserController = {
     } catch (error) {
       console.error('❌ Error creating medical record:', error);
 
-      const errorResponse: ErrorResponse = {
+      res.status(500).send({
         success: false,
-        message: 'An error occurred while creating the medical record',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
-      };
-      res.status(500).json(errorResponse);
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
+      });
     }
   },
 
@@ -1083,13 +1015,11 @@ const userCtl: UserController = {
       res.status(200).json(response);
     } catch (error) {
       console.error('❌ Error updating medical record:', error);
-
-      const errorResponse: ErrorResponse = {
+      res.status(500).send({
         success: false,
-        message: 'An error occurred while updating the medical record',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
-      };
-      res.status(500).json(errorResponse);
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
+      });
     }
   },
 
@@ -1190,7 +1120,8 @@ const userCtl: UserController = {
           console.error('Error uploading to Cloudinary:', uploadError);
           res.status(500).json({
             success: false,
-            message: 'Error uploading image',
+            message: 'Internal server error, please try again later.',
+            code: 'INTERNAL_ERROR',
           });
           return;
         }
@@ -1239,7 +1170,9 @@ const userCtl: UserController = {
 
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor al agregar la mascota',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -1249,28 +1182,27 @@ const userCtl: UserController = {
     res: Response,
     next?: NextFunction
   ): Promise<void> => {
-    const {
-      email,
-      name,
-      phone,
-      country,
-      userStatus,
-      role,
-      pets,
-      address,
-      zipCode,
-      state,
-      city,
-      photoProfile,
-      isPublic,
-      // Nuevos campos para configuration
-      configuration,
-      profile,
-      avatarProfile,
-    } = req.body;
-    const id = (req.user as IUser)?.id?.toString();
-
     try {
+      const {
+        email,
+        name,
+        phone,
+        country,
+        userStatus,
+        role,
+        pets,
+        address,
+        zipCode,
+        state,
+        city,
+        photoProfile,
+        isPublic,
+        // Nuevos campos para configuration
+        configuration,
+        profile,
+        avatarProfile,
+      } = req.body;
+      const id = (req.user as IUser)?.id?.toString();
       // Construir el objeto de actualización
       const updateData: any = {
         email,
@@ -1324,102 +1256,27 @@ const userCtl: UserController = {
         success: true,
       });
     } catch (error) {
-      const errorResponse: ErrorResponse = {
+      res.status(500).send({
         success: false,
-        message: 'An error occurred while updating user.',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
-      };
-      res.status(500).json(errorResponse);
-    }
-  },
-
-  getUserProfileById: async (req: Request, res: Response): Promise<void> => {
-    const user = await User.findById({ _id: req.query.id });
-    if (user) {
-      const userData = {
-        address: (user as any).address,
-        birthDate: (user as any).birthDate,
-        favoriteActivities: (user as any).favoriteActivities,
-        healthAndRequirements: (user as any).healthAndRequirements,
-        ownerPetName: (user as any).ownerPetName,
-        phoneVeterinarian: (user as any).phoneVeterinarian,
-        veterinarianContact: (user as any).veterinarianContact,
-        email: user.email,
-        petName: (user as any).petName,
-        petStatus: (user as any).petStatus,
-        photo: (user as any).photo,
-        photo_id: (user as any).photo_id,
-        updatedAt: user.updatedAt,
-        createdAt: user.createdAt,
-        newPetProfile: (user as any).newPetProfile,
-        genderSelected: (user as any).genderSelected,
-        _id: user._id,
-        breed: (user as any).breed,
-        weight: (user as any).weight,
-        phone: user.profile.phone,
-        country: user.profile.country,
-      };
-      res.status(200).send({
-        success: true,
-        payload: userData,
-      });
-    } else {
-      res.status(200).send({ success: false, message: 'User not found' });
-    }
-  },
-
-  getUserProfileByIdScanner: async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
-    try {
-      const { idPrimary, idSecondary } = req.params;
-      const user = await User.findById({ _id: idPrimary });
-      if (user) {
-        if (!user.isActivated) {
-          if (idSecondary == '0') {
-            const { photo, petName } = user as any;
-            res
-              .status(200)
-              .send({ success: true, payload: { photo, petName } });
-          } else {
-            const data = (user as any).newPetProfile.find(
-              (x: any) => x._id == idSecondary
-            );
-            if (data) {
-              const userReceived = {
-                petName: data.petName,
-                photo: data.photo,
-              };
-              res.status(200).send({ success: true, payload: userReceived });
-            } else {
-              res
-                .status(200)
-                .send({ success: false, message: 'User not found' });
-            }
-          }
-        } else {
-          res.status(200).send({ success: false, message: 'User not found' });
-        }
-      } else {
-        res.status(200).send({ success: false, message: 'User not found' });
-      }
-    } catch (error) {
-      res.json({
-        success: false,
-        message: 'An error occurred in the process.',
-        error: JSON.parse(JSON.stringify(error)),
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
       });
     }
   },
 
   getSettings: async (req: Request, res: Response): Promise<void> => {
-    const user = (await User.findById((req as any).user?.id)) as IUser;
-    if (user) {
-      const data = user.configuration;
-      res.status(200).send({ success: true, payload: data });
-    } else {
-      res.status(200).send({ success: false, message: 'User not found' });
+    try {
+      const user = (await User.findById((req as any).user?.id)) as IUser;
+      if (user) {
+        const data = user.configuration;
+        res.status(200).send({ success: true, payload: data });
+      }
+    } catch (error) {
+      res.status(500).send({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        error: (error as Error).message,
+      });
     }
   },
 
@@ -1475,263 +1332,9 @@ const userCtl: UserController = {
       console.error('Error updating configuration:', error);
       res.status(500).json({
         success: false,
-        message: 'An error occurred while updating configuration.',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
-  },
-  getMyPetCode: async (req: Request, res: Response): Promise<void> => {
-    const user = await User.findById({ _id: req.query.id });
-    if (user) {
-      const qrCode = {
-        isActivated: user.isActivated,
-        _id: user._id,
-      };
-      if (user.isActivated) {
-        const data = qrCode;
-        res.status(200).send({ success: true, payload: data });
-      } else {
-        if (req.query.idSecond != '0') {
-          const data = (user as any).newPetProfile.find(
-            (x: any) => x._id == req.query.idSecond
-          );
-          res.status(200).send({ success: true, payload: data });
-        } else {
-          const userData = {
-            phone: user.profile.phone,
-            _id: user._id,
-            photo: (user as any).photo,
-            address: (user as any).address,
-            birthDate: (user as any).birthDate,
-            favoriteActivities: (user as any).favoriteActivities,
-            healthAndRequirements: (user as any).healthAndRequirements,
-            ownerPetName: (user as any).ownerPetName,
-            phoneVeterinarian: (user as any).phoneVeterinarian,
-            veterinarianContact: (user as any).veterinarianContact,
-            petName: (user as any).petName,
-            petStatus: (user as any).petStatus,
-            genderSelected: (user as any).genderSelected,
-            isDigitalIdentificationActive: (user as any)
-              .isDigitalIdentificationActive,
-            breed: (user as any).breed,
-            weight: (user as any).weight,
-          };
-          res.status(200).send({
-            success: true,
-            payload: userData,
-          });
-        }
-      }
-    } else {
-      res.status(200).send({ success: false, message: 'User not found' });
-    }
-  },
-
-  getMyPetInfo: async (req: Request, res: Response): Promise<void> => {
-    const user = await User.findById({ _id: req.query.id });
-    if (user) {
-      const qrCode = {
-        isActivated: user.isActivated,
-        _id: user._id,
-      };
-      if (user.isActivated) {
-        const data = qrCode;
-        res.status(200).send({ success: true, payload: data });
-      } else {
-        const petInfo = (user as any).newPetProfile[req.query.idSecond as any];
-        res.status(200).send({
-          success: petInfo ? true : false,
-          payload: petInfo ? petInfo : null,
-          message: petInfo ? '' : 'User not found',
-        });
-      }
-    } else {
-      res.status(200).send({ success: false, message: 'User not found' });
-    }
-  },
-
-  editProfileInfo: async (req: Request, res: Response): Promise<void> => {
-    const {
-      address,
-      birthDate,
-      favoriteActivities,
-      healthAndRequirements,
-      ownerPetName,
-      phoneVeterinarian,
-      veterinarianContact,
-      petName,
-      petStatus,
-      genderSelected,
-      breed,
-      weight,
-    } = req.body as IPet;
-
-    try {
-      await User.findByIdAndUpdate(req.body._id, {
-        address,
-        birthDate,
-        favoriteActivities,
-        healthAndRequirements,
-        ownerPetName,
-        phoneVeterinarian,
-        veterinarianContact,
-        petName,
-        petStatus,
-        genderSelected,
-        breed,
-        weight,
-      });
-      res.send({
-        message: 'The information was updated correctly',
-        success: true,
-      });
-    } catch (error) {
-      res.json({
-        success: false,
-        message: 'An error occurred in the process.',
-        error: JSON.parse(JSON.stringify(error)),
-      });
-    }
-  },
-
-  editPetProfile: async (req: Request, res: Response): Promise<void> => {
-    const {
-      address,
-      birthDate,
-      favoriteActivities,
-      healthAndRequirements,
-      ownerPetName,
-      phoneVeterinarian,
-      veterinarianContact,
-      petName,
-      petStatus,
-      genderSelected,
-      phone,
-      breed,
-      weight,
-      country,
-    } = req.body;
-
-    try {
-      await User.findOneAndUpdate(
-        { _id: req.body._id, 'newPetProfile._id': req.body.secondaryId },
-        {
-          $set: {
-            'newPetProfile.$.address': address,
-            'newPetProfile.$.birthDate': birthDate,
-            'newPetProfile.$.favoriteActivities': favoriteActivities,
-            'newPetProfile.$.healthAndRequirements': healthAndRequirements,
-            'newPetProfile.$.ownerPetName': ownerPetName,
-            'newPetProfile.$.phoneVeterinarian': phoneVeterinarian,
-            'newPetProfile.$.veterinarianContact': veterinarianContact,
-            'newPetProfile.$.petName': petName,
-            'newPetProfile.$.petStatus': petStatus,
-            'newPetProfile.$.genderSelected': genderSelected,
-            'newPetProfile.$.phone': phone,
-            'newPetProfile.$.breed': breed,
-            'newPetProfile.$.weight': weight,
-            'newPetProfile.$.country': country,
-          },
-        }
-      );
-      res.send({
-        message: 'The information was updated correctly',
-        success: true,
-      });
-    } catch (error) {
-      res.json({
-        success: false,
-        message: 'An error occurred in the process.',
-        error: JSON.parse(JSON.stringify(error)),
-      });
-    }
-  },
-
-  editPhotoProfile: async (req: Request, res: Response): Promise<void> => {
-    const { idPrincipal, idSecondary, idPhoto } = req.body;
-
-    const result = await cloudinaryV2.uploader.upload(
-      req.file != undefined ? (req.file as any).path : req.body.image,
-      { folder: 'mascotas_cr' }
-    );
-
-    try {
-      if (idSecondary === '0') {
-        if (idPhoto != undefined) {
-          await cloudinaryV2.uploader.destroy(idPhoto);
-        }
-        await User.findByIdAndUpdate(idPrincipal, {
-          photo: result.secure_url,
-          photo_id: result.public_id,
-        });
-        await fs.unlink((req.file as any).path);
-      } else {
-        if (idPhoto != undefined) {
-          await cloudinaryV2.uploader.destroy(idPhoto);
-        }
-        await User.findOneAndUpdate(
-          { _id: idPrincipal, 'newPetProfile._id': idSecondary },
-          {
-            $set: {
-              'newPetProfile.$.photo': result.secure_url,
-              'newPetProfile.$.photo_id': result.public_id,
-            },
-          }
-        );
-        await fs.unlink((req.file as any).path);
-      }
-      res.send({
-        message: 'The information was updated correctly',
-        success: true,
-      });
-    } catch (error) {
-      res.json({
-        success: false,
-        message: 'An error occurred in the process.',
-        error: JSON.parse(JSON.stringify(error)),
-      });
-    }
-  },
-
-  editThemeProfile: async (req: Request, res: Response): Promise<void> => {
-    const { theme } = req.body;
-    try {
-      await User.findByIdAndUpdate(req.body._id, { theme });
-      res.send({
-        message: 'The information was updated correctly',
-        success: true,
-      });
-    } catch (error) {
-      res.json({
-        success: false,
-        message: 'An error occurred in the process.',
-        error: JSON.parse(JSON.stringify(error)),
-      });
-    }
-  },
-
-  updatePetViewed: async (req: Request, res: Response): Promise<void> => {
-    const { lat, lng, dateViewed } = req.body;
-    try {
-      const data = { lat, lng, dateViewed };
-      await User.findOneAndUpdate(
-        { _id: req.body._id, 'newPetProfile._id': req.body.secondaryId },
-        {
-          $push: {
-            'newPetProfile.$.petViewCounter': data,
-          },
-        },
-        { new: true }
-      );
-      res.send({
-        message: 'The information was updated correctly',
-        success: true,
-      });
-    } catch (error) {
-      res.json({
-        success: false,
-        message: 'An error occurred in the process.',
-        error: JSON.parse(JSON.stringify(error)),
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -2010,223 +1613,18 @@ const userCtl: UserController = {
       if ((error as any).message.includes('No se pudo generar')) {
         res.status(500).json({
           success: false,
-          message: 'Error interno al generar identificadores únicos',
+          message: 'Internal server error, please try again later.',
+          code: 'INTERNAL_ERROR',
         });
         return;
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
-        error:
-          process.env.NODE_ENV === 'development'
-            ? (error as Error).message
-            : undefined,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
-    }
-  },
-
-  registerNewPet: async (
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void> => {
-    const { email, phone, isActivated, password, country, userState } =
-      req.body;
-    const emailFound = await User.findOne({ email: email });
-    if (emailFound) {
-      res.json({
-        success: false,
-        message: 'The email already exists in the system',
-      });
-      return;
-    } else {
-      try {
-        const newPet = new Pet({
-          email,
-          phone,
-          country,
-          isActivated,
-          password,
-          userState,
-          hostName: req.headers.referer,
-          newPetProfile: [],
-          // theme: 'theme-default-light',
-          theme: 'dark',
-        });
-
-        // User.addPet(newPet, async (_err, pPet, _done) => {
-        //   try {
-        //     var smtpTransport = nodemailer.createTransport({
-        //       host: process.env.ZOHO_HOST,
-        //       port: process.env.ZOHO_PORT,
-        //       secure: true,
-        //       logger: true,
-        //       debug: true,
-        //       auth: {
-        //         user: process.env.ZOHO_USER,
-        //         pass: process.env.ZOHO_PASSWORD,
-        //       },
-        //       tls: {
-        //         // do not fail on invalid certs
-        //         rejectUnauthorized: false,
-        //       },
-        //     });
-
-        //     const handlebarOptions = {
-        //       viewEngine: {
-        //         extName: '.handlebars',
-        //         partialsDir: path.resolve(__dirname, 'views'),
-        //         defaultLayout: false,
-        //       },
-        //       viewPath: path.resolve(__dirname, 'views'),
-        //       extName: '.handlebars',
-        //     };
-
-        //     smtpTransport.use('compile', hbs(handlebarOptions));
-
-        //     smtpTransport.verify(function (error, success) {
-        //       if (error) {
-        //         console.log(error);
-        //       } else {
-        //         console.log('Server is ready to take our messages');
-        //       }
-        //     });
-
-        //     var mailOptions = {
-        //       to: email,
-        //       from: 'soporte@localpetsandfamily.com',
-        //       subject: 'Registro Exitoso en Plaquitas para mascotas CR',
-        //       template: 'email-new-pet',
-        //       context: {
-        //         text1: 'Hola \n\n',
-        //         text2:
-        //           '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
-        //         text3:
-        //           'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
-        //         email: email,
-        //         text4:
-        //           'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
-        //         text5:
-        //           'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
-        //         text6:
-        //           'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
-        //         text7: '¡Bienvenido a bordo! ',
-        //         text8: 'Atentamente,',
-        //         text9: 'El Equipo de Plaquitas para mascotas CR',
-        //         textLink: 'Iniciar Sesión',
-        //         link:
-        //           req.headers.host == 'localhost:8080'
-        //             ? 'http://localhost:4200/login-pets'
-        //             : req.headers.referer + '/login',
-        //       },
-        //     };
-
-        //     smtpTransport.sendMail(mailOptions, function (err) {
-        //       res.json({
-        //         success: true,
-        //         message: 'Your pet has been created successfully.',
-        //       });
-        //     });
-        //   } catch (error) {
-        //     res.json({
-        //       success: false,
-        //       message: 'The email already exists in the system',
-        //       error: JSON.parse(JSON.stringify(error)),
-        //     });
-        //     next(error);
-        //   }
-        // });
-
-        try {
-          var smtpTransport = nodemailer.createTransport({
-            // host: process.env.ZOHO_HOST, // Need improvement here
-            // port: process.env.ZOHO_PORT,
-            host: 'smtp.zoho.com',
-            port: 465,
-            secure: true,
-            logger: true,
-            debug: true,
-            auth: {
-              user: process.env.ZOHO_USER,
-              pass: process.env.ZOHO_PASSWORD,
-            },
-            tls: {
-              // do not fail on invalid certs
-              rejectUnauthorized: false,
-            },
-          });
-
-          const handlebarOptions = {
-            viewEngine: {
-              extname: '.handlebars',
-              partialsDir: path.resolve(__dirname, 'views'),
-              defaultLayout: false,
-            },
-            viewPath: path.resolve(__dirname, 'views'),
-            extName: '.handlebars',
-          } as any;
-
-          smtpTransport.use('compile', hbs(handlebarOptions));
-
-          smtpTransport.verify(function (error, success) {
-            if (error) {
-              console.log(error);
-            } else {
-              console.log('Server is ready to take our messages');
-            }
-          });
-
-          var mailOptions = {
-            to: email,
-            from: 'soporte@localpetsandfamily.com',
-            subject: 'Registro Exitoso en Plaquitas para mascotas CR',
-            template: 'email-new-pet',
-            context: {
-              text1: 'Hola \n\n',
-              text2:
-                '¡Nos complace informarte que tu registro en Plaquitas para mascotas CR se ha realizado con éxito!',
-              text3:
-                'Tu cuenta ha sido creada y ahora tienes acceso a todas las emocionantes funcionalidades de nuestra plataforma. A continuación, te proporcionamos algunos detalles importantes:\n\n',
-              email: email,
-              text4:
-                'Por favor, asegúrate de mantener segura tu información de inicio de sesión y no la compartas con nadie. Si alguna vez olvidas tu contraseña, puedes restablecerla a través de la opción Olvidé mi contraseña en la página de inicio de sesión.\n\n',
-              text5:
-                'Te animamos a explorar Plaquitas para mascotas CR y comenzar a disfrutar de nuestros servicios. Si tienes alguna pregunta o necesitas asistencia, no dudes en ponerte en contacto con nuestro equipo de soporte.\n\n',
-              text6:
-                'Gracias por unirte a nuestra comunidad. Esperamos que tengas una experiencia excepcional en Plaquitas para mascotas CR.\n\n',
-              text7: '¡Bienvenido a bordo! ',
-              text8: 'Atentamente,',
-              text9: 'El Equipo de Plaquitas para mascotas CR',
-              textLink: 'Iniciar Sesión',
-              link:
-                req.headers.host == 'localhost:8080'
-                  ? 'http://localhost:4200/login-pets'
-                  : req.headers.referer + '/login',
-            },
-          };
-
-          smtpTransport.sendMail(mailOptions, function (err) {
-            res.json({
-              success: true,
-              message: 'Your pet has been created successfully.',
-            });
-          });
-        } catch (error) {
-          res.json({
-            success: false,
-            message: 'The email already exists in the system',
-            error: JSON.parse(JSON.stringify(error)),
-          });
-          if (next) next(error);
-        }
-      } catch (error) {
-        res.json({
-          success: false,
-          message: 'An error occurred in the process.',
-          error: JSON.parse(JSON.stringify(error)),
-        });
-      }
     }
   },
 
@@ -2529,7 +1927,9 @@ const userCtl: UserController = {
 
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -2776,89 +2176,11 @@ const userCtl: UserController = {
 
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor al agregar la mascota',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
-  },
-
-  registerNewPetfromUserProfile: async (
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void> => {
-    // Implementación similar a los métodos anteriores...
-    //   const {
-    //     genderSelected,
-    //     petName,
-    //     petStatus,
-    //     email,
-    //     phone,
-    //     ownerPetName,
-    //     address,
-    //     birthDate,
-    //     favoriteActivities,
-    //     healthAndRequirements,
-    //     phoneVeterinarian,
-    //     veterinarianContact,
-    //     country,
-    //   } = req.body;
-    //   try {
-    //     const result = await cloudinary.uploader.upload(
-    //       req.file != undefined ? req.file.path : req.body.photo,
-    //       { folder: 'mascotas_cr' }
-    //     );
-    //     const permissions = {
-    //       showPhoneInfo: true,
-    //       showEmailInfo: true,
-    //       showLinkTwitter: true,
-    //       showLinkFacebook: true,
-    //       showLinkInstagram: true,
-    //       showOwnerPetName: true,
-    //       showBirthDate: true,
-    //       showAddressInfo: true,
-    //       showAgeInfo: true,
-    //       showVeterinarianContact: true,
-    //       showPhoneVeterinarian: true,
-    //       showHealthAndRequirements: true,
-    //       showFavoriteActivities: true,
-    //       showLocationInfo: true,
-    //     };
-    //     const newPet = {
-    //       genderSelected,
-    //       petName,
-    //       petStatus,
-    //       email,
-    //       phone,
-    //       ownerPetName,
-    //       address,
-    //       birthDate,
-    //       favoriteActivities,
-    //       healthAndRequirements,
-    //       phoneVeterinarian,
-    //       veterinarianContact,
-    //       country,
-    //       photo: result.secure_url,
-    //       photo_id: result.public_id,
-    //       permissions: permissions,
-    //     };
-    //     await User.findByIdAndUpdate(
-    //       req.body._id,
-    //       { $push: { newPetProfile: newPet } },
-    //       { new: true }
-    //     ).then(async function (data) {
-    //       await fs.unlink(req.file.path);
-    //       res.json({
-    //         success: true,
-    //         message: 'Your pet has been created successfully.',
-    //       });
-    //     });
-    //   } catch (error) {
-    //     res.json({
-    //       success: false,
-    //       message: 'An error occurred in the process.',
-    //       error: JSON.parse(JSON.stringify(error)),
-    //     });
-    //   }
   },
 
   // Agrega una mascota a un usuario autenticado sin codigo qr
@@ -3180,150 +2502,14 @@ const userCtl: UserController = {
       console.error('Error validating QR code:', error);
       res.status(500).json({
         success: false,
-        message: 'An error occurred while validating the QR code.',
-        error: process.env.NODE_ENV === 'development' ? error : undefined,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
 
-  deletePetById: async (
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void> => {
-    // Implementación similar a los métodos anteriores...
-    //   try {
-    //     await User.findByIdAndUpdate(req.body.idPrimary, {
-    //       $pull: { newPetProfile: { _id: req.body._id } },
-    //     }).then(async function (data) {
-    //       await cloudinary.uploader.destroy(req.body.photo_id);
-    //       res.json({
-    //         success: true,
-    //         message: 'Your pet has been deleted successfully.',
-    //       });
-    //     });
-    //   } catch (error) {
-    //     res.json({
-    //       success: false,
-    //       message: 'An error occurred in the process.',
-    //       error: JSON.parse(JSON.stringify(error)),
-    //     });
-    //   }
-  },
-
-  forgot: async (
-    req: Request,
-    res: Response,
-    next?: NextFunction
-  ): Promise<void> => {
-    // Implementación similar a los métodos anteriores...
-    //   const { email } = req.body;
-    //   async.waterfall(
-    //     [
-    //       function (done) {
-    //         crypto.randomBytes(20, function (err, buf) {
-    //           var token = buf.toString('hex');
-    //           done(err, token);
-    //         });
-    //       },
-    //       function (token, done) {
-    //         User.findOne({ email: email }, (err, user) => {
-    //           if (!user) {
-    //             return res.json({ success: false, message: 'Email not found' });
-    //           }
-    //           if (user != null) {
-    //             user.resetPasswordToken = token;
-    //             user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-    //             user.save(function (err) {
-    //               done(err, token, user);
-    //             });
-    //           }
-    //         });
-    //       },
-    //       function (token, user, done) {
-    //         var smtpTransport = nodemailer.createTransport({
-    //           host: process.env.ZOHO_HOST,
-    //           port: process.env.ZOHO_PORT,
-    //           secure: true,
-    //           logger: true,
-    //           debug: true,
-    //           auth: {
-    //             user: process.env.ZOHO_USER,
-    //             pass: process.env.ZOHO_PASSWORD,
-    //           },
-    //           tls: {
-    //             // do not fail on invalid certs
-    //             rejectUnauthorized: false,
-    //           },
-    //         });
-    //         const handlebarOptions = {
-    //           viewEngine: {
-    //             extName: '.handlebars',
-    //             partialsDir: path.resolve(__dirname, 'views'),
-    //             defaultLayout: false,
-    //           },
-    //           viewPath: path.resolve(__dirname, 'views'),
-    //           extName: '.handlebars',
-    //         };
-    //         smtpTransport.use('compile', hbs(handlebarOptions));
-    //         smtpTransport.verify(function (error, success) {
-    //           if (error) {
-    //             console.log(error);
-    //           } else {
-    //             console.log('Server is ready to take our messages');
-    //           }
-    //         });
-    //         var mailOptions = {
-    //           to: user.email,
-    //           from: '	soporte@localpetsandfamily.com',
-    //           subject:
-    //             'Plaquitas para mascotas CR restablecimiento de la contraseña',
-    //           template: 'email-forgot',
-    //           context: {
-    //             text1: 'Estimado usuario, \n\n',
-    //             text2:
-    //               'Recibe este correo electrónico porque usted, o alguien en su representación, ha solicitado restablecer la contraseña de su cuenta.',
-    //             text3:
-    //               'Para completar este proceso, por favor haga clic en el enlace proporcionado a continuación o cópielo y péguelo en su navegador:\n\n',
-    //             linkSend:
-    //               req.headers.referer + '/reset-password/' + token + ' \n\n',
-    //             text4:
-    //               'Si usted no solicitó este restablecimiento de contraseña, le pedimos que por favor ignore este correo electrónico. En tal caso, su contraseña seguirá siendo la misma y segura.\n\n',
-    //             text5:
-    //               'Gracias por utilizar nuestros servicios y por mantener su cuenta segura.\n\n',
-    //             text6: 'Atentamente.\n\n',
-    //             text7: 'Plaquitas para mascotas CR',
-    //             textLink: 'Ir al enlace',
-    //             link:
-    //               req.headers.host == 'localhost:8080'
-    //                 ? 'http://localhost:4200/reset-password/' + token
-    //                 : req.headers.referer + '/reset-password/' + token,
-    //           },
-    //         };
-    //         smtpTransport.sendMail(mailOptions, function (err) {
-    //           res.json({
-    //             success: true,
-    //             message:
-    //               'Se ha enviado un correo electrónico a ' +
-    //               user.email +
-    //               ' con más instrucciones. favor de revisar la carpeta de spam si no ves el correo en tu bandeja principal',
-    //           });
-    //           done(err, 'done');
-    //         });
-    //       },
-    //     ],
-    //     function (err) {
-    //       res.json({
-    //         success: false,
-    //         message: 'An error occurred in the process.',
-    //         error: JSON.parse(JSON.stringify(err)),
-    //       });
-    //     }
-    //   );
-  },
-
   // Obtener lista de productos publicados con paginación, búsqueda y filtros
-
   async getAllPublishedProductList(
     req: Request,
     res: Response,
@@ -3416,6 +2602,7 @@ const userCtl: UserController = {
       next(error);
     }
   },
+  // Obtener un producto publicado por su ID
   async getProductPublishedById(
     req: Request,
     res: Response,
@@ -3446,6 +2633,7 @@ const userCtl: UserController = {
       next(error);
     }
   },
+  // Actualiza la contrasenna del usuario autenticado
   async updatePassword(
     req: Request,
     res: Response,
@@ -3502,7 +2690,7 @@ const userCtl: UserController = {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email } = req.body;
+      const { email, lang } = req.body;
 
       if (!email) {
         res.status(400).json({
@@ -3525,10 +2713,11 @@ const userCtl: UserController = {
       const user = await User.findOne({ email });
 
       if (!user) {
-        // Por seguridad, no revelar si el email existe o no
-        res.status(500).json({
-          success: false,
-          message: 'Email not found',
+        // Por seguridad, responder igual aunque no exista
+        res.json({
+          success: true,
+          message:
+            'Si el email existe, recibirás instrucciones para restablecer tu contraseña.',
         });
         return;
       }
@@ -3540,49 +2729,60 @@ const userCtl: UserController = {
 
       // Determinar URL
       const frontendUrl = process.env.FRONTEND_URL || req.headers.origin;
-      const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+      const resetUrl = `${frontendUrl}/${lang}/reset-password/${resetToken}`;
 
       // Enviar email usando el servicio
       const emailService = EmailService.getInstance();
       const emailSent = await emailService.sendPasswordResetEmail(
         user.email,
-        user.username || 'Usuario',
-        resetUrl
+        user.profile.username || 'Usuario',
+        resetUrl,
+        lang || 'es'
       );
 
       if (!emailSent) {
-        console.warn(`No se pudo enviar email de reset a ${user.email}`);
-        // Puedes decidir si quieres fallar o solo loggear el warning
+        console.error(
+          `❌ Error crítico: No se pudo enviar email a ${user.email} - Credenciales SMTP incorrectas o servidor no disponible`
+        );
+
+        // Opción 1: Informar al usuario (recomendada)
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error, please try again later.',
+          code: 'INTERNAL_ERROR',
+        });
+        return;
       }
 
-      // Responder al cliente
+      // Responder al cliente (solo si el email se envió correctamente)
       res.json({
         success: true,
-        message:
-          'Se enviaron instrucciones para restablecer la contraseña a su correo electrónico. Revise su carpeta de spam si no lo ve en la bandeja principal.',
+        message: 'Password reset instructions.',
       });
     } catch (error) {
       console.error('Error en forgotPassword:', error);
       res.status(500).json({
         success: false,
-        message:
-          'Ocurrió un error al procesar la solicitud. Por favor, intente nuevamente.',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
+
   async resetPassword(
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { token, newPassword, confirmPassword } = req.body;
+      const { token, newPassword, confirmPassword, lang } = req.body;
 
       // Validación de campos requeridos
       if (!token || !newPassword) {
         res.status(400).json({
           success: false,
-          message: 'Token y nueva contraseña son requeridos',
+          message: 'Token and new password are required',
         });
         return;
       }
@@ -3591,7 +2791,7 @@ const userCtl: UserController = {
       if (confirmPassword && newPassword !== confirmPassword) {
         res.status(400).json({
           success: false,
-          message: 'Las contraseñas no coinciden',
+          message: 'Passwords do not match',
         });
         return;
       }
@@ -3622,8 +2822,7 @@ const userCtl: UserController = {
       if (!user) {
         res.status(400).json({
           success: false,
-          message:
-            'Token inválido o expirado. Por favor, solicite un nuevo enlace.',
+          message: 'Invalid or expired token. Please request a new link.',
           code: 'INVALID_TOKEN',
         });
         return;
@@ -3635,7 +2834,8 @@ const userCtl: UserController = {
         if (isSamePassword) {
           res.status(400).json({
             success: false,
-            message: 'La nueva contraseña debe ser diferente a la anterior',
+            message:
+              'The new password must be different from the previous one.',
             code: 'SAME_PASSWORD',
           });
           return;
@@ -3660,8 +2860,9 @@ const userCtl: UserController = {
       emailService
         .sendPasswordChangedConfirmation(
           user.email,
-          user.username || 'Usuario',
-          req
+          user.profile.username || 'Usuario',
+          req,
+          lang || 'es'
         )
         .then((success) => {
           if (success) {
@@ -3680,16 +2881,11 @@ const userCtl: UserController = {
       // Responder éxito inmediatamente
       res.json({
         success: true,
-        message: 'Contraseña restablecida exitosamente',
+        message: 'Password successfully reset',
         payload: {
           userId: user._id,
           email: user.email,
         },
-        nextSteps: [
-          'Ahora puede iniciar sesión con su nueva contraseña',
-          'Revise su correo para la confirmación del cambio',
-          'Si no reconoce este cambio, contacte a soporte inmediatamente',
-        ],
       });
     } catch (error: any) {
       console.error('Error en resetPassword:', error);
@@ -3697,13 +2893,13 @@ const userCtl: UserController = {
       if (error.name === 'ValidationError') {
         res.status(400).json({
           success: false,
-          message: 'Error de validación en los datos',
+          message: 'Data validation error',
           errors: error.errors,
         });
       } else {
         res.status(500).json({
           success: false,
-          message: 'Error interno del servidor al restablecer la contraseña',
+          message: 'Internal server error, please try again later.',
           code: 'INTERNAL_ERROR',
         });
       }

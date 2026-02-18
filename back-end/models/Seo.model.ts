@@ -133,7 +133,9 @@ const SeoSchema = new Schema<ISeo>(
     pageId: {
       type: String,
       required: true,
-      unique: false,
+      unique: true,
+      index: true,
+      trim: true,
     },
     route: {
       type: String,

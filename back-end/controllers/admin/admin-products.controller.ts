@@ -363,7 +363,9 @@ const adminProductCtl: AdminProductController = {
 
       res.status(500).json({
         success: false,
-        message: 'Error al crear el producto',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -568,7 +570,9 @@ const adminProductCtl: AdminProductController = {
 
       res.status(500).json({
         success: false,
-        message: `Error al actualizar el producto: ${error.message}`,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -986,7 +990,9 @@ const adminProductCtl: AdminProductController = {
       console.error('Error obteniendo estadísticas de productos:', error);
       res.status(500).json({
         success: false,
-        message: 'Error obteniendo estadísticas de productos',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -1030,7 +1036,9 @@ const adminProductCtl: AdminProductController = {
       console.error('Error obteniendo crecimiento de productos:', error);
       res.status(500).json({
         success: false,
-        message: 'Error obteniendo crecimiento de productos',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },

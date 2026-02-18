@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contraseña Actualizada - PlaquitasCR</title>
+    <title>Restablecimiento de contraseña - PlaquitasCR</title>
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
     <style>
         *,
@@ -32,8 +32,8 @@
             margin-bottom: 30px;
         }
         
-        .logo {
-            max-width: 50%;
+       .logo {
+            max-width: 100px;  /* Reducido de 150px a 100px */
             height: auto;
         }
         
@@ -52,13 +52,24 @@
             line-height: 1.6;
         }
         
-        .success-box {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            padding: 15px;
-            border-radius: 5px;
+        .reset-button {
+            background-color: #4CAF50;
+            border: none;
+            color: #fff;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
             margin: 20px 0;
-            color: #155724;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .reset-button:hover {
+            background-color: #45a049;
         }
         
         .warning-box {
@@ -70,13 +81,18 @@
             color: #856404;
         }
         
-        .info-box {
-            background-color: #e8f4fd;
-            border: 1px solid #b8daff;
-            padding: 15px;
-            border-radius: 5px;
+        .link-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 20px;
             margin: 20px 0;
-            color: #004085;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        
+        .link-text {
+            color: #007bff;
+            text-decoration: none;
         }
         
         .footer {
@@ -116,36 +132,24 @@
             margin-bottom: 15px;
         }
         
+        .instruction {
+            margin-bottom: 15px;
+        }
+        
+        .closing {
+            margin-top: 25px;
+            font-style: italic;
+        }
+        
+        .signature {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+        
         .user-name {
             color: #4CAF50;
             font-weight: bold;
-        }
-        
-        .security-list {
-            padding-left: 20px;
-            margin: 15px 0;
-        }
-        
-        .security-list li {
-            margin-bottom: 8px;
-        }
-        
-        .date-info {
-            background-color: #f8f9fa;
-            padding: 12px;
-            border-radius: 5px;
-            margin: 15px 0;
-        }
-        
-        .login-button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 5px;
-            display: inline-block;
-            font-weight: bold;
-            margin: 15px 0;
         }
         
         @media only screen and (max-width: 600px) {
@@ -160,6 +164,11 @@
             .text-block {
                 font-size: 14px;
             }
+            
+            .reset-button {
+                padding: 12px 24px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -168,97 +177,95 @@
     <div class="container">
         <!-- Header con logo -->
         <div class="header">
-            <img class="logo" src="https://res.cloudinary.com/ensamble/image/upload/v1613167406/6f34a0248653a5483ac7d7950fc13ce4_2_shgyuj.png"
-                alt="PlaquitasCR Logo" />
+            <img class="logo" src="https://plaquitascr.com/assets/images/plaquitascr.png" alt="PlaquitasCR Logo" />
         </div>
-
+    
         <!-- Contenido principal -->
         <div class="content">
-            <!-- Saludo personalizado -->
-            <p class="greeting">Hola <span class="user-name">{{userName}}</span>,</p>
-
-            <!-- Mensaje de éxito -->
-            <div class="success-box">
-                <strong>✅ Contraseña Actualizada Exitosamente</strong>
-                <p style="margin: 10px 0 0 0; font-size: 14px;">
-                    Tu contraseña ha sido cambiada correctamente.
-                </p>
-            </div>
-
-            <!-- Información del cambio -->
-            <div class="info-box">
-                <p><strong>📅 Fecha y hora del cambio:</strong><br>{{changeDate}}</p>
-                <p><strong>🌐 Dispositivo/IP:</strong><br>{{deviceInfo}}</p>
-            </div>
-
-            <!-- Instrucciones de seguridad -->
-            <div class="warning-box">
-                <strong>🔒 Recomendaciones de Seguridad:</strong>
-                <ul class="security-list">
-                    <li>No compartas tu contraseña con nadie</li>
-                    <li>Usa una contraseña única para cada cuenta</li>
-                    <li>Habilita la autenticación de dos factores si está disponible</li>
-                    <li>Cambia tu contraseña regularmente</li>
-                </ul>
-            </div>
-
-            <!-- Acción principal -->
-            <div style="text-align: center; margin: 25px 0;">
-                <p class="text-block">Puedes iniciar sesión ahora con tu nueva contraseña:</p>
-                <a href="{{loginUrl}}" class="login-button" target="_blank">
-                    Iniciar Sesión en PlaquitasCR
+            <!-- Saludo personalizado (ahora fijo en español) -->
+            <p class="greeting">Estimado/a <span class="user-name">{{userName}}</span>,</p>
+    
+            <!-- Instrucción 1 (fijo) -->
+            <p class="text-block instruction">
+                Recibió este correo porque solicitó restablecer la contraseña de su cuenta.
+            </p>
+    
+            <!-- Instrucción 2 (fijo) -->
+            <p class="text-block instruction">
+                Para completar el proceso, haga clic en el siguiente enlace:
+            </p>
+    
+            <!-- Botón de acción (fijo) -->
+            <div style="text-align: center;">
+                <a href="{{resetUrl}}" class="reset-button" target="_blank">
+                    Restablecer Contraseña
                 </a>
             </div>
-
-            <!-- Advertencia si no reconoces el cambio -->
+    
+            <!-- Advertencia de expiración (fijo) -->
             <div class="warning-box">
-                <strong>⚠️ ¿No reconoces este cambio?</strong>
-                <p style="margin: 10px 0 0 0; font-size: 14px;">
-                    Si no realizaste este cambio de contraseña, por favor:
-                </p>
-                <ul class="security-list">
-                    <li>Contacta inmediatamente a nuestro soporte</li>
-                    <li>Revisa la actividad reciente de tu cuenta</li>
-                    <li>Considera cambiar tu contraseña nuevamente</li>
-                </ul>
+                <strong>⚠️ Importante:</strong> Este enlace expirará en 1 hora.
             </div>
-
-            <!-- Firma -->
-            <p class="text-block" style="margin-top: 25px;">
-                {{closing}}<br>
-                <strong>{{signature}}</strong>
+    
+            <!-- Enlace alternativo (fijo) -->
+            <div class="link-box">
+                <p style="margin-bottom: 10px; font-size: 14px; color: #666;">
+                    Si el botón no funciona, copie y pegue el siguiente enlace en su navegador:
+                </p>
+                <a href="{{resetUrl}}" class="link-text">{{resetUrl}}</a>
+            </div>
+    
+            <!-- Instrucción 3 (fijo) -->
+            <p class="text-block instruction">
+                Si no solicitó este restablecimiento, ignore este correo. Su contraseña permanecerá segura.
+            </p>
+    
+            <!-- Cierre (fijo) -->
+            <p class="text-block closing">
+                Gracias por utilizar nuestros servicios.
+            </p>
+    
+            <!-- Firma (fijo) -->
+            <p class="text-block signature">
+                El equipo de PlaquitasCR
             </p>
         </div>
-
-        <!-- Footer con información de contacto -->
+    
+        <!-- Footer (TODO FIJO EN ESPAÑOL) -->
         <div class="footer">
             <div class="support-info">
                 <p style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 15px;">
-                    ¿Necesitas ayuda?
+                    ¿Necesita ayuda?
                 </p>
                 <p>
                     <strong>Soporte al Cliente:</strong>
-                    <a class="phone-link" href="tel:+50670160434">
-                        (+506) 7016-0434
+                    <a class="phone-link" href="tel:{{phoneNumber}}">
+                        {{phoneNumber}}
                     </a>
                 </p>
                 <p>
                     <strong>Email:</strong>
-                    <a class="social-link" href="mailto:soporte@plaquitascr.com">
-                        soporte@plaquitascr.com
+                    <a class="social-link" href="mailto:{{supportEmail}}">
+                        {{supportEmail}}
                     </a>
                 </p>
                 <p>
                     <strong>Facebook:</strong>
-                    <a class="social-link" href="https://www.facebook.com/profile.php?id=100064041162056" target="_blank" rel="noopener noreferrer">
-                        @PlaquitasCR
+                    <a class="social-link" href="{{facebookUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{facebookUsername}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Instagram:</strong>
+                    <a class="social-link" href="{{instagramUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{instagramUsername}}
                     </a>
                 </p>
                 <p style="margin-top: 20px; font-size: 12px; color: #999;">
-                    Este es un correo automático de notificación de seguridad.
+                    Este es un correo automático, por favor no responda a este mensaje.
                 </p>
             </div>
-
+        
             <!-- Información de copyright -->
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
                 <p style="font-size: 12px; color: #999;">

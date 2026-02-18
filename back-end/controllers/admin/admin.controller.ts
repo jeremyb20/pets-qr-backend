@@ -746,7 +746,9 @@ const adminCtl: AdminController = {
       console.error('Error obteniendo estadísticas de usuarios:', error);
       res.status(500).json({
         success: false,
-        message: 'Error obteniendo estadísticas de usuarios',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -790,7 +792,9 @@ const adminCtl: AdminController = {
       console.error('Error obteniendo crecimiento de usuarios:', error);
       res.status(500).json({
         success: false,
-        message: 'Error obteniendo crecimiento de usuarios',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -900,7 +904,9 @@ const adminCtl: AdminController = {
       console.error('Error obteniendo estadísticas de mascotas:', error);
       res.status(500).json({
         success: false,
-        message: 'Error obteniendo estadísticas de mascotas',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
@@ -944,7 +950,9 @@ const adminCtl: AdminController = {
       console.error('Error obteniendo crecimiento de mascotas:', error);
       res.status(500).json({
         success: false,
-        message: 'Error obteniendo crecimiento de mascotas',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },

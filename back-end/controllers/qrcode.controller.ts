@@ -495,7 +495,9 @@ const qrCodeController = {
       console.error('Error obteniendo estadísticas:', error);
       res.status(500).json({
         success: false,
-        message: 'Error obteniendo estadísticas',
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
       });
     }
   },
