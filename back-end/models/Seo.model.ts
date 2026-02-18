@@ -207,11 +207,9 @@ SeoSchema.index({ contentType: 1, contentId: 1 });
 SeoSchema.index({ 'multiLanguageContent.language': 1 });
 
 // Índice para búsqueda de texto en títulos y descripciones
-SeoSchema.index({
-  'multiLanguageContent.title': 'text',
-  'multiLanguageContent.description': 'text',
-  'multiLanguageContent.keywords': 'text',
-});
+SeoSchema.index({ 'multiLanguageContent.title': 1 });
+SeoSchema.index({ 'multiLanguageContent.description': 1 });
+SeoSchema.index({ 'multiLanguageContent.keywords': 1 });
 
 // Método para obtener contenido por idioma
 SeoSchema.methods.getContentByLanguage = function (
