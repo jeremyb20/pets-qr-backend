@@ -46,6 +46,8 @@ router.get('/validateQrCode?:code', userCtl.validateQrCode);
 
 router.get('/getAllPublishedProductList', userCtl.getAllPublishedProductList);
 
+router.get('/searchProducts', userCtl.searchProducts);
+
 router.get('/getProductPublishedById', userCtl.getProductPublishedById);
 
 router.put('/updatePassword', authenticateToken, userCtl.updatePassword);

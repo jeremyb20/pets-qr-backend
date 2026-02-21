@@ -87,6 +87,11 @@ interface UserController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
+  searchProducts(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
   getProductPublishedById(
     req: Request,
     res: Response,
@@ -2602,6 +2607,81 @@ const userCtl: UserController = {
       next(error);
     }
   },
+  //
+  async searchProducts(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const {
+        query = '',
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+      } = req.query;
+
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const skip = (pageNum - 1) * limitNum;
+      const searchTerm = query as string;
+
+      const cacheKey = `products:search:${searchTerm}:page:${pageNum}:limit:${limitNum}`;
+
+      // Verificar caché
+      const cachedData = await cacheService.get(cacheKey);
+      if (cachedData) {
+        console.log('Cache hit for search key:', cacheKey);
+        res.status(200).json(cachedData);
+        return;
+      }
+
+      // Construir query de búsqueda con regex
+      let queryConditions: any = { publish: 'published' };
+
+      if (searchTerm) {
+        const searchRegex = new RegExp(searchTerm, 'i');
+        queryConditions.$or = [
+          { name: searchRegex },
+          { description: searchRegex },
+          { sku: searchRegex },
+          { code: searchRegex },
+          { category: searchRegex },
+        ];
+      }
+
+      // Ejecutar búsqueda
+      const [products, total] = await Promise.all([
+        Product.find(queryConditions)
+          .populate('reviews')
+          .sort({ [sortBy as string]: sortOrder === 'desc' ? -1 : 1 })
+          .skip(skip)
+          .limit(limitNum)
+          .exec(),
+        Product.countDocuments(queryConditions),
+      ]);
+
+      const response: ApiResponse<typeof products> = {
+        success: true,
+        payload: products,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum),
+        },
+      };
+
+      // Guardar en caché
+      await cacheService.setex(cacheKey, 300, response);
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // Obtener un producto publicado por su ID
   async getProductPublishedById(
     req: Request,

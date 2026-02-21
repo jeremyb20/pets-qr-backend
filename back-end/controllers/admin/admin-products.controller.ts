@@ -31,6 +31,8 @@ const adminProductCtl: AdminProductController = {
         limit = 10,
         sortBy = 'createdAt',
         sortOrder = 'desc',
+        startDate = '',
+        endDate = '',
         search = '',
         ...filters
       } = req.query;
@@ -61,6 +63,16 @@ const adminProductCtl: AdminProductController = {
 
       if (tableFilters.stock && tableFilters.stock.length > 0) {
         query.inventoryType = { $in: tableFilters.stock };
+      }
+
+      if (startDate || endDate) {
+        query.createdAt = {};
+        if (startDate) {
+          query.createdAt.$gte = new Date(startDate as string);
+        }
+        if (endDate) {
+          query.createdAt.$lte = new Date(endDate as string);
+        }
       }
 
       // Ejecutar consulta

@@ -29,21 +29,17 @@ const app: Application = express();
 
 // Configuración de CORS
 const corsOptions: CorsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:8083',
-    'https://normal-actively-bug.ngrok-free.app',
-    'https://*.ngrok-free.app',
-    'https://*.ngrok.io',
-    'https://next-fe-seven.vercel.app',
-    'https://*.vercel.app',
-    'https://plaquitascr.com', // Agrega este
-    'https://www.plaquitascr.com', // Y este si también usas www
-  ],
+  origin:
+    process.env.NODE_ENV === 'production'
+      ? [
+          'https://plaquitascr.com',
+          'https://www.plaquitascr.com',
+          process.env.FRONTEND_URL || '', // Variable de entorno
+        ].filter(Boolean)
+      : ['http://localhost:3000', 'http://localhost:8083'],
   credentials: true,
   optionsSuccessStatus: 200,
 };
-
 // Middlewares básicos
 app.use(cors(corsOptions));
 app.use(morgan('dev'));
