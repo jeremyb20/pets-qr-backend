@@ -110,6 +110,14 @@ const PetSchema = new Schema<IPet>(
       type: String,
       required: true,
     },
+    petFirstSurname: {
+      type: String,
+      required: false,
+    },
+    petSecondSurname: {
+      type: String,
+      required: false,
+    },
     genderSelected: {
       type: String,
       required: false,

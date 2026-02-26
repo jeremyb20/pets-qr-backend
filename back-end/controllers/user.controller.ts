@@ -272,7 +272,9 @@ const userCtl: UserController = {
           path: 'pets',
           match: petFilter,
           select: `
-         petName 
+         petName
+         petFirstSurname
+         petSecondSurname
          memberPetId 
          phone 
          photo 
@@ -291,6 +293,8 @@ const userCtl: UserController = {
          address 
          phoneVeterinarian 
          veterinarianContact
+         updatedAt
+         createdAt
         `,
           options: {
             skip: skip,
@@ -307,6 +311,8 @@ const userCtl: UserController = {
         _id: pet._id.toString(),
         idParental: id,
         petName: pet.petName || '',
+        petFirstSurname: pet.petFirstSurname || '',
+        petSecondSurname: pet.petSecondSurname || '',
         petStatus: pet.petStatus || 'No-Perdido',
         email: pet.email,
         phone: pet.phone,
@@ -366,7 +372,7 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        'memberPetId petName genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner'
+        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
@@ -2333,6 +2339,8 @@ const userCtl: UserController = {
         owner: existingUser._id,
         memberPetId, // Código generado automáticamente
         petName: parsedPetData.petName,
+        petFirstSurname: parsedPetData.petFirstSurname || 'N/A',
+        petSecondSurname: parsedPetData.petSecondSurname || 'N/A',
         breed: parsedPetData.breed,
         genderSelected: parsedPetData.genderSelected,
         birthDate: parsedPetData.birthDate || null,

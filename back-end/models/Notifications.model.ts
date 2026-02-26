@@ -82,6 +82,8 @@ export interface INotification extends Document {
   read: boolean;
   createdAt: Date;
   updatedAt: Date;
+  icon?: string;
+  lang?: string;
 }
 
 const NotificationSchema = new Schema<INotification>(
@@ -137,6 +139,14 @@ const NotificationSchema = new Schema<INotification>(
     read: {
       type: Boolean,
       default: false,
+    },
+    icon: {
+      type: String,
+      default: '',
+    },
+    lang: {
+      type: String,
+      default: 'es',
     },
   },
   {

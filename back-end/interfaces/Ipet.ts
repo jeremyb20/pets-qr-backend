@@ -68,6 +68,8 @@ export interface IPet {
   owner?: Types.ObjectId;
   memberPetId: string;
   petName: string;
+  petFirstSurname?: string;
+  petSecondSurname?: string;
   genderSelected?: string;
   breed?: string;
   weight?: string;

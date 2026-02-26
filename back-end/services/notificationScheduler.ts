@@ -1,20 +1,10 @@
 import cron from 'node-cron';
 import { Types } from 'mongoose';
 import Notification, { INotification } from '../models/Notifications.model';
-import { notificationController } from '../controllers/notification.controller';
-
-// Interfaces para los tipos
-interface NotificationData {
-  title: string;
-  body: string;
-  data?: any;
-}
-
-interface PushNotificationPayload {
-  title: string;
-  body: string;
-  data?: any;
-}
+import {
+  notificationController,
+  PushNotificationPayload,
+} from '../controllers/notification.controller';
 
 class NotificationScheduler {
   constructor() {
@@ -69,6 +59,7 @@ class NotificationScheduler {
         title: notification.title,
         body: notification.body,
         data: notification.data,
+        icon: notification.icon,
       };
 
       await notificationController.sendPushNotification(userId, pushPayload);

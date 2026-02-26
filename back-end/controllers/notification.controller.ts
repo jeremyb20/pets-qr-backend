@@ -7,7 +7,7 @@ import Notification, {
 } from '../models/Notifications.model';
 import configureWebPush from '../config/webpush';
 import { IUser } from '../interfaces/IUser';
-
+import User from '../models/User.model';
 const webpush = configureWebPush();
 
 // Interfaces para los tipos
@@ -20,18 +20,13 @@ interface PushSubscription {
   expirationTime?: number | null;
 }
 
-interface PushNotificationPayload {
-  title: string;
-  body: string;
-  type?: string;
-  data?: any;
-}
-
-interface SendNotificationRequest {
+export interface PushNotificationPayload {
   title: string;
   body: string;
   type?: NotificationType;
   data?: any;
+  icon?: string;
+  lang?: string;
 }
 
 interface ScheduleNotificationRequest {
@@ -197,7 +192,8 @@ export const notificationController = {
   // Enviar notificación inmediata
   sendNotification: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { title, body, type, data }: SendNotificationRequest = req.body;
+      const { title, body, type, data, icon, lang }: PushNotificationPayload =
+        req.body;
       const userId = (req.user as IUser)?.id?.toString();
 
       if (!userId) {
@@ -224,6 +220,8 @@ export const notificationController = {
         type: type || 'system',
         data: data || new Map(),
         status: 'pending' as const,
+        icon: icon,
+        lang: lang || 'es',
       });
 
       await notification.save();
@@ -231,7 +229,7 @@ export const notificationController = {
       // Enviar notificación push
       await notificationController.sendPushNotification(
         new Types.ObjectId(userId),
-        { title, body, type, data }
+        { title, body, type, data, icon, lang }
       );
 
       // Actualizar estado a enviado
@@ -493,6 +491,75 @@ export const notificationController = {
     } catch (error) {
       console.error('❌ Error en sendPushNotification:', error);
       throw error;
+    }
+  },
+
+  // send admin dynamic notification
+  sendAdminDynamicNotification: async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const { title, body, type, data, icon, userId } = req.body;
+      const userIdAdmin = userId as Types.ObjectId;
+      if (!title || !body) {
+        res.status(400).json({
+          success: false,
+          message: 'Título y cuerpo son requeridos',
+        });
+        return;
+      }
+
+      // Verificar si el usuario existe
+      const userExists = await User.findById(userIdAdmin);
+      if (!userExists) {
+        res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado',
+        });
+        return;
+      }
+
+      // Guardar notificación en base de datos
+      const notification = new Notification({
+        user: userIdAdmin,
+        title: title.trim(),
+        body: body.trim(),
+        type: type || 'system',
+        data: data || new Map(),
+        status: 'pending' as const,
+        icon: icon,
+      });
+
+      await notification.save();
+
+      // Enviar notificación push
+      await notificationController.sendPushNotification(userIdAdmin, {
+        title,
+        body,
+        type,
+        data,
+        icon,
+      });
+
+      // Actualizar estado a enviado
+      notification.status = 'sent';
+      notification.sentAt = new Date();
+      await notification.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Notificación enviada correctamente',
+        notification,
+      });
+    } catch (error) {
+      console.error('❌ Error en sendAdminDynamicNotification:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
     }
   },
 };
