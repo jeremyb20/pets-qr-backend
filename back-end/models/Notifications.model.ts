@@ -28,6 +28,7 @@ export interface INotification extends Document {
   updatedAt: Date;
   icon?: string;
   lang?: string;
+  image?: string;
 }
 
 const NotificationSchema = new Schema<INotification>(
@@ -90,6 +91,10 @@ const NotificationSchema = new Schema<INotification>(
     lang: {
       type: String,
       default: 'es',
+    },
+    image: {
+      type: String,
+      default: '',
     },
   },
   {

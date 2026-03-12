@@ -2402,7 +2402,7 @@ const userCtl: UserController = {
       res.status(201).json({
         success: true,
         message: 'Mascota agregada exitosamente a tu cuenta',
-        data: {
+        payload: {
           user: {
             id: existingUser._id,
             name: existingUser.profile.name,

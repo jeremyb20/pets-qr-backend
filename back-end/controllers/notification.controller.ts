@@ -29,6 +29,7 @@ export interface PushNotificationPayload {
   data?: any;
   icon?: string;
   lang?: string;
+  image?: string;
   targetDevices?: ('all' | 'mobile' | 'desktop')[]; // Nuevo
   specificDeviceId?: string; // Nuevo
 }
@@ -246,6 +247,7 @@ export const notificationController = {
         lang,
         targetDevices = ['all'], // Por defecto a todos
         specificDeviceId,
+        image,
       }: PushNotificationPayload = req.body;
 
       const userId = (req.user as IUser)?.id?.toString();
@@ -280,6 +282,7 @@ export const notificationController = {
         status: 'pending' as const,
         icon: icon,
         lang: lang || 'es',
+        image: image,
       });
 
       await notification.save();
@@ -287,7 +290,17 @@ export const notificationController = {
       // Enviar notificación push a múltiples dispositivos
       const results = await notificationController.sendPushNotification(
         new Types.ObjectId(userId),
-        { title, body, type, data, icon, lang, targetDevices, specificDeviceId }
+        {
+          title,
+          body,
+          type,
+          data,
+          icon,
+          lang,
+          targetDevices,
+          specificDeviceId,
+          image,
+        }
       );
 
       // Actualizar estado basado en resultados
@@ -515,6 +528,7 @@ export const notificationController = {
   },
 
   // Función interna para enviar push notifications (MEJORADA para multi-dispositivo)
+
   sendPushNotification: async (
     userId: Types.ObjectId,
     payload: PushNotificationPayload
@@ -609,7 +623,6 @@ export const notificationController = {
           }
         }
       );
-
       return await Promise.all(promises);
     } catch (error) {
       console.error('❌ Error en sendPushNotification:', error);
@@ -627,6 +640,7 @@ export const notificationController = {
         data,
         icon,
         targetDevices = ['all'],
+        image,
       } = req.body;
 
       const userIdAdmin = new Types.ObjectId(process.env.ADMIN_ID || '');
@@ -658,6 +672,7 @@ export const notificationController = {
         data: { ...data, targetDevices },
         status: 'pending' as const,
         icon: icon,
+        image: image,
       });
 
       await notification.save();
@@ -672,6 +687,7 @@ export const notificationController = {
           data,
           icon,
           targetDevices,
+          image,
         }
       );
 
