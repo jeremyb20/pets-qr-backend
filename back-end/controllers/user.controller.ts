@@ -34,6 +34,7 @@ import { Product } from '../models/Product.model';
 import cacheService from '../config/redis';
 import { validatePasswordStrength } from '../utils/validate-password';
 import EmailService from '../services/emailService';
+import { AdminNotificationService } from '../services/adminNotification.service';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -1566,6 +1567,13 @@ const userCtl: UserController = {
       //   // No fallar el registro si hay error en el email
       // }
 
+      AdminNotificationService.notifyNewUser(savedUser).catch((error) => {
+        console.error(
+          'Error enviando notificación al admin (no crítico):',
+          error
+        );
+      });
+
       // Paso 10: Responder con éxito
       res.status(201).json({
         success: true,
@@ -1875,7 +1883,6 @@ const userCtl: UserController = {
       // Paso 6: Actualizar el usuario para agregar la mascota
       savedUser.pets.push(savedPet._id);
       await savedUser.save();
-
       // Paso 7: Actualizar el código QR como usado
       await QrCode.findByIdAndUpdate(qrCode._id, {
         status: 'used',
@@ -1884,6 +1891,15 @@ const userCtl: UserController = {
         activationDate: new Date(),
         updatedAt: new Date(),
       });
+
+      AdminNotificationService.notifyNewPet(savedPet, savedUser).catch(
+        (error) => {
+          console.error(
+            'Error enviando notificación al admin (no crítico):',
+            error
+          );
+        }
+      );
 
       // Paso 8: Responder con éxito
       res.status(201).json({
@@ -2132,7 +2148,14 @@ const userCtl: UserController = {
       // Paso 5: Actualizar el usuario
       existingUser.pets.push(savedPet._id);
       await existingUser.save();
-
+      AdminNotificationService.notifyNewPet(savedPet, existingUser).catch(
+        (error) => {
+          console.error(
+            'Error enviando notificación al admin (no crítico):',
+            error
+          );
+        }
+      );
       // Paso 6: Responder con éxito
       res.status(201).json({
         success: true,
@@ -2397,6 +2420,15 @@ const userCtl: UserController = {
       });
 
       await newQrCode.save();
+
+      AdminNotificationService.notifyNewPet(savedPet, existingUser).catch(
+        (error) => {
+          console.error(
+            'Error enviando notificación al admin (no crítico):',
+            error
+          );
+        }
+      );
 
       // Paso 7: Responder con éxito
       res.status(201).json({
