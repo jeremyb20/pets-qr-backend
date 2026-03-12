@@ -9,6 +9,8 @@ import configureWebPush from '../config/webpush';
 import { IUser } from '../interfaces/IUser';
 import User from '../models/User.model';
 const webpush = configureWebPush();
+import 'dotenv/config';
+import { detectDevice } from '../utils/deviceDetector';
 
 // Interfaces para los tipos
 interface PushSubscription {
@@ -27,6 +29,8 @@ export interface PushNotificationPayload {
   data?: any;
   icon?: string;
   lang?: string;
+  targetDevices?: ('all' | 'mobile' | 'desktop')[]; // Nuevo
+  specificDeviceId?: string; // Nuevo
 }
 
 interface ScheduleNotificationRequest {
@@ -35,12 +39,24 @@ interface ScheduleNotificationRequest {
   type?: NotificationType;
   data?: any;
   scheduledTime: string;
+  targetDevices?: ('all' | 'mobile' | 'desktop')[]; // Nuevo
 }
 
 interface WebPushResponse {
   success: boolean;
   subscriptionId?: Types.ObjectId;
+  deviceInfo?: {
+    type: string;
+    deviceId: string;
+  };
   error?: string;
+}
+
+interface SendResult {
+  totalDevices: number;
+  successful: number;
+  failed: number;
+  devices: WebPushResponse[];
 }
 
 export const notificationController = {
@@ -48,10 +64,8 @@ export const notificationController = {
   subscribe: async (req: Request, res: Response): Promise<void> => {
     try {
       const subscription: PushSubscription = req.body;
+      const { deviceId } = req.body; // Nuevo: recibir deviceId del frontend
 
-      console.log('Nueva suscripción recibida:', req.user);
-
-      // Acceso seguro al _id
       const userId = (req.user as IUser)?.id?.toString();
 
       if (!userId) {
@@ -70,26 +84,53 @@ export const notificationController = {
         return;
       }
 
-      // Verificar si ya existe la suscripción
+      // Detectar información del dispositivo
+      const deviceInfo = detectDevice(req.headers['user-agent'] || '');
+
+      // Generar deviceId si no viene del frontend
+      const finalDeviceId =
+        deviceId ||
+        `${deviceInfo.type}_${Date.now()}_${Math.random().toString(36)}`;
+
+      // Verificar si ya existe la suscripción para este dispositivo
       const existingSubscription = await Subscription.findOne({
         user: new Types.ObjectId(userId),
-        endpoint: subscription.endpoint,
+        'deviceInfo.deviceId': finalDeviceId,
       });
 
       if (existingSubscription) {
+        // Actualizar suscripción existente
+        existingSubscription.endpoint = subscription.endpoint;
+        existingSubscription.keys = subscription.keys;
+        existingSubscription.expirationTime = subscription.expirationTime
+          ? new Date(subscription.expirationTime)
+          : null;
+        existingSubscription.isActive = true;
+        existingSubscription.deviceInfo.lastActive = new Date();
+
+        await existingSubscription.save();
+
         res.status(200).json({
           success: true,
-          message: 'Suscripción ya existente',
+          message: 'Suscripción actualizada',
+          deviceId: existingSubscription.deviceInfo.deviceId,
         });
         return;
       }
 
-      // Crear nueva suscripción
+      // Crear nueva suscripción con info del dispositivo
       const newSubscription = new Subscription({
         user: new Types.ObjectId(userId),
         endpoint: subscription.endpoint,
         keys: subscription.keys,
-        expirationTime: subscription.expirationTime || null,
+        expirationTime: subscription.expirationTime
+          ? new Date(subscription.expirationTime)
+          : null,
+        deviceInfo: {
+          ...deviceInfo,
+          deviceId: finalDeviceId,
+          lastActive: new Date(),
+        },
         isActive: true,
       });
 
@@ -98,6 +139,7 @@ export const notificationController = {
       res.status(201).json({
         success: true,
         message: 'Suscripción guardada correctamente',
+        deviceId: newSubscription.deviceInfo.deviceId,
       });
     } catch (error) {
       console.error('❌ Error en subscribe:', error);
@@ -112,7 +154,7 @@ export const notificationController = {
   // Eliminar suscripción de usuario
   unsubscribe: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { endpoint } = req.body;
+      const { endpoint, deviceId } = req.body; // Aceptar deviceId
       const userId = (req.user as IUser)?.id?.toString();
 
       if (!userId) {
@@ -123,18 +165,21 @@ export const notificationController = {
         return;
       }
 
-      if (!endpoint) {
+      const query: any = { user: new Types.ObjectId(userId) };
+
+      if (deviceId) {
+        query['deviceInfo.deviceId'] = deviceId;
+      } else if (endpoint) {
+        query.endpoint = endpoint;
+      } else {
         res.status(400).json({
           success: false,
-          message: 'Endpoint requerido',
+          message: 'Endpoint o deviceId requerido',
         });
         return;
       }
 
-      await Subscription.findOneAndDelete({
-        user: new Types.ObjectId(userId),
-        endpoint: endpoint,
-      });
+      await Subscription.findOneAndDelete(query);
 
       res.status(200).json({
         success: true,
@@ -189,11 +234,20 @@ export const notificationController = {
     }
   },
 
-  // Enviar notificación inmediata
+  // Enviar notificación inmediata (MEJORADO con multi-dispositivo)
   sendNotification: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { title, body, type, data, icon, lang }: PushNotificationPayload =
-        req.body;
+      const {
+        title,
+        body,
+        type,
+        data,
+        icon,
+        lang,
+        targetDevices = ['all'], // Por defecto a todos
+        specificDeviceId,
+      }: PushNotificationPayload = req.body;
+
       const userId = (req.user as IUser)?.id?.toString();
 
       if (!userId) {
@@ -218,7 +272,11 @@ export const notificationController = {
         title: title.trim(),
         body: body.trim(),
         type: type || 'system',
-        data: data || new Map(),
+        data: {
+          ...data,
+          targetDevices,
+          specificDeviceId,
+        },
         status: 'pending' as const,
         icon: icon,
         lang: lang || 'es',
@@ -226,21 +284,33 @@ export const notificationController = {
 
       await notification.save();
 
-      // Enviar notificación push
-      await notificationController.sendPushNotification(
+      // Enviar notificación push a múltiples dispositivos
+      const results = await notificationController.sendPushNotification(
         new Types.ObjectId(userId),
-        { title, body, type, data, icon, lang }
+        { title, body, type, data, icon, lang, targetDevices, specificDeviceId }
       );
 
-      // Actualizar estado a enviado
-      notification.status = 'sent';
+      // Actualizar estado basado en resultados
+      const successful = results.filter((r) => r.success).length;
+      notification.status = successful > 0 ? 'sent' : 'failed';
       notification.sentAt = new Date();
+      if (notification.data) {
+        notification.data.sendResults = results; // Guardar directamente el array/objeto
+      } else {
+        notification.data = { sendResults: results };
+      }
       await notification.save();
 
       res.status(200).json({
         success: true,
         message: 'Notificación enviada correctamente',
         notification,
+        results: {
+          totalDevices: results.length,
+          successful: results.filter((r) => r.success).length,
+          failed: results.filter((r) => !r.success).length,
+          devices: results,
+        },
       });
     } catch (error) {
       console.error('❌ Error en sendNotification:', error);
@@ -253,7 +323,7 @@ export const notificationController = {
     }
   },
 
-  // Programar notificación
+  // Programar notificación (MEJORADO)
   scheduleNotification: async (req: Request, res: Response): Promise<void> => {
     try {
       const {
@@ -262,6 +332,7 @@ export const notificationController = {
         type,
         data,
         scheduledTime,
+        targetDevices = ['all'],
       }: ScheduleNotificationRequest = req.body;
       const userId = (req.user as IUser)?.id?.toString();
 
@@ -286,7 +357,7 @@ export const notificationController = {
         title: title.trim(),
         body: body.trim(),
         type: type || 'system',
-        data: data || new Map(),
+        data: { ...data, targetDevices },
         scheduledFor: new Date(scheduledTime),
         status: 'pending' as const,
       });
@@ -443,34 +514,81 @@ export const notificationController = {
     }
   },
 
-  // Función interna para enviar push notifications
+  // Función interna para enviar push notifications (MEJORADA para multi-dispositivo)
   sendPushNotification: async (
     userId: Types.ObjectId,
     payload: PushNotificationPayload
   ): Promise<WebPushResponse[]> => {
     try {
-      const subscriptions: ISubscription[] = await Subscription.find({
+      // Obtener todas las suscripciones activas del usuario
+      let subscriptions: ISubscription[] = await Subscription.find({
         user: userId,
         isActive: true,
       });
 
+      // Filtrar por tipo de dispositivo si se especifica
+      if (payload.targetDevices && !payload.targetDevices.includes('all')) {
+        subscriptions = subscriptions.filter((sub) =>
+          payload.targetDevices!.includes(sub.deviceInfo.type as any)
+        );
+      }
+
+      // Filtrar por dispositivo específico
+      if (payload.specificDeviceId) {
+        subscriptions = subscriptions.filter(
+          (sub) => sub.deviceInfo.deviceId === payload.specificDeviceId
+        );
+      }
+
+      if (subscriptions.length === 0) {
+        console.log(`No hay dispositivos activos para el usuario ${userId}`);
+        return [];
+      }
+
+      console.log(
+        `Enviando notificación a ${subscriptions.length} dispositivos del usuario ${userId}`
+      );
+
+      // Enviar a cada dispositivo
       const promises = subscriptions.map(
         async (subscription): Promise<WebPushResponse> => {
           try {
+            // Añadir info del dispositivo al payload
+            const enrichedPayload = {
+              ...payload,
+              data: {
+                ...payload.data,
+                deviceType: subscription.deviceInfo.type,
+                deviceId: subscription.deviceInfo.deviceId,
+                timestamp: Date.now(),
+              },
+            };
+
             await webpush.sendNotification(
               {
                 endpoint: subscription.endpoint,
                 keys: subscription.keys,
               },
-              JSON.stringify(payload)
+              JSON.stringify(enrichedPayload)
             );
+
+            // Actualizar último acceso
+            subscription.deviceInfo.lastActive = new Date();
+            await subscription.save();
 
             return {
               success: true,
               subscriptionId: subscription._id as Types.ObjectId,
+              deviceInfo: {
+                type: subscription.deviceInfo.type,
+                deviceId: subscription.deviceInfo.deviceId,
+              },
             };
           } catch (error: any) {
-            console.error('❌ Error enviando notificación push:', error);
+            console.error(
+              `❌ Error enviando a dispositivo ${subscription.deviceInfo.deviceId}:`,
+              error
+            );
 
             // Si la suscripción es inválida, desactivarla
             if (error.statusCode === 410) {
@@ -481,6 +599,11 @@ export const notificationController = {
 
             return {
               success: false,
+              subscriptionId: subscription._id as Types.ObjectId,
+              deviceInfo: {
+                type: subscription.deviceInfo.type,
+                deviceId: subscription.deviceInfo.deviceId,
+              },
               error: error.message,
             };
           }
@@ -494,14 +617,20 @@ export const notificationController = {
     }
   },
 
-  // send admin dynamic notification
-  sendAdminDynamicNotification: async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
+  // send admin dynamic notification (MEJORADO)
+  sendToAdmin: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { title, body, type, data, icon, userId } = req.body;
-      const userIdAdmin = userId as Types.ObjectId;
+      const {
+        title,
+        body,
+        type,
+        data,
+        icon,
+        targetDevices = ['all'],
+      } = req.body;
+
+      const userIdAdmin = new Types.ObjectId(process.env.ADMIN_ID || '');
+
       if (!title || !body) {
         res.status(400).json({
           success: false,
@@ -526,34 +655,132 @@ export const notificationController = {
         title: title.trim(),
         body: body.trim(),
         type: type || 'system',
-        data: data || new Map(),
+        data: { ...data, targetDevices },
         status: 'pending' as const,
         icon: icon,
       });
 
       await notification.save();
 
-      // Enviar notificación push
-      await notificationController.sendPushNotification(userIdAdmin, {
-        title,
-        body,
-        type,
-        data,
-        icon,
-      });
+      // Enviar notificación push a múltiples dispositivos
+      const results = await notificationController.sendPushNotification(
+        userIdAdmin,
+        {
+          title,
+          body,
+          type,
+          data,
+          icon,
+          targetDevices,
+        }
+      );
 
-      // Actualizar estado a enviado
-      notification.status = 'sent';
+      // Actualizar estado
+      notification.status = results.some((r) => r.success) ? 'sent' : 'failed';
       notification.sentAt = new Date();
+      if (notification.data) {
+        notification.data.sendResults = results; // Guardar directamente el array/objeto
+      } else {
+        notification.data = { sendResults: results };
+      }
       await notification.save();
 
       res.status(200).json({
         success: true,
         message: 'Notificación enviada correctamente',
         notification,
+        results: {
+          totalDevices: results.length,
+          successful: results.filter((r) => r.success).length,
+          failed: results.filter((r) => !r.success).length,
+        },
       });
     } catch (error) {
-      console.error('❌ Error en sendAdminDynamicNotification:', error);
+      console.error('❌ Error en sendToAdmin:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  // Obtener dispositivos del usuario (NUEVO)
+  getUserDevices: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req.user as IUser)?.id?.toString();
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado',
+        });
+        return;
+      }
+
+      const devices = await Subscription.find(
+        { user: new Types.ObjectId(userId), isActive: true },
+        {
+          'deviceInfo.type': 1,
+          'deviceInfo.browser': 1,
+          'deviceInfo.os': 1,
+          'deviceInfo.lastActive': 1,
+          'deviceInfo.deviceId': 1,
+          createdAt: 1,
+          endpoint: 1,
+        }
+      ).sort({ 'deviceInfo.lastActive': -1 });
+
+      res.status(200).json({
+        success: true,
+        devices,
+      });
+    } catch (error) {
+      console.error('❌ Error en getUserDevices:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  // Desactivar dispositivo específico (NUEVO)
+  deactivateDevice: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { deviceId } = req.params;
+      const userId = (req.user as IUser)?.id?.toString();
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado',
+        });
+        return;
+      }
+
+      const result = await Subscription.findOneAndUpdate(
+        { user: new Types.ObjectId(userId), 'deviceInfo.deviceId': deviceId },
+        { isActive: false },
+        { new: true }
+      );
+
+      if (!result) {
+        res.status(404).json({
+          success: false,
+          message: 'Dispositivo no encontrado',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Dispositivo desactivado correctamente',
+      });
+    } catch (error) {
+      console.error('❌ Error en deactivateDevice:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error, please try again later.',

@@ -44,4 +44,15 @@ router.post('/unsubscribe', authenticateToken, notificationCtl.unsubscribe);
 // send test notification
 router.post('/send', authenticateToken, notificationCtl.send);
 
+// send notification to admin
+router.post('/sendToAdmin', notificationCtl.sendToAdmin);
+
+// NUEVAS RUTAS PARA MULTI-DISPOSITIVO
+router.get('/devices', authenticateToken, notificationCtl.getUserDevices);
+router.delete(
+  '/devices/:deviceId',
+  authenticateToken,
+  notificationCtl.deactivateDevice
+);
+
 export default router;

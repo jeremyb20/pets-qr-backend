@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
 import User from '../models/User.model';
 import Pet from '../models/Pet.model';
-import fs from 'fs-extra';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
