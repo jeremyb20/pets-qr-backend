@@ -60,6 +60,9 @@ class NotificationScheduler {
         body: notification.body,
         data: notification.data,
         icon: notification.icon,
+        image: notification.image,
+        lang: notification.lang || 'es',
+        targetDevices: notification.data?.targetDevices || ['all'],
       };
 
       await notificationController.sendPushNotification(userId, pushPayload);

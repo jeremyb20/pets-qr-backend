@@ -32,15 +32,7 @@ export interface PushNotificationPayload {
   image?: string;
   targetDevices?: ('all' | 'mobile' | 'desktop')[]; // Nuevo
   specificDeviceId?: string; // Nuevo
-}
-
-interface ScheduleNotificationRequest {
-  title: string;
-  body: string;
-  type?: NotificationType;
-  data?: any;
-  scheduledTime: string;
-  targetDevices?: ('all' | 'mobile' | 'desktop')[]; // Nuevo
+  scheduledTime?: string;
 }
 
 interface WebPushResponse {
@@ -346,7 +338,8 @@ export const notificationController = {
         data,
         scheduledTime,
         targetDevices = ['all'],
-      }: ScheduleNotificationRequest = req.body;
+        image,
+      }: PushNotificationPayload = req.body;
       const userId = (req.user as IUser)?.id?.toString();
 
       if (!userId) {
@@ -373,6 +366,7 @@ export const notificationController = {
         data: { ...data, targetDevices },
         scheduledFor: new Date(scheduledTime),
         status: 'pending' as const,
+        image: image,
       });
 
       await notification.save();
