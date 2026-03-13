@@ -25,8 +25,8 @@ router.get(
 );
 
 // Marcar notificación como leída
-router.patch(
-  '/:notificationId/read',
+router.put(
+  '/markAsRead/:notificationId',
   authenticateToken,
   notificationCtl.markAsRead
 );

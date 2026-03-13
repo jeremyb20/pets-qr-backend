@@ -28,7 +28,7 @@ export class AdminNotificationService {
       }
 
       const title = '¡Nueva mascota registrada! 🐾';
-      const body = `El usuario con el correo: ${userData?.email || 'N/A'} ha registrado a ${petData.petName} (${petData.breed || 'mascota'})`;
+      const body = `El usuario con el correo: ${userData?.email || 'N/A'} ha registrado una mascota con el nombre de: ${petData.petName}`;
 
       const notificationData = {
         type: 'pet_registration',
