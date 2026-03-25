@@ -73,3 +73,28 @@ export interface PetFilters {
     $lte?: Date;
   };
 }
+
+export interface IUpcomingAppointment {
+  id: string;
+  petId: string;
+  petName: string;
+  petPhoto?: string;
+  type: 'vaccine' | 'deworming' | 'medical_visit';
+  title: string;
+  description: string;
+  date: string;
+  time?: string;
+  location?: string;
+  veterinarian?: string;
+  veterinarianPhone?: string;
+  status: 'upcoming' | 'overdue' | 'today';
+  daysUntil: number;
+  originalRecord: any;
+}
+
+export interface UpcomingAppointmentsQueryParams {
+  days?: string; // Días hacia adelante a considerar (default: 30)
+  includePast?: string; // Incluir citas vencidas (default: false)
+  limit?: string; // Límite de resultados (default: 10)
+  petId?: string; // Filtrar por mascota específica
+}

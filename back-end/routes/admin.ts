@@ -7,6 +7,7 @@ import { isAdmin } from '../middlewares/roleMiddlewares';
 import { uploadImages } from '../middlewares/uploadMiddleware';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import adminSeoCtrl from '../controllers/admin/admin-seo.controller';
+import promotionController from '../controllers/admin/admin-promotion.controller';
 
 const router = Router();
 
@@ -203,6 +204,37 @@ router.get(
   authenticateToken,
   isAdmin,
   adminProductCtl.getProductGrowth
+);
+
+router.post(
+  '/createPromotion',
+  authenticateToken,
+  isAdmin,
+  promotionController.createPromotion
+);
+router.get(
+  '/getAllPromotions',
+  authenticateToken,
+  isAdmin,
+  promotionController.getAllPromotions
+);
+router.get(
+  '/getPromotionById/:id',
+  authenticateToken,
+  isAdmin,
+  promotionController.getPromotionById
+);
+router.put(
+  '/updatePromotion/:id',
+  authenticateToken,
+  isAdmin,
+  promotionController.updatePromotion
+);
+router.delete(
+  '/deletePromotion/:id',
+  authenticateToken,
+  isAdmin,
+  promotionController.deletePromotion
 );
 
 export default router;

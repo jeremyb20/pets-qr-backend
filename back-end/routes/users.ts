@@ -3,6 +3,7 @@ import userCtl from '../controllers/user.controller';
 import verification from '../middlewares/config-legacy';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { uploadSingleImage } from '../middlewares/uploadMiddleware';
+import promotionController from '../controllers/admin/admin-promotion.controller';
 
 const router = Router();
 
@@ -55,5 +56,11 @@ router.put('/updatePassword', authenticateToken, userCtl.updatePassword);
 router.post('/forgotPassword', userCtl.forgotPassword);
 
 router.post('/resetPassword', userCtl.resetPassword);
+
+// Rutas públicas para usuarios
+router.get('/getActivePromotions', promotionController.getActivePromotions);
+router.get('/getFeaturedPromotion', promotionController.getFeaturedPromotion);
+router.get('/validatePromoCode/:code', promotionController.validatePromoCode);
+router.post('/usePromoCode/:code', promotionController.usePromoCode);
 
 export default router;

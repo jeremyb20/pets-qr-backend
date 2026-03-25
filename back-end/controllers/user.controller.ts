@@ -9,10 +9,12 @@ import 'dotenv/config';
 import {
   ApiResponse,
   ErrorResponse,
+  IUpcomingAppointment,
   MedicalRecordQueryParams,
   PetFilters,
   PetQueryParams,
   SuccessResponse,
+  UpcomingAppointmentsQueryParams,
 } from '../types/response.type';
 import {
   isDewormingInput,
@@ -103,6 +105,21 @@ interface UserController {
     next: NextFunction
   ): Promise<void>;
   forgotPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
+  getUserPetStats(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
+  getUserUpcomingAppointments(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
+  getUserUpcomingAppointmentsGrouped(
     req: Request,
     res: Response,
     next: NextFunction
@@ -295,6 +312,7 @@ const userCtl: UserController = {
          veterinarianContact
          updatedAt
          createdAt
+         medicalRecord
         `,
           options: {
             skip: skip,
@@ -338,6 +356,7 @@ const userCtl: UserController = {
         healthAndRequirements: pet.healthAndRequirements || '',
         address: pet.address || '',
         memberPetId: pet.memberPetId || '',
+        medicalRecord: pet.medicalRecord,
       }));
 
       const response: ApiResponse<IPet[]> = {
@@ -372,7 +391,7 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner'
+        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
@@ -3022,6 +3041,483 @@ const userCtl: UserController = {
           code: 'INTERNAL_ERROR',
         });
       }
+    }
+  },
+
+  async getUserPetStats(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = (req.user as IUser)?.id; // Asumiendo que tienes el usuario autenticado en req.user
+      const currentDate = new Date();
+
+      // Obtener todas las mascotas del usuario
+      const userPets = await Pet.find({ owner: userId });
+
+      // Estadísticas básicas
+      const petsCount = userPets.length;
+
+      // Calcular vacunas y mascotas que necesitan vacunación
+      let vaccinationsCount = 0;
+      let petsNeedingVaccination = 0;
+      let vetVisitsCount = 0;
+
+      userPets.forEach((pet) => {
+        // Contar vacunas registradas en el historial médico
+        if (
+          pet.medicalRecord?.vaccines &&
+          Array.isArray(pet.medicalRecord.vaccines)
+        ) {
+          vaccinationsCount += pet.medicalRecord.vaccines.length;
+
+          // Verificar si la mascota necesita vacunación (próxima vacuna en los próximos 30 días)
+          const needsVaccination = pet.medicalRecord.vaccines.some(
+            (vaccine) => {
+              if (vaccine.nextVaccineDate) {
+                const nextDate = new Date(vaccine.nextVaccineDate);
+                const daysUntilNext = Math.ceil(
+                  (nextDate.getTime() - currentDate.getTime()) /
+                    (1000 * 3600 * 24)
+                );
+                return daysUntilNext <= 30 && daysUntilNext > 0;
+              }
+              return false;
+            }
+          );
+
+          if (needsVaccination) {
+            petsNeedingVaccination++;
+          }
+        }
+
+        // Contar visitas al veterinario
+        if (
+          pet.medicalRecord?.datesOfMedicalVisits &&
+          Array.isArray(pet.medicalRecord.datesOfMedicalVisits)
+        ) {
+          vetVisitsCount += pet.medicalRecord.datesOfMedicalVisits.length;
+        }
+      });
+
+      // Obtener próximas citas (asumiendo que tienes un modelo de Appointment)
+      // Si no tienes citas aún, puedes devolver 0 o implementar después
+      let appointmentsCount = 0;
+      let upcomingAppointments = 0;
+
+      res.json({
+        success: true,
+        payload: {
+          petsCount,
+          vaccinationsCount,
+          appointmentsCount,
+          vetVisitsCount,
+          petsNeedingVaccination,
+          upcomingAppointments,
+          date: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo estadísticas del usuario:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+  async getUserUpcomingAppointments(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = (req.user as IUser)?.id;
+      const {
+        days = '30',
+        includePast = 'false',
+        limit = '10',
+        petId = '',
+      } = req.query as UpcomingAppointmentsQueryParams;
+
+      const daysToConsider = parseInt(days, 10);
+      const limitResults = parseInt(limit, 10);
+      const includePastAppointments = includePast === 'true';
+      const currentDate = new Date();
+      const futureDate = new Date();
+      futureDate.setDate(currentDate.getDate() + daysToConsider);
+
+      // Construir query base
+      const query: any = { owner: userId };
+      if (petId) {
+        query.memberPetId = petId;
+      }
+
+      // Obtener todas las mascotas del usuario
+      const userPets = await Pet.find(query).select(
+        'memberPetId petName photo medicalRecord'
+      );
+
+      const upcomingAppointments: IUpcomingAppointment[] = [];
+
+      // Procesar cada mascota
+      for (const pet of userPets) {
+        // Procesar vacunas
+        if (
+          pet.medicalRecord?.vaccines &&
+          Array.isArray(pet.medicalRecord.vaccines)
+        ) {
+          for (const vaccine of pet.medicalRecord.vaccines) {
+            if (vaccine.nextVaccineDate) {
+              const nextDate = new Date(vaccine.nextVaccineDate);
+              const daysUntil = Math.ceil(
+                (nextDate.getTime() - currentDate.getTime()) /
+                  (1000 * 3600 * 24)
+              );
+
+              // Determinar si incluir esta cita
+              const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
+              const isOverdue = daysUntil < 0;
+
+              if (isUpcoming || (includePastAppointments && isOverdue)) {
+                let status: 'upcoming' | 'overdue' | 'today' = 'upcoming';
+                if (daysUntil === 0) status = 'today';
+                if (daysUntil < 0) status = 'overdue';
+
+                upcomingAppointments.push({
+                  id:
+                    vaccine._id?.toString() ||
+                    `${pet.memberPetId}_vaccine_${Date.now()}`,
+                  petId: pet.memberPetId,
+                  petName: pet.petName,
+                  petPhoto: pet.photo,
+                  type: 'vaccine',
+                  title: `${vaccine.vaccineName || 'Vaccine'} - Booster`,
+                  description: vaccine.observations || 'Next vaccination due',
+                  date: vaccine.nextVaccineDate,
+                  time: undefined,
+                  location: undefined,
+                  veterinarian: undefined,
+                  veterinarianPhone: undefined,
+                  status,
+                  daysUntil,
+                  originalRecord: vaccine,
+                });
+              }
+            }
+          }
+        }
+
+        // Procesar desparasitaciones
+        if (
+          pet.medicalRecord?.deworming &&
+          Array.isArray(pet.medicalRecord.deworming)
+        ) {
+          for (const deworming of pet.medicalRecord.deworming) {
+            if (deworming.nextDewormingDate) {
+              const nextDate = new Date(deworming.nextDewormingDate);
+              const daysUntil = Math.ceil(
+                (nextDate.getTime() - currentDate.getTime()) /
+                  (1000 * 3600 * 24)
+              );
+
+              const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
+              const isOverdue = daysUntil < 0;
+
+              if (isUpcoming || (includePastAppointments && isOverdue)) {
+                let status: 'upcoming' | 'overdue' | 'today' = 'upcoming';
+                if (daysUntil === 0) status = 'today';
+                if (daysUntil < 0) status = 'overdue';
+
+                upcomingAppointments.push({
+                  id:
+                    deworming._id?.toString() ||
+                    `${pet.memberPetId}_deworming_${Date.now()}`,
+                  petId: pet.memberPetId,
+                  petName: pet.petName,
+                  petPhoto: pet.photo,
+                  type: 'deworming',
+                  title: `${deworming.dewormerName || 'Deworming'} - Next Dose`,
+                  description: deworming.observations || 'Next deworming due',
+                  date: deworming.nextDewormingDate,
+                  time: undefined,
+                  location: undefined,
+                  veterinarian: undefined,
+                  veterinarianPhone: undefined,
+                  status,
+                  daysUntil,
+                  originalRecord: deworming,
+                });
+              }
+            }
+          }
+        }
+
+        // Procesar visitas médicas programadas (si tienen fecha futura)
+        if (
+          pet.medicalRecord?.datesOfMedicalVisits &&
+          Array.isArray(pet.medicalRecord.datesOfMedicalVisits)
+        ) {
+          for (const visit of pet.medicalRecord.datesOfMedicalVisits) {
+            if (visit.visitDate) {
+              const visitDate = new Date(visit.visitDate);
+              const daysUntil = Math.ceil(
+                (visitDate.getTime() - currentDate.getTime()) /
+                  (1000 * 3600 * 24)
+              );
+
+              const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
+              const isOverdue = daysUntil < 0;
+
+              if (isUpcoming || (includePastAppointments && isOverdue)) {
+                let status: 'upcoming' | 'overdue' | 'today' = 'upcoming';
+                if (daysUntil === 0) status = 'today';
+                if (daysUntil < 0) status = 'overdue';
+
+                upcomingAppointments.push({
+                  id:
+                    visit._id?.toString() ||
+                    `${pet.memberPetId}_visit_${Date.now()}`,
+                  petId: pet.memberPetId,
+                  petName: pet.petName,
+                  petPhoto: pet.photo,
+                  type: 'medical_visit',
+                  title: visit.reasonForVisit || 'Medical Visit',
+                  description:
+                    visit.observations || 'Scheduled veterinary visit',
+                  date: visit.visitDate,
+                  time: undefined,
+                  location: undefined,
+                  veterinarian: visit.veterinarianName,
+                  veterinarianPhone: undefined,
+                  status,
+                  daysUntil,
+                  originalRecord: visit,
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // Ordenar por fecha (más cercana primero)
+      upcomingAppointments.sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+
+        // Las de hoy primero, luego las próximas, luego las vencidas
+        if (a.status === 'today' && b.status !== 'today') return -1;
+        if (b.status === 'today' && a.status !== 'today') return 1;
+        if (a.status === 'overdue' && b.status !== 'overdue') return 1;
+        if (b.status === 'overdue' && a.status !== 'overdue') return -1;
+
+        return dateA - dateB;
+      });
+
+      // Aplicar límite
+      const limitedAppointments = upcomingAppointments.slice(0, limitResults);
+
+      // Estadísticas adicionales
+      const stats = {
+        total: upcomingAppointments.length,
+        today: upcomingAppointments.filter((a) => a.status === 'today').length,
+        upcoming: upcomingAppointments.filter((a) => a.status === 'upcoming')
+          .length,
+        overdue: upcomingAppointments.filter((a) => a.status === 'overdue')
+          .length,
+        byType: {
+          vaccine: upcomingAppointments.filter((a) => a.type === 'vaccine')
+            .length,
+          deworming: upcomingAppointments.filter((a) => a.type === 'deworming')
+            .length,
+          medical_visit: upcomingAppointments.filter(
+            (a) => a.type === 'medical_visit'
+          ).length,
+        },
+      };
+
+      res.json({
+        success: true,
+        payload: {
+          appointments: limitedAppointments,
+          stats,
+          filters: {
+            days: daysToConsider,
+            includePast: includePastAppointments,
+            limit: limitResults,
+            petId: petId || 'all',
+          },
+          date: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo próximas citas del usuario:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+  async getUserUpcomingAppointmentsGrouped(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = (req.user as IUser)?.id;
+      const { days = '30', includePast = 'false' } =
+        req.query as UpcomingAppointmentsQueryParams;
+
+      const daysToConsider = parseInt(days, 10);
+      const includePastAppointments = includePast === 'true';
+      const currentDate = new Date();
+      const futureDate = new Date();
+      futureDate.setDate(currentDate.getDate() + daysToConsider);
+
+      // Obtener todas las mascotas del usuario con sus registros médicos
+      const userPets = await Pet.find({ owner: userId }).select(
+        'memberPetId petName photo medicalRecord petStatus'
+      );
+
+      const petsWithUpcomingAppointments: any[] = [];
+
+      for (const pet of userPets) {
+        const petAppointments: IUpcomingAppointment[] = [];
+
+        // Procesar vacunas
+        if (pet.medicalRecord?.vaccines) {
+          for (const vaccine of pet.medicalRecord.vaccines) {
+            if (vaccine.nextVaccineDate) {
+              const nextDate = new Date(vaccine.nextVaccineDate);
+              const daysUntil = Math.ceil(
+                (nextDate.getTime() - currentDate.getTime()) /
+                  (1000 * 3600 * 24)
+              );
+
+              const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
+              const isOverdue = daysUntil < 0;
+
+              if (isUpcoming || (includePastAppointments && isOverdue)) {
+                petAppointments.push({
+                  id: vaccine._id?.toString() || '',
+                  petId: pet.memberPetId,
+                  petName: pet.petName,
+                  petPhoto: pet.photo,
+                  type: 'vaccine',
+                  title: `${vaccine.vaccineName || 'Vaccine'} - Booster`,
+                  description: vaccine.observations || 'Next vaccination due',
+                  date: vaccine.nextVaccineDate,
+                  time: undefined,
+                  location: undefined,
+                  veterinarian: undefined,
+                  veterinarianPhone: undefined,
+                  status:
+                    daysUntil === 0
+                      ? 'today'
+                      : daysUntil < 0
+                        ? 'overdue'
+                        : 'upcoming',
+                  daysUntil,
+                  originalRecord: vaccine,
+                });
+              }
+            }
+          }
+        }
+
+        // Procesar desparasitaciones
+        if (pet.medicalRecord?.deworming) {
+          for (const deworming of pet.medicalRecord.deworming) {
+            if (deworming.nextDewormingDate) {
+              const nextDate = new Date(deworming.nextDewormingDate);
+              const daysUntil = Math.ceil(
+                (nextDate.getTime() - currentDate.getTime()) /
+                  (1000 * 3600 * 24)
+              );
+
+              const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
+              const isOverdue = daysUntil < 0;
+
+              if (isUpcoming || (includePastAppointments && isOverdue)) {
+                petAppointments.push({
+                  id: deworming._id?.toString() || '',
+                  petId: pet.memberPetId,
+                  petName: pet.petName,
+                  petPhoto: pet.photo,
+                  type: 'deworming',
+                  title: `${deworming.dewormerName || 'Deworming'} - Next Dose`,
+                  description: deworming.observations || 'Next deworming due',
+                  date: deworming.nextDewormingDate,
+                  time: undefined,
+                  location: undefined,
+                  veterinarian: undefined,
+                  veterinarianPhone: undefined,
+                  status:
+                    daysUntil === 0
+                      ? 'today'
+                      : daysUntil < 0
+                        ? 'overdue'
+                        : 'upcoming',
+                  daysUntil,
+                  originalRecord: deworming,
+                });
+              }
+            }
+          }
+        }
+
+        // Ordenar citas de esta mascota por fecha
+        petAppointments.sort((a, b) => {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          if (a.status === 'today' && b.status !== 'today') return -1;
+          if (b.status === 'today' && a.status !== 'today') return 1;
+          return dateA - dateB;
+        });
+
+        if (petAppointments.length > 0) {
+          petsWithUpcomingAppointments.push({
+            petId: pet.memberPetId,
+            petName: pet.petName,
+            petPhoto: pet.photo,
+            petStatus: pet.petStatus,
+            totalAppointments: petAppointments.length,
+            appointments: petAppointments,
+          });
+        }
+      }
+
+      // Ordenar mascotas por la fecha de su próxima cita
+      petsWithUpcomingAppointments.sort((a, b) => {
+        const nextDateA = new Date(a.appointments[0]?.date).getTime();
+        const nextDateB = new Date(b.appointments[0]?.date).getTime();
+        return nextDateA - nextDateB;
+      });
+
+      res.json({
+        success: true,
+        payload: {
+          pets: petsWithUpcomingAppointments,
+          totalPets: petsWithUpcomingAppointments.length,
+          totalAppointments: petsWithUpcomingAppointments.reduce(
+            (sum, pet) => sum + pet.totalAppointments,
+            0
+          ),
+          date: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Error obteniendo próximas citas agrupadas:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
     }
   },
 };

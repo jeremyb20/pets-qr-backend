@@ -278,63 +278,6 @@ const adminSeoCtrl = {
     }
   },
 
-  // getSeoByPageId: async (req: Request, res: Response): Promise<void> => {
-  //   try {
-  //     const { pageId } = req.params;
-  //     const { language } = req.query; // Opcional: filtrar por idioma
-  //     console.log(req.params, '*******', req.query);
-  //     let query: any = { pageId };
-
-  //     // Si se especifica un idioma, filtrar el contenido multiidioma
-  //     if (language) {
-  //       query['multiLanguageContent.language'] = language;
-  //     }
-
-  //     const seoRecord = await Seo.findOne(query)
-  //       .populate({
-  //         path: 'createdBy',
-  //         select: 'name email',
-  //       })
-  //       .populate({
-  //         path: 'updatedBy',
-  //         select: 'name email',
-  //       })
-  //       .lean();
-
-  //     if (!seoRecord) {
-  //       const errorResponse: ErrorResponse = {
-  //         success: false,
-  //         message: 'SEO record not found for the specified pageId',
-  //       };
-  //       res.status(404).json(errorResponse);
-  //       return;
-  //     }
-
-  //     // Filtrar contenido por idioma si se especificó
-  //     if (language && seoRecord.multiLanguageContent) {
-  //       seoRecord.multiLanguageContent = seoRecord.multiLanguageContent.filter(
-  //         (content: any) => content.language === language
-  //       );
-  //     }
-
-  //     const response: ApiResponse<ISeo> = {
-  //       success: true,
-  //       payload: seoRecord as ISeo,
-  //     };
-
-  //     res.status(200).json(response);
-  //   } catch (error) {
-  //     console.error('❌ Error fetching SEO record by pageId:', error);
-
-  //     const errorResponse: ErrorResponse = {
-  //       success: false,
-  //       message: 'An error occurred while fetching the SEO record.',
-  //       error: process.env.NODE_ENV === 'development' ? error : undefined,
-  //     };
-  //     res.status(500).json(errorResponse);
-  //   }
-  // },
-
   getSeoByPageId: async (req: Request, res: Response): Promise<void> => {
     try {
       const { pageId } = req.params;
