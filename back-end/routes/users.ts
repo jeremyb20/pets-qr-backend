@@ -63,4 +63,6 @@ router.get('/getFeaturedPromotion', promotionController.getFeaturedPromotion);
 router.get('/validatePromoCode/:code', promotionController.validatePromoCode);
 router.post('/usePromoCode/:code', promotionController.usePromoCode);
 
+router.post('/registerPetView/:memberPetId', userCtl.registerPetView);
+
 export default router;

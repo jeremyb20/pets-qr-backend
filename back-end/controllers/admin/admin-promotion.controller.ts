@@ -19,6 +19,7 @@ interface CreatePromotionRequest {
   code?: string;
   usageLimit?: number;
   link?: string;
+  customIMG?: string;
 }
 
 interface UpdatePromotionRequest extends Partial<CreatePromotionRequest> {
@@ -49,6 +50,7 @@ export class PromotionController {
         code,
         usageLimit,
         link,
+        customIMG,
       } = req.body as CreatePromotionRequest;
 
       // Validar campos requeridos
@@ -110,7 +112,8 @@ export class PromotionController {
         code,
         usageLimit,
         usedCount: 0,
-        link: '',
+        link: link,
+        customIMG: customIMG || null,
         status:
           fromDate <= new Date() && untilDate >= new Date()
             ? 'active'

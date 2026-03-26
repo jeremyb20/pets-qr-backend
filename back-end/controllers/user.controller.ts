@@ -124,6 +124,11 @@ interface UserController {
     res: Response,
     next: NextFunction
   ): Promise<void>;
+  registerPetView(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
 }
 
 const userCtl: UserController = {
@@ -313,6 +318,7 @@ const userCtl: UserController = {
          updatedAt
          createdAt
          medicalRecord
+         notes
         `,
           options: {
             skip: skip,
@@ -357,6 +363,7 @@ const userCtl: UserController = {
         address: pet.address || '',
         memberPetId: pet.memberPetId || '',
         medicalRecord: pet.medicalRecord,
+        notes: pet.notes || '',
       }));
 
       const response: ApiResponse<IPet[]> = {
@@ -391,7 +398,7 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng'
+        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
@@ -3516,6 +3523,68 @@ const userCtl: UserController = {
         success: false,
         message: 'Internal server error, please try again later.',
         code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+  // En tu controlador de pets (pet.controller.ts)
+
+  registerPetView: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { memberPetId } = req.params;
+      const { lat, lng } = req.body;
+
+      if (!memberPetId) {
+        res.status(400).json({
+          success: false,
+          message: 'memberPetId is required',
+        });
+        return;
+      }
+
+      if (!lat || !lng) {
+        res.status(400).json({
+          success: false,
+          message: 'Latitude and longitude are required',
+        });
+        return;
+      }
+
+      // Buscar la mascota por memberPetId
+      const pet = await Pet.findOne({ memberPetId });
+
+      if (!pet) {
+        res.status(404).json({
+          success: false,
+          message: 'Pet not found',
+        });
+        return;
+      }
+
+      // Agregar la vista al petViewCounter
+      const newView = {
+        lat: lat.toString(),
+        lng: lng.toString(),
+        dateViewed: new Date().toISOString(),
+      };
+
+      pet.petViewCounter = pet.petViewCounter || [];
+      pet.petViewCounter.push(newView);
+
+      await pet.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Pet view registered successfully',
+        data: {
+          viewCount: pet.petViewCounter.length,
+        },
+      });
+    } catch (error) {
+      console.error('Error registering pet view:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
         error: (error as Error).message,
       });
     }

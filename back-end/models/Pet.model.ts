@@ -225,6 +225,10 @@ const PetSchema = new Schema<IPet>(
         datesOfMedicalVisits: [],
       }),
     },
+    notes: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

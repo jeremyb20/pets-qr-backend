@@ -21,6 +21,7 @@ export interface IPromotion extends Document {
   createdAt: Date;
   updatedAt: Date;
   link: string;
+  customIMG?: string;
 }
 
 const PromotionSchema = new Schema<IPromotion>(
@@ -99,6 +100,10 @@ const PromotionSchema = new Schema<IPromotion>(
       default: 0,
     },
     link: {
+      type: String,
+      required: false,
+    },
+    customIMG: {
       type: String,
       required: false,
     },

@@ -31,6 +31,7 @@ export interface IPetPermissions {
   showHealthAndRequirements: boolean;
   showFavoriteActivities: boolean;
   showLocationInfo: boolean;
+  showNotes: boolean;
 }
 
 export interface IVaccinesControl {
@@ -97,6 +98,7 @@ export interface IPet {
   phone: string;
   ownerPetName: string;
   medicalRecord?: IMedicalRecord; // ← Objeto con tres arrays
+  notes: string;
 }
 
 export interface AddPetToExistingUserRequest {
