@@ -50,7 +50,9 @@ const startServer = async (): Promise<void> => {
       console.log(`📍 Port: ${port}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🕒 Started at: ${new Date().toISOString()}`);
-      console.log(`🔗 Health check: http://localhost:${port}/health`);
+      console.log(
+        `🔗 Health check: http://localhost:${port}/api/public/health`
+      );
       console.log('──────────────────────────────────────────────');
     });
 

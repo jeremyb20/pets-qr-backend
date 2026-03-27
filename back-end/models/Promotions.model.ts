@@ -22,6 +22,8 @@ export interface IPromotion extends Document {
   updatedAt: Date;
   link: string;
   customIMG?: string;
+  isExternalLink: boolean;
+  buttonTextRedirect: string;
 }
 
 const PromotionSchema = new Schema<IPromotion>(
@@ -104,6 +106,14 @@ const PromotionSchema = new Schema<IPromotion>(
       required: false,
     },
     customIMG: {
+      type: String,
+      required: false,
+    },
+    isExternalLink: {
+      type: Boolean,
+      default: false,
+    },
+    buttonTextRedirect: {
       type: String,
       required: false,
     },

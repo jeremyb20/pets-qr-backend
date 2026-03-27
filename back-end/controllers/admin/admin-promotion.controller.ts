@@ -3,26 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import Promotion, { IPromotion } from '../../models/Promotions.model';
 import { Types } from 'mongoose';
 
-interface CreatePromotionRequest {
-  title: string;
-  description: string;
-  discount: number;
-  validFrom: string;
-  validUntil: string;
-  urlImage?: string;
-  urlImageId?: string;
-  icon?: string;
-  type: string;
-  priority?: number;
-  termsAndConditions?: string;
-  applicableTo?: string[];
-  code?: string;
-  usageLimit?: number;
-  link?: string;
-  customIMG?: string;
-}
-
-interface UpdatePromotionRequest extends Partial<CreatePromotionRequest> {
+interface UpdatePromotionRequest extends Partial<IPromotion> {
   status?: 'active' | 'inactive' | 'expired';
 }
 
@@ -51,7 +32,9 @@ export class PromotionController {
         usageLimit,
         link,
         customIMG,
-      } = req.body as CreatePromotionRequest;
+        isExternalLink,
+        buttonTextRedirect,
+      } = req.body as IPromotion;
 
       // Validar campos requeridos
       if (!title || !description || !discount || !validFrom || !validUntil) {
@@ -114,6 +97,8 @@ export class PromotionController {
         usedCount: 0,
         link: link,
         customIMG: customIMG || null,
+        isExternalLink,
+        buttonTextRedirect: buttonTextRedirect || null,
         status:
           fromDate <= new Date() && untilDate >= new Date()
             ? 'active'

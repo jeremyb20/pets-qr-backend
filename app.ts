@@ -21,9 +21,10 @@ import catalogRoutes from './back-end/routes/catalog';
 import notificationRoutes from './back-end/routes/notifications';
 import seoRoutes from './back-end/routes/seo';
 import petRoutes from './back-end/routes/pet';
+import publicRoutes from './back-end/routes/public';
 
 // Definir tipos para Multer
-interface MulterFile extends Express.Multer.File { }
+interface MulterFile extends Express.Multer.File {}
 
 const app: Application = express();
 
@@ -32,10 +33,10 @@ const corsOptions: CorsOptions = {
   origin:
     process.env.NODE_ENV === 'production'
       ? [
-        'https://plaquitascr.com',
-        'https://www.plaquitascr.com',
-        process.env.FRONTEND_URL || '', // Variable de entorno
-      ].filter(Boolean)
+          'https://plaquitascr.com',
+          'https://www.plaquitascr.com',
+          process.env.FRONTEND_URL || '',
+        ].filter(Boolean)
       : ['http://localhost:3000', 'http://localhost:8083'],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -94,15 +95,7 @@ const upload = multer({
   },
 });
 
-// Health check endpoint (PRIMERO)
-app.get('/api/health', (req: Request, res: Response): void => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
+app.use('/api/public', publicRoutes);
 
 // 1. RUTAS DE API (DEBEN IR ANTES DEL CATCH-ALL)
 app.use('/api/admin', adminRoutes);

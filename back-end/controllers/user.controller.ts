@@ -149,13 +149,80 @@ const DefaultPermissions = {
 const userCtl: UserController = {
   authenticate: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password } = req.body as AuthRequest;
+      const { email, password, turnstileToken } = req.body as AuthRequest & {
+        turnstileToken?: string;
+      };
+
+      // 1. VALIDAR TOKEN DE TURNSTILE
+      if (!turnstileToken) {
+        res.status(400).json({
+          success: false,
+          message: 'Verificación de seguridad requerida',
+          code: 'SECURITY_REQUIRED',
+        });
+        return;
+      }
+
+      // 2. VERIFICAR TOKEN CON CLOUDFLARE
+      const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+
+      if (!turnstileSecretKey) {
+        console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
+        res.status(500).json({
+          success: false,
+          message: 'Error de configuración de seguridad',
+          code: 'CONFIG_ERROR',
+        });
+        return;
+      }
+
+      const verificationUrl =
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+      const verificationResponse = await fetch(verificationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
+      });
+
+      const verificationData = await verificationResponse.json();
+      console.log(verificationData, 'verificationDataverificationData');
+      // Verificar si el reCAPTCHA fue exitoso
+      if (!verificationData.success) {
+        console.error('❌ reCAPTCHA verification failed:', verificationData);
+        res.status(400).json({
+          success: false,
+          message:
+            'Verificación de seguridad fallida favor de contactar al administrador del sitio',
+          details: verificationData['error-codes'] || ['Unknown error'],
+        });
+        return;
+      }
+
+      // Opcional: Verificar el score (si usas Turnstile con score)
+      // El score va de 0.0 a 1.0, donde 1.0 es muy probablemente humano
+      if (
+        verificationData.score !== undefined &&
+        verificationData.score < 0.5
+      ) {
+        console.warn(
+          `⚠️ Low Turnstile score: ${verificationData.score} for email: ${email}`
+        );
+        // Puedes permitir el login pero con un flag, o rechazarlo
+        // Por ahora, solo registramos pero permitimos continuar
+      }
+
+      console.log('✅ Turnstile verification successful for:', email);
+
+      // 3. BUSCAR USUARIO
       const user = await User.findOne({ email });
       if (!user) {
         res.json({ success: false, message: 'Email not found' });
         return;
       }
 
+      // 4. VERIFICAR CONTRASEÑA
       const isMatch = await bcrypt.compare(password, user.password);
       if (isMatch) {
         const token = jwt.sign(
@@ -184,7 +251,13 @@ const userCtl: UserController = {
           },
         });
       } else {
-        res.status(500).json({ success: false, message: 'Wrong password' });
+        // Registrar intento fallido de contraseña
+        console.warn(`⚠️ Failed login attempt for: ${email} - Wrong password`);
+        res.status(401).json({
+          success: false,
+          message: 'Wrong password',
+          code: 'INVALID_CREDENTIALS',
+        });
       }
     } catch (error) {
       console.error('Error in authenticate method:', error);
@@ -192,7 +265,10 @@ const userCtl: UserController = {
         success: false,
         message: 'Internal server error, please try again later.',
         code: 'INTERNAL_ERROR',
-        error: (error as Error).message,
+        error:
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
+            : undefined,
       });
     }
   },
@@ -1547,10 +1623,12 @@ const userCtl: UserController = {
         country,
         username: customUsername,
         settings,
+        turnstileToken, // Nuevo campo
       } = req.body as IUser & {
         phone: string;
         country: string;
         settings: IUserThemeConfig;
+        turnstileToken: string; // Añadir tipo
       };
 
       // Validar campos requeridos
@@ -1569,14 +1647,64 @@ const userCtl: UserController = {
         return;
       }
 
-      // Validar términos y condiciones
-      // if (termsAccepted !== true) {
-      //   res.status(400).json({
-      //     success: false,
-      //     message: 'Debes aceptar los términos y condiciones',
-      //   });
-      //   return;
-      // }
+      // Validar token de reCAPTCHA
+      if (!turnstileToken) {
+        res.status(400).json({
+          success: false,
+          message: 'Verificación de seguridad requerida',
+        });
+        return;
+      }
+
+      // Verificar reCAPTCHA con Google
+      const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+      if (!turnstileSecretKey) {
+        console.error('❌ RECAPTCHA_SECRET_KEY no está configurada');
+        res.status(500).json({
+          success: false,
+          message: 'Error de configuración de seguridad',
+        });
+        return;
+      }
+
+      const verificationUrl =
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+      const verificationResponse = await fetch(verificationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
+      });
+
+      const verificationData = await verificationResponse.json();
+
+      // Verificar si el reCAPTCHA fue exitoso
+      if (!verificationData.success) {
+        console.error('❌ reCAPTCHA verification failed:', verificationData);
+        res.status(400).json({
+          success: false,
+          message: 'Verificación de seguridad fallida',
+          details: verificationData['error-codes'] || ['Unknown error'],
+        });
+        return;
+      }
+
+      // Opcional: Verificar el score (reCAPTCHA v3)
+      // El score va de 0.0 a 1.0, donde 1.0 es muy probablemente humano
+      // Puedes ajustar el umbral según tus necesidades
+      if (
+        verificationData.score !== undefined &&
+        verificationData.score < 0.5
+      ) {
+        console.warn(`⚠️ reCAPTCHA score bajo: ${verificationData.score}`);
+        res.status(400).json({
+          success: false,
+          message:
+            'Verificación de seguridad fallida. Por favor, intente nuevamente.',
+        });
+        return;
+      }
 
       // Validar formato de email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1717,6 +1845,12 @@ const userCtl: UserController = {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
+        // Opcional: Guardar información del reCAPTCHA para auditoría
+        metadata: {
+          recaptchaScore: verificationData.score,
+          recaptchaAction: verificationData.action,
+          registeredAt: new Date(),
+        },
       });
 
       const savedUser = await newUser.save();
@@ -1735,20 +1869,6 @@ const userCtl: UserController = {
           expiresIn: '7d', // Token válido por 7 días
         }
       );
-
-      // // Paso 9: Enviar email de verificación (opcional)
-      // try {
-      //   // Aquí puedes implementar el envío de email de verificación
-      //   console.log(`📧 Email de verificación enviado a: ${savedUser.email}`);
-
-      //   await savedUser.save();
-
-      //   // TODO: Implementar servicio de email
-      //   // await sendVerificationEmail(savedUser.email, verificationToken);
-      // } catch (emailError) {
-      //   console.error('❌ Error enviando email de verificación:', emailError);
-      //   // No fallar el registro si hay error en el email
-      // }
 
       AdminNotificationService.notifyNewUser(savedUser).catch((error) => {
         console.error(
