@@ -52,6 +52,7 @@ interface UserController {
   getSettings(req: Request, res: Response): Promise<void>;
   updateSettings(req: Request, res: Response): Promise<void>;
   getProfileById(req: Request, res: Response): Promise<void>;
+  getPublicProfileById(req: Request, res: Response): Promise<void>;
   getMedicalRecordsByPet(req: Request, res: Response): Promise<void>;
   createMedicalRecord(req: Request, res: Response): Promise<void>;
   updateMedicalRecord(req: Request, res: Response): Promise<void>;
@@ -130,6 +131,20 @@ interface UserController {
     next: NextFunction
   ): Promise<void>;
 }
+
+const DefaultPermissions = {
+  showPhoneInfo: true,
+  showOwnerPetName: true,
+  showEmailInfo: true,
+  showBirthDate: true,
+  showAddressInfo: true,
+  showVeterinarianContact: true,
+  showPhoneVeterinarian: true,
+  showHealthAndRequirements: true,
+  showFavoriteActivities: true,
+  showLocationInfo: true,
+  showLocationConsent: true,
+};
 
 const userCtl: UserController = {
   authenticate: async (req: Request, res: Response): Promise<void> => {
@@ -364,6 +379,7 @@ const userCtl: UserController = {
         memberPetId: pet.memberPetId || '',
         medicalRecord: pet.medicalRecord,
         notes: pet.notes || '',
+        owner: pet.owner || '',
       }));
 
       const response: ApiResponse<IPet[]> = {
@@ -392,7 +408,7 @@ const userCtl: UserController = {
     }
   },
 
-  getProfileById: async (req: Request, res: Response): Promise<void> => {
+  getPublicProfileById: async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
 
@@ -403,6 +419,147 @@ const userCtl: UserController = {
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
       if (pet) {
+        let user = null;
+
+        // Asegurarnos de que tenemos el owner id
+        const ownerId = pet.owner;
+
+        if (ownerId) {
+          try {
+            // Intentar buscar el usuario usando el ObjectId directamente
+            user = await User.findById(ownerId)
+              .select('username email profile')
+              .lean();
+
+            // Si no se encuentra, podría ser que owner sea un string en lugar de ObjectId
+            if (!user && typeof ownerId === 'string') {
+              // Intentar buscar como string
+              user = await User.findOne({ _id: ownerId })
+                .select('username email profile')
+                .lean();
+            }
+
+            // Otra posibilidad: el owner podría estar en otro campo diferente
+            if (!user) {
+              console.log(
+                'Owner ID encontrado pero no coincide con usuario:',
+                ownerId
+              );
+            }
+          } catch (error) {
+            console.error('Error buscando usuario:', error);
+          }
+        }
+
+        // Convertir el documento de Mongoose a objeto plano
+        const petObject = pet.toObject ? pet.toObject() : pet;
+
+        // Preparar datos del owner
+        const ownerData = user
+          ? {
+              _id: user._id,
+              username: user.profile?.username || user.username || '',
+              email: user.email || '',
+              name: user.profile?.name || '',
+              phone: user.profile?.phone || '',
+              address: user.profile?.address || '',
+              city: user.profile?.city || '',
+              state: user.profile?.state || '',
+              country: user.profile?.country || '',
+              photoProfile: user.profile?.photoProfile || '',
+              avatarProfile: user.profile?.avatarProfile || '2',
+            }
+          : {
+              _id: ownerId,
+              username: '',
+              email: '',
+              name: '',
+              phone: '',
+              address: '',
+              city: '',
+              state: '',
+              country: '',
+              photoProfile: '',
+              avatarProfile: '2',
+            };
+
+        // Combinar los datos de forma correcta
+        const petWithOwner = {
+          ...petObject,
+          owner: ownerData,
+        };
+
+        res.status(200).json({
+          success: true,
+          payload: petWithOwner,
+          type: 'pet_profile',
+        });
+        return;
+      }
+
+      // Si no se encuentra en Pet, verificar si existe como QR no registrado
+      const qrCode = await QrCode.findOne({ randomCode: id }).select(
+        'randomCode isAssigned assignedPet createdAt'
+      );
+
+      // Si existe el QR (no registrado aún)
+      if (qrCode) {
+        const QRdata = {
+          randomCode: qrCode.randomCode,
+          assignedPet: qrCode.assignedPet,
+          createdAt: qrCode.createdAt,
+        };
+        res.status(200).json({
+          success: true,
+          payload: null,
+          qrCode: QRdata,
+          type: 'qr_code_unregistered',
+        });
+        return;
+      }
+
+      // No se encuentra ni en Pet ni en QrCode
+      res.status(404).json({
+        success: false,
+        message: 'Código o mascota no encontrada',
+        type: 'not_found',
+      });
+    } catch (error) {
+      console.error('Error in getPublicProfileById:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  getProfileById: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const authenticatedUserId = (req.user as IUser)?.id?.toString(); // Ajusta según cómo manejas la autenticación
+
+      // Buscar en el modelo Pet por memberPetId
+      const pet = await Pet.findOne({ memberPetId: id }).select(
+        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
+      );
+
+      // Si se encuentra la mascota (QR ya convertido en perfil)
+      if (pet) {
+        // Verificar si el usuario autenticado es el propietario
+        const isOwner = pet.owner.toString() === authenticatedUserId;
+
+        // Si NO es el propietario, retornar error
+        if (!isOwner) {
+          res.status(403).json({
+            success: false,
+            message: 'No tienes permiso para acceder a esta mascota',
+            type: 'unauthorized_access',
+          });
+          return;
+        }
+
         let user = null;
 
         // Asegurarnos de que tenemos el owner id
@@ -1880,22 +2037,7 @@ const userCtl: UserController = {
           photo: petPhotoUrl,
           photo_id: petPhotoId,
         }),
-        permissions: {
-          showPhoneInfo: true,
-          showEmailInfo: true,
-          showLinkTwitter: true,
-          showLinkFacebook: true,
-          showLinkInstagram: true,
-          showOwnerPetName: true,
-          showBirthDate: true,
-          showAddressInfo: true,
-          showAgeInfo: true,
-          showVeterinarianContact: true,
-          showPhoneVeterinarian: true,
-          showHealthAndRequirements: true,
-          showFavoriteActivities: true,
-          showLocationInfo: true,
-        },
+        permissions: DefaultPermissions,
         medicalRecord: {
           vaccines: [],
           deworming: [],
@@ -2145,22 +2287,7 @@ const userCtl: UserController = {
           photo: petPhotoUrl,
           photo_id: petPhotoId,
         }),
-        permissions: {
-          showPhoneInfo: true,
-          showEmailInfo: true,
-          showLinkTwitter: true,
-          showLinkFacebook: true,
-          showLinkInstagram: true,
-          showOwnerPetName: true,
-          showBirthDate: true,
-          showAddressInfo: true,
-          showAgeInfo: true,
-          showVeterinarianContact: true,
-          showPhoneVeterinarian: true,
-          showHealthAndRequirements: true,
-          showFavoriteActivities: true,
-          showLocationInfo: true,
-        },
+        permissions: DefaultPermissions,
         medicalRecord: {
           vaccines: [],
           deworming: [],
@@ -2403,22 +2530,7 @@ const userCtl: UserController = {
           photo: petPhotoUrl,
           photo_id: petPhotoId,
         }),
-        permissions: {
-          showPhoneInfo: true,
-          showEmailInfo: true,
-          showLinkTwitter: true,
-          showLinkFacebook: true,
-          showLinkInstagram: true,
-          showOwnerPetName: true,
-          showBirthDate: true,
-          showAddressInfo: true,
-          showAgeInfo: true,
-          showVeterinarianContact: true,
-          showPhoneVeterinarian: true,
-          showHealthAndRequirements: true,
-          showFavoriteActivities: true,
-          showLocationInfo: true,
-        },
+        permissions: DefaultPermissions,
         medicalRecord: {
           vaccines: [],
           deworming: [],

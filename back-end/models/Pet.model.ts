@@ -174,9 +174,7 @@ const PetSchema = new Schema<IPet>(
       type: String,
       required: false,
     },
-    linkTwitter: String,
-    linkFacebook: String,
-    linkInstagram: String,
+
     isDigitalIdentificationActive: {
       type: Boolean,
       default: false,
@@ -191,9 +189,6 @@ const PetSchema = new Schema<IPet>(
     permissions: {
       showPhoneInfo: { type: Boolean, default: true },
       showEmailInfo: { type: Boolean, default: true },
-      showLinkTwitter: { type: Boolean, default: true },
-      showLinkFacebook: { type: Boolean, default: true },
-      showLinkInstagram: { type: Boolean, default: true },
       showOwnerPetName: { type: Boolean, default: true },
       showBirthDate: { type: Boolean, default: true },
       showAddressInfo: { type: Boolean, default: true },
@@ -203,6 +198,7 @@ const PetSchema = new Schema<IPet>(
       showHealthAndRequirements: { type: Boolean, default: true },
       showFavoriteActivities: { type: Boolean, default: true },
       showLocationInfo: { type: Boolean, default: true },
+      showLocationConsent: { type: Boolean, default: true },
     },
     petStatusReport: [
       {

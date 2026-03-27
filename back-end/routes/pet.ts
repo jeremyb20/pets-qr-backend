@@ -6,7 +6,8 @@ import { uploadSingleImage } from '../middlewares/uploadMiddleware';
 
 const router = Router();
 
-router.get('/getProfileById/:id', userCtl.getProfileById);
+router.get('/getProfileById/:id', authenticateToken, userCtl.getProfileById);
+router.get('/getPublicProfileById/:id', userCtl.getPublicProfileById);
 
 router.put(
   '/updatePetById',

@@ -19,19 +19,16 @@ export interface IPetStatusReport {
 export interface IPetPermissions {
   showPhoneInfo: boolean;
   showEmailInfo: boolean;
-  showLinkTwitter: boolean;
-  showLinkFacebook: boolean;
-  showLinkInstagram: boolean;
   showOwnerPetName: boolean;
   showBirthDate: boolean;
   showAddressInfo: boolean;
-  showAgeInfo: boolean;
   showVeterinarianContact: boolean;
   showPhoneVeterinarian: boolean;
   showHealthAndRequirements: boolean;
   showFavoriteActivities: boolean;
   showLocationInfo: boolean;
   showNotes: boolean;
+  showLocationConsent: boolean;
 }
 
 export interface IVaccinesControl {
@@ -66,7 +63,7 @@ export interface IMedicalRecord {
 
 // Interface principal del documento Pet
 export interface IPet {
-  owner?: Types.ObjectId;
+  owner: Types.ObjectId;
   memberPetId: string;
   petName: string;
   petFirstSurname?: string;
