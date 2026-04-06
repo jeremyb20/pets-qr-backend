@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import cloudinary from 'cloudinary';
 import User from '../models/User.model';
-import Pet from '../models/Pet.model';
+import Pet, { DefaultPermissions } from '../models/Pet.model';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -131,21 +131,6 @@ interface UserController {
     next: NextFunction
   ): Promise<void>;
 }
-
-const DefaultPermissions = {
-  showPhoneInfo: true,
-  showOwnerPetName: true,
-  showEmailInfo: true,
-  showBirthDate: true,
-  showAddressInfo: true,
-  showVeterinarianContact: true,
-  showPhoneVeterinarian: true,
-  showHealthAndRequirements: true,
-  showFavoriteActivities: true,
-  showLocationInfo: true,
-  showLocationConsent: true,
-};
-
 const userCtl: UserController = {
   authenticate: async (req: Request, res: Response): Promise<void> => {
     try {
@@ -153,66 +138,70 @@ const userCtl: UserController = {
         turnstileToken?: string;
       };
 
-      // 1. VALIDAR TOKEN DE TURNSTILE
-      if (!turnstileToken) {
-        res.status(400).json({
-          success: false,
-          message: 'Verificación de seguridad requerida',
-          code: 'SECURITY_REQUIRED',
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Modo desarrollo: Omitiendo verificación de Turnstile');
+        // Continuar con el login sin verificar
+      } else {
+        // 1. VALIDAR TOKEN DE TURNSTILE
+        if (!turnstileToken) {
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad requerida',
+            code: 'SECURITY_REQUIRED',
+          });
+          return;
+        }
+
+        // 2. VERIFICAR TOKEN CON CLOUDFLARE
+        const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+
+        if (!turnstileSecretKey) {
+          console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
+          res.status(500).json({
+            success: false,
+            message: 'Error de configuración de seguridad',
+            code: 'CONFIG_ERROR',
+          });
+          return;
+        }
+
+        const verificationUrl =
+          'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationResponse = await fetch(verificationUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
         });
-        return;
+
+        const verificationData = await verificationResponse.json();
+        console.log(verificationData, 'verificationDataverificationData');
+        // Verificar si el reCAPTCHA fue exitoso
+        if (!verificationData.success) {
+          console.error('❌ reCAPTCHA verification failed:', verificationData);
+          res.status(400).json({
+            success: false,
+            message:
+              'Verificación de seguridad fallida favor de contactar al administrador del sitio',
+            details: verificationData['error-codes'] || ['Unknown error'],
+          });
+          return;
+        }
+
+        // Opcional: Verificar el score (si usas Turnstile con score)
+        // El score va de 0.0 a 1.0, donde 1.0 es muy probablemente humano
+        if (
+          verificationData.score !== undefined &&
+          verificationData.score < 0.5
+        ) {
+          console.warn(
+            `⚠️ Low Turnstile score: ${verificationData.score} for email: ${email}`
+          );
+          // Puedes permitir el login pero con un flag, o rechazarlo
+          // Por ahora, solo registramos pero permitimos continuar
+        }
       }
-
-      // 2. VERIFICAR TOKEN CON CLOUDFLARE
-      const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
-
-      if (!turnstileSecretKey) {
-        console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
-        res.status(500).json({
-          success: false,
-          message: 'Error de configuración de seguridad',
-          code: 'CONFIG_ERROR',
-        });
-        return;
-      }
-
-      const verificationUrl =
-        'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-      const verificationResponse = await fetch(verificationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
-      });
-
-      const verificationData = await verificationResponse.json();
-      console.log(verificationData, 'verificationDataverificationData');
-      // Verificar si el reCAPTCHA fue exitoso
-      if (!verificationData.success) {
-        console.error('❌ reCAPTCHA verification failed:', verificationData);
-        res.status(400).json({
-          success: false,
-          message:
-            'Verificación de seguridad fallida favor de contactar al administrador del sitio',
-          details: verificationData['error-codes'] || ['Unknown error'],
-        });
-        return;
-      }
-
-      // Opcional: Verificar el score (si usas Turnstile con score)
-      // El score va de 0.0 a 1.0, donde 1.0 es muy probablemente humano
-      if (
-        verificationData.score !== undefined &&
-        verificationData.score < 0.5
-      ) {
-        console.warn(
-          `⚠️ Low Turnstile score: ${verificationData.score} for email: ${email}`
-        );
-        // Puedes permitir el login pero con un flag, o rechazarlo
-        // Por ahora, solo registramos pero permitimos continuar
-      }
-
       console.log('✅ Turnstile verification successful for:', email);
 
       // 3. BUSCAR USUARIO
@@ -490,7 +479,7 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
+        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
@@ -530,38 +519,149 @@ const userCtl: UserController = {
         // Convertir el documento de Mongoose a objeto plano
         const petObject = pet.toObject ? pet.toObject() : pet;
 
-        // Preparar datos del owner
-        const ownerData = user
-          ? {
-              _id: user._id,
-              username: user.profile?.username || user.username || '',
-              email: user.email || '',
-              name: user.profile?.name || '',
-              phone: user.profile?.phone || '',
-              address: user.profile?.address || '',
-              city: user.profile?.city || '',
-              state: user.profile?.state || '',
-              country: user.profile?.country || '',
-              photoProfile: user.profile?.photoProfile || '',
-              avatarProfile: user.profile?.avatarProfile || '2',
-            }
-          : {
-              _id: ownerId,
-              username: '',
-              email: '',
-              name: '',
-              phone: '',
-              address: '',
-              city: '',
-              state: '',
-              country: '',
-              photoProfile: '',
-              avatarProfile: '2',
-            };
+        // Obtener permisos (combinar con permisos por defecto si no existen)
+        const permissions = petObject.permissions || DefaultPermissions;
 
-        // Combinar los datos de forma correcta
+        // Función para filtrar datos según permisos (solo incluye campos permitidos)
+        const filterByPermissions = (data: any, perms: any) => {
+          const filtered: any = {};
+
+          // Campos que siempre se muestran
+          filtered._id = data._id;
+          filtered.memberPetId = data.memberPetId;
+          filtered.petName = data.petName;
+          filtered.petFirstSurname = data.petFirstSurname;
+          filtered.petSecondSurname = data.petSecondSurname;
+          filtered.petStatus = data.petStatus;
+          filtered.photo = data.photo;
+          filtered.isDigitalIdentificationActive =
+            data.isDigitalIdentificationActive;
+          filtered.petViewCounter = data.petViewCounter;
+          filtered.petStatusReport = data.petStatusReport;
+          filtered.createdAt = data.createdAt;
+          filtered.updatedAt = data.updatedAt;
+          filtered.notes = data.notes;
+          filtered.permissions = perms;
+
+          // Campos condicionales (solo se añaden si el permiso está activo)
+          if (perms.showBreedInfo) {
+            filtered.breed = data.breed;
+          }
+
+          if (perms.showWeightInfo) {
+            filtered.weight = data.weight;
+          }
+
+          if (perms.showPhoneInfo) {
+            filtered.phone = data.phone;
+          }
+
+          if (perms.showOwnerPetName) {
+            filtered.ownerPetName = data.ownerPetName;
+          }
+
+          if (perms.showBirthDate) {
+            filtered.birthDate = data.birthDate;
+          }
+
+          if (perms.showAddressInfo) {
+            filtered.address = data.address;
+          }
+
+          if (perms.showVeterinarianContact) {
+            filtered.veterinarianContact = data.veterinarianContact;
+          }
+
+          if (perms.showPhoneVeterinarian) {
+            filtered.phoneVeterinarian = data.phoneVeterinarian;
+          }
+
+          if (perms.showHealthAndRequirements) {
+            filtered.healthAndRequirements = data.healthAndRequirements;
+          }
+
+          if (perms.showFavoriteActivities) {
+            filtered.favoriteActivities = data.favoriteActivities;
+          }
+
+          if (perms.showGenderInfo) {
+            filtered.genderSelected = data.genderSelected;
+          }
+
+          if (perms.showLocationInfo) {
+            filtered.lat = data.lat;
+            filtered.lng = data.lng;
+          }
+
+          return filtered;
+        };
+
+        // Preparar datos del owner (solo incluye campos permitidos)
+        const getOwnerData = (userData: any, ownerIdValue: any, perms: any) => {
+          const ownerInfo: any = {
+            _id: userData?._id || ownerIdValue,
+          };
+
+          // Nombre siempre visible
+          if (userData?.profile?.name) {
+            ownerInfo.name = userData.profile.name;
+          }
+
+          // Foto de perfil siempre visible si existe
+          if (userData?.profile?.photoProfile) {
+            ownerInfo.photoProfile = userData.profile.photoProfile;
+          }
+
+          // Avatar siempre visible
+          ownerInfo.avatarProfile = userData?.profile?.avatarProfile || '2';
+
+          // Username (solo si hay algún permiso de contacto)
+          if (perms.showEmailInfo || perms.showPhoneInfo) {
+            const username =
+              userData?.profile?.username || userData?.username || '';
+            if (username) {
+              ownerInfo.username = username;
+            }
+          }
+
+          // Email (solo si permiso activo y existe)
+          if (perms.showEmailInfo && userData?.email) {
+            ownerInfo.email = userData.email;
+          }
+
+          // Teléfono (solo si permiso activo y existe)
+          if (perms.showPhoneInfo && userData?.profile?.phone) {
+            ownerInfo.phone = userData.profile.phone;
+          }
+
+          // Dirección (solo si permiso activo y existe)
+          if (perms.showAddressInfo) {
+            if (userData?.profile?.address) {
+              ownerInfo.address = userData.profile.address;
+            }
+            if (userData?.profile?.city) {
+              ownerInfo.city = userData.profile.city;
+            }
+            if (userData?.profile?.state) {
+              ownerInfo.state = userData.profile.state;
+            }
+            if (userData?.profile?.country) {
+              ownerInfo.country = userData.profile.country;
+            }
+          }
+
+          return ownerInfo;
+        };
+
+        // Aplicar filtros a los datos de la mascota
+        const filteredPetData = filterByPermissions(petObject, permissions);
+
+        // Preparar datos del owner aplicando permisos
+        const ownerData = getOwnerData(user, ownerId, permissions);
+
+        // Combinar los datos filtrados
         const petWithOwner = {
-          ...petObject,
+          ...filteredPetData,
           owner: ownerData,
         };
 
@@ -618,7 +718,7 @@ const userCtl: UserController = {
 
       // Buscar en el modelo Pet por memberPetId
       const pet = await Pet.findOne({ memberPetId: id }).select(
-        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng linkTwitter linkFacebook linkInstagram isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
+        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
       );
 
       // Si se encuentra la mascota (QR ya convertido en perfil)
@@ -1646,64 +1746,52 @@ const userCtl: UserController = {
         });
         return;
       }
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Modo desarrollo: Omitiendo verificación de Turnstile');
+        // Continuar con el login sin verificar
+      } else {
+        // Validar token de reCAPTCHA
+        if (!turnstileToken) {
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad requerida',
+          });
+          return;
+        }
 
-      // Validar token de reCAPTCHA
-      if (!turnstileToken) {
-        res.status(400).json({
-          success: false,
-          message: 'Verificación de seguridad requerida',
+        // Verificar reCAPTCHA con Google
+        const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+        if (!turnstileSecretKey) {
+          console.error('❌ RECAPTCHA_SECRET_KEY no está configurada');
+          res.status(500).json({
+            success: false,
+            message: 'Error de configuración de seguridad',
+          });
+          return;
+        }
+
+        const verificationUrl =
+          'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationResponse = await fetch(verificationUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
         });
-        return;
-      }
 
-      // Verificar reCAPTCHA con Google
-      const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
-      if (!turnstileSecretKey) {
-        console.error('❌ RECAPTCHA_SECRET_KEY no está configurada');
-        res.status(500).json({
-          success: false,
-          message: 'Error de configuración de seguridad',
-        });
-        return;
-      }
+        const verificationData = await verificationResponse.json();
 
-      const verificationUrl =
-        'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-      const verificationResponse = await fetch(verificationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
-      });
-
-      const verificationData = await verificationResponse.json();
-
-      // Verificar si el reCAPTCHA fue exitoso
-      if (!verificationData.success) {
-        console.error('❌ reCAPTCHA verification failed:', verificationData);
-        res.status(400).json({
-          success: false,
-          message: 'Verificación de seguridad fallida',
-          details: verificationData['error-codes'] || ['Unknown error'],
-        });
-        return;
-      }
-
-      // Opcional: Verificar el score (reCAPTCHA v3)
-      // El score va de 0.0 a 1.0, donde 1.0 es muy probablemente humano
-      // Puedes ajustar el umbral según tus necesidades
-      if (
-        verificationData.score !== undefined &&
-        verificationData.score < 0.5
-      ) {
-        console.warn(`⚠️ reCAPTCHA score bajo: ${verificationData.score}`);
-        res.status(400).json({
-          success: false,
-          message:
-            'Verificación de seguridad fallida. Por favor, intente nuevamente.',
-        });
-        return;
+        // Verificar si el reCAPTCHA fue exitoso
+        if (!verificationData.success) {
+          console.error('❌ reCAPTCHA verification failed:', verificationData);
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad fallida',
+            details: verificationData['error-codes'] || ['Unknown error'],
+          });
+          return;
+        }
       }
 
       // Validar formato de email
@@ -1825,11 +1913,7 @@ const userCtl: UserController = {
         pets: [],
         configuration: {
           theme: settings || defaultTheme,
-          permissions: {
-            showPhoneInfo: true,
-            showEmailInfo: true,
-            showPersonalInfo: true,
-          },
+          permissions: DefaultPermissions,
         },
         profile: {
           name: `${firstName} ${lastName}`,
@@ -1846,11 +1930,11 @@ const userCtl: UserController = {
         createdAt: new Date(),
         updatedAt: new Date(),
         // Opcional: Guardar información del reCAPTCHA para auditoría
-        metadata: {
-          recaptchaScore: verificationData.score,
-          recaptchaAction: verificationData.action,
-          registeredAt: new Date(),
-        },
+        // metadata: {
+        //   recaptchaScore: verificationData.score,
+        //   recaptchaAction: verificationData.action,
+        //   registeredAt: new Date(),
+        // },
       });
 
       const savedUser = await newUser.save();
@@ -2116,11 +2200,7 @@ const userCtl: UserController = {
             themeMode: 'dark',
             themeStretch: false,
           },
-          permissions: {
-            showPhoneInfo: true,
-            showEmailInfo: true,
-            showPersonalInfo: true,
-          },
+          permissions: DefaultPermissions,
         },
         profile: {
           name: `${parsedUserData.firstName} ${parsedUserData.lastName}`,
@@ -3067,8 +3147,58 @@ const userCtl: UserController = {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { email, lang } = req.body;
+      const { email, lang, turnstileToken } = req.body;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Modo desarrollo: Omitiendo verificación de Turnstile');
+        // Continuar con el login sin verificar
+      } else {
+        // 1. VALIDAR TOKEN DE TURNSTILE
+        if (!turnstileToken) {
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad requerida',
+            code: 'SECURITY_REQUIRED',
+          });
+          return;
+        }
 
+        // 2. VERIFICAR TOKEN CON CLOUDFLARE
+        const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+
+        if (!turnstileSecretKey) {
+          console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
+          res.status(500).json({
+            success: false,
+            message: 'Error de configuración de seguridad',
+            code: 'CONFIG_ERROR',
+          });
+          return;
+        }
+
+        const verificationUrl =
+          'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationResponse = await fetch(verificationUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
+        });
+
+        const verificationData = await verificationResponse.json();
+        console.log(verificationData, 'verificationDataverificationData');
+        // Verificar si el reCAPTCHA fue exitoso
+        if (!verificationData.success) {
+          console.error('❌ reCAPTCHA verification failed:', verificationData);
+          res.status(400).json({
+            success: false,
+            message:
+              'Verificación de seguridad fallida favor de contactar al administrador del sitio',
+            details: verificationData['error-codes'] || ['Unknown error'],
+          });
+          return;
+        }
+      }
       if (!email) {
         res.status(400).json({
           success: false,

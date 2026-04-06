@@ -9,6 +9,23 @@ import {
 } from '../interfaces/Ipet';
 import { Schema, model, Document, Types } from 'mongoose';
 
+export const DefaultPermissions = {
+  showPhoneInfo: true, // Muestra teléfono del dueño
+  showOwnerPetName: true, // Muestra nombre del dueño de la mascota
+  showEmailInfo: true, // Muestra email del dueño
+  showBirthDate: true, // Muestra fecha de nacimiento de la mascota
+  showAddressInfo: true, // Muestra dirección del dueño
+  showVeterinarianContact: true, // Muestra contacto del veterinario
+  showPhoneVeterinarian: true, // Muestra teléfono del veterinario
+  showHealthAndRequirements: true, // Muestra información de salud
+  showFavoriteActivities: true, // Muestra actividades favoritas
+  showLocationInfo: true, // Muestra ubicación (lat/lng)
+  showLocationConsent: true, // Consentimiento de ubicación
+  showBreedInfo: true, // Muestra información de raza
+  showWeightInfo: true, // Muestra información de peso
+  showGenderInfo: true, // Muestra información de género
+};
+
 const VaccineSchema = new Schema<IVaccinesControl>({
   dateOfApplication: {
     type: String,
@@ -174,7 +191,6 @@ const PetSchema = new Schema<IPet>(
       type: String,
       required: false,
     },
-
     isDigitalIdentificationActive: {
       type: Boolean,
       default: false,
@@ -187,18 +203,66 @@ const PetSchema = new Schema<IPet>(
       },
     ],
     permissions: {
-      showPhoneInfo: { type: Boolean, default: true },
-      showEmailInfo: { type: Boolean, default: true },
-      showOwnerPetName: { type: Boolean, default: true },
-      showBirthDate: { type: Boolean, default: true },
-      showAddressInfo: { type: Boolean, default: true },
-      showAgeInfo: { type: Boolean, default: true },
-      showVeterinarianContact: { type: Boolean, default: true },
-      showPhoneVeterinarian: { type: Boolean, default: true },
-      showHealthAndRequirements: { type: Boolean, default: true },
-      showFavoriteActivities: { type: Boolean, default: true },
-      showLocationInfo: { type: Boolean, default: true },
-      showLocationConsent: { type: Boolean, default: true },
+      showPhoneInfo: {
+        type: Boolean,
+        default: true,
+      },
+      showEmailInfo: {
+        type: Boolean,
+        default: true,
+      },
+      showOwnerPetName: {
+        type: Boolean,
+        default: true,
+      },
+      showBirthDate: {
+        type: Boolean,
+        default: true,
+      },
+      showAddressInfo: {
+        type: Boolean,
+        default: true,
+      },
+      showAgeInfo: {
+        type: Boolean,
+        default: true,
+      },
+      showVeterinarianContact: {
+        type: Boolean,
+        default: true,
+      },
+      showPhoneVeterinarian: {
+        type: Boolean,
+        default: true,
+      },
+      showHealthAndRequirements: {
+        type: Boolean,
+        default: true,
+      },
+      showFavoriteActivities: {
+        type: Boolean,
+        default: true,
+      },
+      showLocationInfo: {
+        type: Boolean,
+        default: true,
+      },
+      showLocationConsent: {
+        type: Boolean,
+        default: true,
+      },
+      showBreedInfo: {
+        type: Boolean,
+        default: true,
+      },
+      showWeightInfo: {
+        type: Boolean,
+        default: true,
+      },
+      showGenderInfo: {
+        type: Boolean,
+        default: true,
+      },
     },
     petStatusReport: [
       {

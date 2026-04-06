@@ -28,7 +28,9 @@ export interface IPetPermissions {
   showFavoriteActivities: boolean;
   showLocationInfo: boolean;
   showNotes: boolean;
-  showLocationConsent: boolean;
+  showBreedInfo: boolean;
+  showWeightInfo: boolean;
+  showGenderInfo: boolean;
 }
 
 export interface IVaccinesControl {
