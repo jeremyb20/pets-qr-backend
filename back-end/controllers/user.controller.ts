@@ -774,31 +774,31 @@ const userCtl: UserController = {
         // Preparar datos del owner
         const ownerData = user
           ? {
-              _id: user._id,
-              username: user.profile?.username || user.username || '',
-              email: user.email || '',
-              name: user.profile?.name || '',
-              phone: user.profile?.phone || '',
-              address: user.profile?.address || '',
-              city: user.profile?.city || '',
-              state: user.profile?.state || '',
-              country: user.profile?.country || '',
-              photoProfile: user.profile?.photoProfile || '',
-              avatarProfile: user.profile?.avatarProfile || '2',
-            }
+            _id: user._id,
+            username: user.profile?.username || user.username || '',
+            email: user.email || '',
+            name: user.profile?.name || '',
+            phone: user.profile?.phone || '',
+            address: user.profile?.address || '',
+            city: user.profile?.city || '',
+            state: user.profile?.state || '',
+            country: user.profile?.country || '',
+            photoProfile: user.profile?.photoProfile || '',
+            avatarProfile: user.profile?.avatarProfile || '2',
+          }
           : {
-              _id: ownerId,
-              username: '',
-              email: '',
-              name: '',
-              phone: '',
-              address: '',
-              city: '',
-              state: '',
-              country: '',
-              photoProfile: '',
-              avatarProfile: '2',
-            };
+            _id: ownerId,
+            username: '',
+            email: '',
+            name: '',
+            phone: '',
+            address: '',
+            city: '',
+            state: '',
+            country: '',
+            photoProfile: '',
+            avatarProfile: '2',
+          };
 
         // Combinar los datos de forma correcta
         const petWithOwner = {
@@ -1824,7 +1824,7 @@ const userCtl: UserController = {
       if (existingEmail) {
         res.status(409).json({
           success: false,
-          message: 'El correo electrónico ya está registrado',
+          message: 'The email address is already registered.',
         });
         return;
       }
@@ -1988,7 +1988,7 @@ const userCtl: UserController = {
         let message = 'Error de duplicación';
 
         if (field === 'email')
-          message = 'El correo electrónico ya está registrado';
+          message = 'The email address is already registered.';
         if (field === 'memberId')
           message = 'Error interno, por favor intenta de nuevo';
         if (field === 'profile.username')
@@ -2085,7 +2085,7 @@ const userCtl: UserController = {
       if (existingUser) {
         res.status(409).json({
           success: false,
-          message: 'El correo electrónico ya está registrado.',
+          message: 'The email address is already registered.',
         });
         return;
       }
@@ -3448,7 +3448,7 @@ const userCtl: UserController = {
                 const nextDate = new Date(vaccine.nextVaccineDate);
                 const daysUntilNext = Math.ceil(
                   (nextDate.getTime() - currentDate.getTime()) /
-                    (1000 * 3600 * 24)
+                  (1000 * 3600 * 24)
                 );
                 return daysUntilNext <= 30 && daysUntilNext > 0;
               }
@@ -3543,7 +3543,7 @@ const userCtl: UserController = {
               const nextDate = new Date(vaccine.nextVaccineDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                  (1000 * 3600 * 24)
+                (1000 * 3600 * 24)
               );
 
               // Determinar si incluir esta cita
@@ -3589,7 +3589,7 @@ const userCtl: UserController = {
               const nextDate = new Date(deworming.nextDewormingDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                  (1000 * 3600 * 24)
+                (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
@@ -3634,7 +3634,7 @@ const userCtl: UserController = {
               const visitDate = new Date(visit.visitDate);
               const daysUntil = Math.ceil(
                 (visitDate.getTime() - currentDate.getTime()) /
-                  (1000 * 3600 * 24)
+                (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
@@ -3764,7 +3764,7 @@ const userCtl: UserController = {
               const nextDate = new Date(vaccine.nextVaccineDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                  (1000 * 3600 * 24)
+                (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
@@ -3805,7 +3805,7 @@ const userCtl: UserController = {
               const nextDate = new Date(deworming.nextDewormingDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                  (1000 * 3600 * 24)
+                (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
