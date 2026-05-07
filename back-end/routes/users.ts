@@ -4,6 +4,7 @@ import verification from '../middlewares/config-legacy';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { uploadSingleImage } from '../middlewares/uploadMiddleware';
 import promotionController from '../controllers/admin/admin-promotion.controller';
+import UserSecurityController from '../controllers/userSecurity.controller';
 
 const router = Router();
 
@@ -64,5 +65,28 @@ router.get('/validatePromoCode/:code', promotionController.validatePromoCode);
 router.post('/usePromoCode/:code', promotionController.usePromoCode);
 
 router.post('/registerPetView/:memberPetId', userCtl.registerPetView);
+
+
+router.get('/getSecurityConfig', authenticateToken, UserSecurityController.getSecurityConfig);
+router.put('/updateSecurityConfig', authenticateToken, UserSecurityController.updateSecurityConfig);
+
+// ============================================
+// AUTENTICACIÓN DE DOS FACTORES (2FA)
+// ============================================
+
+router.post('/enable2FA', authenticateToken, UserSecurityController.enable2FA);
+router.post('/verify2FACode', authenticateToken, UserSecurityController.verify2FACode);
+router.post('/resend2FACode', authenticateToken, UserSecurityController.resend2FACode);
+router.post('/disable2FA', authenticateToken, UserSecurityController.disable2FA);
+
+// ============================================
+// GESTIÓN DE DISPOSITIVOS
+// ============================================
+
+router.get('/getDevices', authenticateToken, UserSecurityController.getDevices);
+router.post('/registerDevice', authenticateToken, UserSecurityController.registerDevice);
+router.delete('/removeDevice/:deviceId', authenticateToken, UserSecurityController.removeDevice);
+router.post('/signOutAllDevices', authenticateToken, UserSecurityController.signOutAllDevices);
+
 
 export default router;

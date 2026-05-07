@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2FA Enabled - PlaquitasCR</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <style>
+        *,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            width: 100%;
+            background-color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #EDEDED;
+            padding: 30px;
+        }
+        
+        .header {
+            text-align: center;
+            background-color: #EDEDED;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            max-width: 100px;
+            height: auto;
+        }
+        
+        .content {
+            background-color: #FFFFFF;
+            padding: 40px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .text-block {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #575757;
+            line-height: 1.6;
+        }
+        
+        .success-box {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .method-badge {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        
+        .footer {
+            background-color: #FFFFFF;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .support-info {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .support-info p {
+            margin-bottom: 10px;
+            color: #5E5E5E;
+            font-size: 14px;
+        }
+        
+        .phone-link {
+            color: #F14B72;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .social-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .closing {
+            margin-top: 25px;
+            font-style: italic;
+        }
+        
+        .signature {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+        
+        .user-name {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .text-block {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header with logo -->
+        <div class="header">
+            <img class="logo" src="{{logoUrl}}" alt="PlaquitasCR Logo" />
+        </div>
+    
+        <!-- Main content -->
+        <div class="content">
+            <!-- Personalized greeting -->
+            <p class="greeting">Estimado <span class="user-name">{{userName}}</span>,</p>
+    
+            <!-- Success message -->
+            <div class="success-box">
+                <div class="success-icon">✅</div>
+                <h2 style="color: #155724; margin-bottom: 10px;">Autenticación de dos factores activada</h2>
+                <p style="color: #155724;">¡Tu cuenta ahora es más segura!</p>
+            </div>
+    
+            <!-- Method information -->
+            <p class="text-block instruction">
+                La autenticación de dos factores se ha activado correctamente en tu cuenta mediante:
+            </p>
+            
+            <div style="text-align: center;">
+                <span class="method-badge">{{method}}</span>
+            </div>
+    
+            <!-- Security tips -->
+            <div class="warning-box">
+                <strong>🔐 Consejos de seguridad:</strong>
+                <ul style="margin-top: 10px; margin-left: 20px; color: #856404;">
+                    <li>Guarda tus códigos de seguridad en un lugar seguro</li>
+                    <li>Nunca compartas tus códigos de verificación con nadie</li>
+                    <li>PlaquitasCR nunca te pedirá tus códigos de autenticación de dos factores</li>
+                    <li>Si pierdes el acceso a tu método de autenticación de dos factores, ponte en contacto con el servicio de asistencia inmediatamente</li>
+                </ul>
+            </div>
+    
+            <!-- Instruction -->
+            <p class="text-block instruction">
+                A partir de ahora, tendrás que introducir un código de verificación cada vez que inicies sesión desde un dispositivo nuevo.
+                Esto añade una capa adicional de seguridad para proteger tu cuenta.
+            </p>
+    
+            <!-- Closing -->
+            <p class="text-block closing">
+                Gracias por dar este importante paso para proteger tu cuenta.
+            </p>
+    
+            <!-- Signature -->
+            <p class="text-block signature">
+                El equipo de PlaquitasCR
+            </p>
+        </div>
+    
+        <!-- Footer -->
+        <div class="footer">
+            <div class="support-info">
+                <p style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 15px;">
+                    ¿Necesita ayuda?
+                </p>
+                <p>
+                    <strong>Soporte al Cliente:</strong>
+                    <a class="phone-link" href="tel:{{phoneNumber}}">
+                        {{phoneNumber}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Email:</strong>
+                    <a class="social-link" href="mailto:{{supportEmail}}">
+                        {{supportEmail}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Facebook:</strong>
+                    <a class="social-link" href="{{facebookUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{facebookUsername}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Instagram:</strong>
+                    <a class="social-link" href="{{instagramUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{instagramUsername}}
+                    </a>
+                </p>
+                <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                    Este es un correo automático, por favor no responda a este mensaje.
+                </p>
+            </div>
+                
+                <!-- Información de copyright -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #999;">
+                    © {{year}} {{companyName}}. Todos los derechos reservados.
+                </p>
+                <p style="font-size: 11px; color: #999; margin-top: 5px;">
+                    PlaquitasCR - El mejor cuidado para tu mascota
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

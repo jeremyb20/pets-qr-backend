@@ -1,5 +1,32 @@
 import { Types } from 'mongoose';
 
+
+export interface IUserSecurity {
+  twoFactorEnabled?: boolean;
+  twoFactorMethod?: 'app' | 'email' | null;
+  twoFactorSecret?: string;
+  twoFactorVerified?: boolean;
+  twoFactorTempCode?: string;
+  twoFactorTempCodeExpires?: Date;
+  backupEmail?: string;
+  sessionVersion?: number;
+  currentSessionToken?: string;
+}
+export interface IUserDevices {
+  id: string;
+  name: string;
+  location?: string;
+  lastActive: Date;
+  deviceType: 'mobile' | 'desktop' | 'tablet';
+  userAgent?: string;
+  ipAddress?: string | string[];
+}
+
+export interface IUserSecurityConfig {
+  security: IUserSecurity;
+  devices: IUserDevices[]; // ← Permissions movido aquí
+}
+
 // Interface para el perfil del usuario
 export interface IUserProfile {
   address: string;
@@ -66,6 +93,7 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   id: string;
+  security: IUserSecurityConfig;
   // Métodos de instancia
   comparePassword(
     candidatePassword: string,

@@ -5,8 +5,90 @@ import {
   IUserConfiguration,
   IUserPermissions,
   IUserProfile,
+  IUserSecurityConfig,
   IUserThemeConfig,
+  IUserSecurity,
+  IUserDevices
 } from '../interfaces/IUser';
+
+const UserSecuritySchema = new Schema<IUserSecurity>({
+
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  twoFactorMethod: {
+    type: String,
+    enum: ['app', 'email', null],
+    default: null,
+  },
+  twoFactorSecret: {
+    type: String,
+    default: null,
+  },
+  twoFactorVerified: {
+    type: Boolean,
+    default: false,
+  },
+  twoFactorTempCode: {
+    type: String,
+    default: null,
+  },
+  twoFactorTempCodeExpires: {
+    type: Date,
+    default: null,
+  },
+  backupEmail: {
+    type: String,
+    default: null,
+  },
+  sessionVersion: {
+    type: Number,
+    default: 1,
+  },
+  currentSessionToken: {
+    type: String,
+    default: null,
+  },
+});
+
+const UserDevicesSchema = new Schema<IUserDevices>({
+
+  id: {
+    type: String,
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  location: {
+    type: String,
+    default: '',
+  },
+  lastActive: {
+    type: Date,
+    default: Date.now,
+  },
+  deviceType: {
+    type: String,
+    enum: ['mobile', 'desktop', 'tablet'],
+    required: true,
+  },
+  userAgent: String,
+  ipAddress: String,
+});
+
+const SecuritySchema = new Schema<IUserSecurityConfig>({
+  security: {
+    type: UserSecuritySchema,
+    default: () => ({}),
+  },
+  devices: [{
+    type: UserDevicesSchema,
+    default: () => ({}),
+  },]
+});
 
 // Subesquema para el perfil
 const UserProfileSchema = new Schema<IUserProfile>({
@@ -171,6 +253,10 @@ const UserSchema = new Schema<IUser>(
       type: UserProfileSchema,
       default: () => ({}),
     },
+    security: {
+      type: SecuritySchema,
+      default: () => ({}),
+    }
   },
   {
     timestamps: true,
