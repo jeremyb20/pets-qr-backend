@@ -37,12 +37,22 @@ import cacheService from '../config/redis';
 import { validatePasswordStrength } from '../utils/validate-password';
 import EmailService from '../services/emailService';
 import { AdminNotificationService } from '../services/adminNotification.service';
+import speakeasy from 'speakeasy';
 
 const cloudinaryV2 = cloudinary.v2;
-
+export interface DeviceInfo {
+  name: string;
+  deviceType: 'mobile' | 'desktop' | 'tablet';
+  location: string;
+  userAgent: string;
+  ipAddress?: string;
+}
 interface AuthRequest {
   email: string;
   password: string;
+  turnstileToken?: string;
+  twoFactorCode?: string;
+  deviceInfo?: DeviceInfo;
 }
 
 interface UserController {
@@ -134,13 +144,10 @@ interface UserController {
 const userCtl: UserController = {
   authenticate: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password, turnstileToken } = req.body as AuthRequest & {
-        turnstileToken?: string;
-      };
+      const { email, password, turnstileToken, twoFactorCode, deviceInfo } = req.body as AuthRequest & {};
 
       if (process.env.NODE_ENV === 'development') {
         console.log('🔧 Modo desarrollo: Omitiendo verificación de Turnstile');
-        // Continuar con el login sin verificar
       } else {
         // 1. VALIDAR TOKEN DE TURNSTILE
         if (!turnstileToken) {
@@ -152,9 +159,7 @@ const userCtl: UserController = {
           return;
         }
 
-        // 2. VERIFICAR TOKEN CON CLOUDFLARE
         const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
-
         if (!turnstileSecretKey) {
           console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
           res.status(500).json({
@@ -165,8 +170,7 @@ const userCtl: UserController = {
           return;
         }
 
-        const verificationUrl =
-          'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
         const verificationResponse = await fetch(verificationUrl, {
           method: 'POST',
           headers: {
@@ -176,30 +180,20 @@ const userCtl: UserController = {
         });
 
         const verificationData = await verificationResponse.json();
-        console.log(verificationData, 'verificationDataverificationData');
-        // Verificar si el reCAPTCHA fue exitoso
+        console.log(verificationData, 'verificationData');
+
         if (!verificationData.success) {
-          console.error('❌ reCAPTCHA verification failed:', verificationData);
+          console.error('❌ Turnstile verification failed:', verificationData);
           res.status(400).json({
             success: false,
-            message:
-              'Verificación de seguridad fallida favor de contactar al administrador del sitio',
+            message: 'Verificación de seguridad fallida',
             details: verificationData['error-codes'] || ['Unknown error'],
           });
           return;
         }
 
-        // Opcional: Verificar el score (si usas Turnstile con score)
-        // El score va de 0.0 a 1.0, donde 1.0 es muy probablemente humano
-        if (
-          verificationData.score !== undefined &&
-          verificationData.score < 0.5
-        ) {
-          console.warn(
-            `⚠️ Low Turnstile score: ${verificationData.score} for email: ${email}`
-          );
-          // Puedes permitir el login pero con un flag, o rechazarlo
-          // Por ahora, solo registramos pero permitimos continuar
+        if (verificationData.score !== undefined && verificationData.score < 0.5) {
+          console.warn(`⚠️ Low Turnstile score: ${verificationData.score} for email: ${email}`);
         }
       }
       console.log('✅ Turnstile verification successful for:', email);
@@ -211,53 +205,212 @@ const userCtl: UserController = {
         return;
       }
 
-      // 4. VERIFICAR CONTRASEÑA
+      // VERIFICAR CONTRASEÑA
       const isMatch = await bcrypt.compare(password, user.password);
-      if (isMatch) {
-        const token = jwt.sign(
-          {
-            email: user.email,
-            id: user._id,
-            role: user.role,
-            userStatus: user.userStatus,
-            memberId: user.memberId,
-          },
-          process.env.SECRET as string,
-          {
-            expiresIn: 86400,
-          }
-        );
-        res.json({
-          success: true,
-          token: token,
-          payload: {
-            id: user._id,
-            userStatus: user.userStatus,
-            role: user.role,
-            email: user.email,
-            memberId: user.memberId,
-            configuration: user.configuration,
-          },
-        });
-      } else {
-        // Registrar intento fallido de contraseña
+      if (!isMatch) {
         console.warn(`⚠️ Failed login attempt for: ${email} - Wrong password`);
         res.status(401).json({
           success: false,
           message: 'Wrong password',
           code: 'INVALID_CREDENTIALS',
         });
+        return;
       }
+
+      // VERIFICAR 2FA si está habilitado
+      const is2FAEnabled = user.security?.security?.twoFactorEnabled || false;
+      const twoFactorMethod = user.security?.security?.twoFactorMethod;
+
+      if (is2FAEnabled) {
+        // Si no se proporcionó código 2FA, solicitar
+        if (!twoFactorCode) {
+          // Si el método es email, enviar un código por correo
+          if (twoFactorMethod === 'email') {
+            try {
+              // Generar código de 6 dígitos
+              const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+              // Guardar código temporal en la base de datos
+              if (!user.security) {
+                user.security = { security: {}, devices: [] };
+              }
+              if (!user.security.security) {
+                user.security.security = {};
+              }
+
+              user.security.security.twoFactorTempCode = verificationCode;
+              user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+              await user.save();
+
+              // Enviar email con el código
+              const emailService = EmailService.getInstance();
+              const lang = req.headers['accept-language']?.split(',')[0] || 'es';
+
+              await emailService.sendEmail({
+                to: user.email,
+                subject: 'Código de verificación 2FA',
+                template: 'email-2fa-verification',
+                lang: lang,
+                context: {
+                  userName: user.profile?.name || user.email,
+                  verificationCode,
+                  expiryMinutes: 10,
+                  year: new Date().getFullYear(),
+                  companyName: process.env.APP_NAME || 'PlaquitasCR',
+                  logoUrl: process.env.LOGO_URL,
+                  phoneNumber: process.env.PHONE_NUMBER,
+                  facebookUrl: process.env.FACEBOOK_URL,
+                  facebookUsername: process.env.FACEBOOK_USERNAME,
+                  instagramUrl: process.env.INSTAGRAM_URL,
+                  instagramUsername: process.env.INSTAGRAM_USERNAME,
+                  supportEmail: process.env.SUPPORT_EMAIL,
+                },
+              });
+
+              console.log(`📧 2FA code sent to ${user.email}`);
+            } catch (emailError) {
+              console.error('Error sending 2FA email:', emailError);
+            }
+          }
+
+          // Responder solicitando código 2FA
+          res.status(200).json({
+            success: false,
+            requiresTwoFactor: true,
+            message: twoFactorMethod === 'email'
+              ? 'Se ha enviado un código de verificación a tu correo electrónico'
+              : 'Two-factor authentication required',
+            method: twoFactorMethod,
+            tempToken: jwt.sign(
+              { id: user._id, email: user.email, twoFactorPending: true },
+              process.env.SECRET as string,
+              { expiresIn: '5m' }
+            )
+          });
+          return;
+        }
+
+        // Verificar código 2FA
+        let isValid2FA = false;
+        const storedSecret = user.security?.security?.twoFactorSecret;
+        const tempCode = user.security?.security?.twoFactorTempCode;
+        const tempCodeExpires = user.security?.security?.twoFactorTempCodeExpires;
+
+        if (twoFactorMethod === 'app' && storedSecret) {
+          isValid2FA = speakeasy.totp.verify({
+            secret: storedSecret,
+            encoding: 'base32',
+            token: twoFactorCode,
+            window: 1,
+          });
+        } else if (twoFactorMethod === 'email') {
+          const now = new Date();
+          isValid2FA = tempCode === twoFactorCode && !!tempCodeExpires && tempCodeExpires > now;
+
+          // Limpiar código temporal después de uso (éxito o fracaso)
+          if (user.security?.security) {
+            user.security.security.twoFactorTempCode = undefined;
+            user.security.security.twoFactorTempCodeExpires = undefined;
+            await user.save();
+          }
+        }
+
+        if (!isValid2FA) {
+          res.status(401).json({
+            success: false,
+            message: 'Invalid or expired verification code',
+            code: 'INVALID_2FA'
+          });
+          return;
+        }
+      }
+
+      // ============================================
+      // REGISTRAR DISPOSITIVO DESPUÉS DE LOGIN EXITOSO
+      // ============================================
+      if (deviceInfo && deviceInfo.name && deviceInfo.deviceType) {
+        try {
+          if (!user.security) {
+            user.security = { security: {}, devices: [] };
+          }
+          if (!user.security.devices) {
+            user.security.devices = [];
+          }
+
+          const clientIp = (req.ip ||
+            req.headers['x-forwarded-for'] ||
+            req.connection?.remoteAddress ||
+            'Unknown IP') as string;
+
+          const deviceId = crypto.randomBytes(16).toString('hex');
+
+          const existingDeviceIndex = user.security.devices.findIndex(
+            (device: any) => device.name === deviceInfo.name &&
+              device.userAgent === (deviceInfo.userAgent || req.headers['user-agent'])
+          );
+
+          if (existingDeviceIndex !== -1) {
+            user.security.devices[existingDeviceIndex].lastActive = new Date();
+            user.security.devices[existingDeviceIndex].ipAddress = clientIp;
+            user.security.devices[existingDeviceIndex].location = deviceInfo.location || 'Unknown location';
+            console.log(`🔄 Device updated for user ${user.email}: ${deviceInfo.name}`);
+          } else {
+            const newDevice = {
+              id: deviceId,
+              name: deviceInfo.name,
+              location: deviceInfo.location || 'Unknown location',
+              lastActive: new Date(),
+              deviceType: deviceInfo.deviceType,
+              userAgent: deviceInfo.userAgent || req.headers['user-agent'],
+              ipAddress: clientIp,
+            };
+
+            user.security.devices.push(newDevice);
+
+            if (user.security.devices.length > 20) {
+              user.security.devices = user.security.devices.slice(-20);
+            }
+            console.log(`✅ New device registered for user ${user.email}: ${deviceInfo.name}`);
+          }
+
+          await user.save();
+        } catch (deviceError) {
+          console.error('Error registering device:', deviceError);
+        }
+      }
+
+      // Generar token JWT final
+      const token = jwt.sign(
+        {
+          email: user.email,
+          id: user._id,
+          role: user.role,
+          userStatus: user.userStatus,
+          memberId: user.memberId,
+        },
+        process.env.SECRET as string,
+        { expiresIn: '7d' }
+      );
+
+      res.json({
+        success: true,
+        token: token,
+        payload: {
+          id: user._id,
+          userStatus: user.userStatus,
+          role: user.role,
+          email: user.email,
+          memberId: user.memberId,
+          configuration: user.configuration,
+        },
+      });
     } catch (error) {
       console.error('Error in authenticate method:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error, please try again later.',
         code: 'INTERNAL_ERROR',
-        error:
-          process.env.NODE_ENV === 'development'
-            ? (error as Error).message
-            : undefined,
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
       });
     }
   },

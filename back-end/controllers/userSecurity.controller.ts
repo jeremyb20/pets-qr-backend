@@ -5,9 +5,11 @@ import EmailService from '../services/emailService';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { IUser } from '../interfaces/IUser';
 import dotenv from 'dotenv';
 dotenv.config();
+
 export class UserSecurityController {
   private emailService: EmailService;
   private readonly TWO_FACTOR_CODE_EXPIRY = 10 * 60 * 1000; // 10 minutos
@@ -744,8 +746,31 @@ export class UserSecurityController {
    */
   async resend2FACode(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      // Obtener el token temporal del header
+      const authHeader = req.headers.authorization;
+      const tempToken = authHeader?.split(' ')[1];
 
+      if (!tempToken) {
+        res.status(401).json({
+          success: false,
+          message: 'No token provided',
+        });
+        return;
+      }
+
+      // Verificar el token temporal
+      let decoded: any;
+      try {
+        decoded = jwt.verify(tempToken, process.env.SECRET as string);
+      } catch (error) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid or expired token',
+        });
+        return;
+      }
+
+      const userId = decoded.id;
       const user = await User.findById(userId);
 
       if (!user) {
@@ -756,6 +781,19 @@ export class UserSecurityController {
         return;
       }
 
+      // Verificar que 2FA esté habilitado y sea por email
+      const is2FAEnabled = user.security?.security?.twoFactorEnabled || false;
+      const twoFactorMethod = user.security?.security?.twoFactorMethod;
+
+      if (!is2FAEnabled || twoFactorMethod !== 'email') {
+        res.status(400).json({
+          success: false,
+          message: '2FA via email is not enabled for this user',
+        });
+        return;
+      }
+
+      // Generar nuevo código
       const verificationCode = crypto.randomInt(100000, 999999).toString();
 
       if (!user.security) {
@@ -769,6 +807,7 @@ export class UserSecurityController {
       user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
 
+      // Enviar email con el código
       const emailService = EmailService.getInstance();
       const lang = req.headers['accept-language']?.split(',')[0] || 'es';
       await emailService.sendEmail({
@@ -792,16 +831,17 @@ export class UserSecurityController {
         },
       });
 
+      console.log(`📧 Re-sent 2FA code to ${user.email}`);
+
       res.json({
         success: true,
-        message: 'Nuevo código enviado a tu email',
+        message: 'New verification code sent to your email',
       });
     } catch (error) {
       console.error('Error in resend2FACode:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error, please try again later.',
-        code: 'INTERNAL_ERROR',
+        message: 'Internal server error',
       });
     }
   }
