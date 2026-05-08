@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación de Email - PlaquitasCR</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <style>
+        *,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            width: 100%;
+            background-color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #EDEDED;
+            padding: 30px;
+        }
+        
+        .header {
+            text-align: center;
+            background-color: #EDEDED;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            max-width: 100px;
+            height: auto;
+        }
+        
+        .content {
+            background-color: #FFFFFF;
+            padding: 40px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .text-block {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #575757;
+            line-height: 1.6;
+        }
+        
+        .verification-code {
+            background-color: #2196F3;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        
+        .success-box {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #155724;
+        }
+        
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #0c5460;
+        }
+        
+        .footer {
+            background-color: #FFFFFF;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .support-info {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .support-info p {
+            margin-bottom: 10px;
+            color: #5E5E5E;
+            font-size: 14px;
+        }
+        
+        .phone-link {
+            color: #F14B72;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .social-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .instruction {
+            margin-bottom: 15px;
+        }
+        
+        .closing {
+            margin-top: 25px;
+            font-style: italic;
+        }
+        
+        .signature {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+        
+        .user-name {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        
+        .benefits-list {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        
+        .benefits-list li {
+            margin-bottom: 8px;
+            color: #575757;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .text-block {
+                font-size: 14px;
+            }
+            
+            .verification-code {
+                font-size: 24px;
+                padding: 15px;
+                letter-spacing: 3px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header with logo -->
+        <div class="header">
+            <img class="logo" src="{{logoUrl}}" alt="PlaquitasCR Logo" />
+        </div>
+    
+        <!-- Main content -->
+        <div class="content">
+            <!-- Personalized greeting -->
+            <p class="greeting">Estimado <span class="user-name">{{userName}}</span>,</p>
+    
+            <!-- Instruction -->
+            <p class="text-block instruction">
+                Gracias por registrarte en <strong>PlaquitasCR</strong>. Para completar tu registro y asegurar tu cuenta, 
+                por favor verifica tu dirección de correo electrónico.
+            </p>
+    
+            <!-- Verification code -->
+            <div class="verification-code">
+                {{verificationCode}}
+            </div>
+    
+            <!-- Expiration warning -->
+            <div class="warning-box">
+                <strong>⚠️ Importante:</strong> Este código de verificación caducará en <strong>{{expiryMinutes}} minutos</strong>.
+                Si no lo utilizas dentro de este tiempo, deberás solicitar uno nuevo.
+            </div>
+    
+            <!-- Why verify box -->
+            <div class="info-box">
+                <strong>✅ ¿Por qué verificar tu correo electrónico?</strong>
+                <ul class="benefits-list">
+                    <li>🔐 Mayor seguridad para tu cuenta y tus mascotas</li>
+                    <li>📧 Recibir notificaciones importantes sobre tus mascotas</li>
+                    <li>🔄 Recuperar tu contraseña fácilmente si la olvidas</li>
+                    <li>📱 Acceder a todas las funciones de la plataforma</li>
+                    <li>🏷️ Recibir certificados digitales de tus mascotas</li>
+                </ul>
+            </div>
+    
+            <!-- Manual entry instruction -->
+            <div class="success-box">
+                <strong>📝 ¿No puedes copiar el código?</strong>
+                <p style="margin-top: 10px; font-size: 14px;">
+                    Puedes ingresar manualmente este código en la aplicación cuando se te solicite.
+                </p>
+            </div>
+    
+            <!-- Did not request -->
+            <p class="text-block instruction">
+                Si no has creado una cuenta en PlaquitasCR, por favor ignora este correo electrónico.
+                Es posible que alguien haya ingresado tu dirección por error.
+            </p>
+    
+            <!-- Need help -->
+            <p class="text-block instruction">
+                Si tienes problemas para verificar tu correo, asegúrate de haber ingresado el código correctamente
+                o solicita un nuevo código desde la aplicación.
+            </p>
+    
+            <!-- Closing -->
+            <p class="text-block closing">
+                ¡Gracias por formar parte de nuestra comunidad! Estamos comprometidos con el bienestar de tus mascotas.
+            </p>
+    
+            <!-- Signature -->
+            <p class="text-block signature">
+                El equipo de PlaquitasCR
+            </p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            
+            <!-- Tips -->
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <p style="font-size: 13px; color: #666; margin: 0;">
+                    💡 <strong>Consejo de seguridad:</strong> Nunca compartas este código con nadie. 
+                    El equipo de PlaquitasCR nunca te pedirá este código por teléfono o mensaje.
+                </p>
+            </div>
+        </div>
+    
+        <!-- Footer with contact information -->
+        <div class="footer">
+            <div class="support-info">
+                <p style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 15px;">
+                    ¿Necesita ayuda?
+                </p>
+                <p>
+                    <strong>Soporte al Cliente:</strong>
+                    <a class="phone-link" href="tel:{{phoneNumber}}">
+                        {{phoneNumber}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Email:</strong>
+                    <a class="social-link" href="mailto:{{supportEmail}}">
+                        {{supportEmail}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Facebook:</strong>
+                    <a class="social-link" href="{{facebookUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{facebookUsername}}
+                    </a>
+                </p>
+                <p>
+                    <strong>Instagram:</strong>
+                    <a class="social-link" href="{{instagramUrl}}" target="_blank" rel="noopener noreferrer">
+                        {{instagramUsername}}
+                    </a>
+                </p>
+                <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                    Este es un correo automático, por favor no responda a este mensaje.
+                </p>
+            </div>
+            
+            <!-- Copyright information -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #999;">
+                    © {{year}} {{companyName}}. Todos los derechos reservados.
+                </p>
+                <p style="font-size: 11px; color: #999; margin-top: 5px;">
+                    PlaquitasCR - El mejor cuidado para tu mascota
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

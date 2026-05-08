@@ -42,7 +42,7 @@ export class UserSecurityController {
       if (!user) {
         res.status(404).json({
           success: false,
-          message: 'Usuario no encontrado',
+          message: 'User not found',
         });
         return;
       }
@@ -63,6 +63,7 @@ export class UserSecurityController {
         success: true,
         payload: {
           twoFactor: {
+            isEmailVerified: securityData.isEmailVerified || false,
             enabled: securityData.twoFactorEnabled || false,
             method: securityData.twoFactorMethod || null,
             email: securityData.backupEmail || user.email,
@@ -841,7 +842,367 @@ export class UserSecurityController {
       console.error('Error in resend2FACode:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'Internal server error, please try again later.',
+      });
+    }
+  }
+
+  /**
+  * Enviar código de verificación al email
+  */
+  async sendEmailVerification(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req.user as IUser)?.id?.toString();
+      const { email } = req.body;
+      const user = await User.findById(userId);
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+        return;
+      }
+
+      // Determinar el email a verificar
+      const emailToVerify = email || user.email;
+
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailToVerify)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid email',
+        });
+        return;
+      }
+
+      // Verificar si Your email address has already been verified
+      if (user.security?.security?.isEmailVerified && emailToVerify === user.email) {
+        res.status(400).json({
+          success: false,
+          message: 'Your email address has already been verified',
+        });
+        return;
+      }
+
+      // Verificar cooldown para reenvíos (60 segundos)
+      const now = Date.now();
+      const lastSent = user.security?.security?.lastEmailVerificationSent || 0;
+      const timeSinceLastSent = (now - lastSent) / 1000;
+
+      if (timeSinceLastSent < 60) {
+        const remainingSeconds = Math.ceil(60 - timeSinceLastSent);
+        res.status(429).json({
+          success: false,
+          message: `Please wait ${remainingSeconds} a few seconds before requesting another code`,
+          code: 'RATE_LIMITED',
+          remainingSeconds,
+        });
+        return;
+      }
+
+      // Verificar límite de intentos (máximo 5)
+      const attempts = user.security?.security?.emailVerificationAttempts || 0;
+      if (attempts >= 5) {
+        const lastAttempt = user.security?.security?.lastVerificationAttempt || 0;
+        const hoursSinceLastAttempt = (now - lastAttempt) / (1000 * 60 * 60);
+
+        if (hoursSinceLastAttempt < 1) {
+          res.status(429).json({
+            success: false,
+            message: 'Too many attempts. Please try again later.',
+            code: 'MAX_ATTEMPTS_REACHED',
+          });
+          return;
+        } else {
+          // Resetear contador de intentos después de 1 hora
+          if (user.security?.security) {
+            user.security.security.emailVerificationAttempts = 0;
+          }
+        }
+      }
+
+      // Generar código de 6 dígitos
+      const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+      // Inicializar estructura security si no existe
+      if (!user.security) {
+        user.security = { security: {}, devices: [] };
+      }
+      if (!user.security.security) {
+        user.security.security = {};
+      }
+
+      // Guardar código en la base de datos
+      user.security.security.emailVerificationCode = verificationCode;
+      user.security.security.emailVerificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.security.security.emailVerificationAttempts = attempts + 1;
+      user.security.security.lastVerificationAttempt = now;
+      user.security.security.lastEmailVerificationSent = now;
+      user.security.security.pendingEmailVerification = emailToVerify;
+
+      await user.save();
+
+      // Enviar email con el código
+      const lang = req.headers['accept-language']?.split(',')[0] || 'es';
+      const emailService = EmailService.getInstance();
+      const emailSent = await emailService.sendEmail({
+        to: emailToVerify,
+        subject: 'Verifica tu correo electrónico',
+        template: 'email-verification',
+        lang: lang,
+        context: {
+          userName: user.profile?.name || user.email,
+          verificationCode,
+          expiryMinutes: 10,
+          year: new Date().getFullYear(),
+          companyName: process.env.APP_NAME || 'PlaquitasCR',
+          logoUrl: process.env.LOGO_URL,
+          phoneNumber: process.env.PHONE_NUMBER,
+          facebookUrl: process.env.FACEBOOK_URL,
+          facebookUsername: process.env.FACEBOOK_USERNAME,
+          instagramUrl: process.env.INSTAGRAM_URL,
+          instagramUsername: process.env.INSTAGRAM_USERNAME,
+          supportEmail: process.env.SUPPORT_EMAIL,
+        },
+      });
+
+      if (!emailSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Error sending the verification code',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        message: 'Verification code sent to your email address',
+        payload: {
+          email: emailToVerify,
+          expiresIn: 10,
+        },
+      });
+    } catch (error) {
+      console.error('Error sending email verification:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: error
+      });
+    }
+  }
+
+  /**
+   * Verificar código de email
+   */
+  async verifyEmailCode(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req.user as IUser)?.id?.toString();
+      const { code } = req.body;
+
+      if (!code || code.length !== 6) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid verification code. It must be 6 digits long.',
+        });
+        return;
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+        return;
+      }
+
+      const storedCode = user.security?.security?.emailVerificationCode;
+      const expiresAt = user.security?.security?.emailVerificationCodeExpires;
+      const pendingEmail = user.security?.security?.pendingEmailVerification;
+      const now = new Date();
+
+      // Verificar si existe código pendiente
+      if (!storedCode || !expiresAt) {
+        res.status(400).json({
+          success: false,
+          message: 'There is no pending verification code. Request a new one.',
+          code: 'NO_CODE_PENDING',
+        });
+        return;
+      }
+
+      // Verificar si el código expiró
+      if (expiresAt < now) {
+        // Limpiar código expirado
+        if (user.security?.security) {
+          user.security.security.emailVerificationCode = undefined;
+          user.security.security.emailVerificationCodeExpires = undefined;
+          await user.save();
+        }
+        res.status(400).json({
+          success: false,
+          message: 'El código ha expirado. Por favor solicita uno nuevo.',
+          code: 'CODE_EXPIRED',
+        });
+        return;
+      }
+
+      // Verificar si el código es correcto
+      if (storedCode !== code) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid code. Please try again.',
+          code: 'INVALID_CODE',
+        });
+        return;
+      }
+
+      // Marcar email como verificado
+      if (user.security?.security) {
+        user.security.security.isEmailVerified = true;
+        user.security.security.emailVerificationCode = undefined;
+        user.security.security.emailVerificationCodeExpires = undefined;
+        user.security.security.pendingEmailVerification = undefined;
+
+        // Si se verificó un email diferente al principal, actualizarlo
+        if (pendingEmail && pendingEmail !== user.email) {
+          const oldEmail = user.email;
+          user.email = pendingEmail;
+
+          // Enviar notificación al email anterior
+          const emailService = EmailService.getInstance();
+          await emailService.sendEmail({
+            to: oldEmail,
+            subject: 'Correo electrónico actualizado',
+            template: 'email-changed',
+            lang: req.headers['accept-language']?.split(',')[0] || 'es',
+            context: {
+              userName: user.profile?.name || user.email,
+              newEmail: pendingEmail,
+              year: new Date().getFullYear(),
+              companyName: process.env.APP_NAME || 'PlaquitasCR',
+              logoUrl: process.env.LOGO_URL,
+              phoneNumber: process.env.PHONE_NUMBER,
+              facebookUrl: process.env.FACEBOOK_URL,
+              facebookUsername: process.env.FACEBOOK_USERNAME,
+              instagramUrl: process.env.INSTAGRAM_URL,
+              instagramUsername: process.env.INSTAGRAM_USERNAME,
+              supportEmail: process.env.SUPPORT_EMAIL,
+            },
+          });
+        }
+
+        await user.save();
+      }
+
+      res.json({
+        success: true,
+        message: 'Email address successfully verified',
+        payload: {
+          isEmailVerified: true,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      console.error('Error verifying email code:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+      });
+    }
+  }
+
+  /**
+   * Reenviar código de verificación de email
+   */
+  async resendEmailVerification(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req.user as IUser)?.id?.toString();
+      const { email } = req.body;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+        return;
+      }
+
+      const emailToVerify = email || user.email;
+
+      // Validar cooldown
+      const now = Date.now();
+      const lastSent = user.security?.security?.lastEmailVerificationSent || 0;
+      const timeSinceLastSent = (now - lastSent) / 1000;
+
+      if (timeSinceLastSent < 30) { // 30 segundos de cooldown para reenvío
+        const remainingSeconds = Math.ceil(30 - timeSinceLastSent);
+        res.status(429).json({
+          success: false,
+          message: `Please wait ${remainingSeconds} a few seconds before requesting another code`,
+          code: 'RATE_LIMITED',
+          remainingSeconds,
+        });
+        return;
+      }
+
+      // Generar nuevo código
+      const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+      if (!user.security) {
+        user.security = { security: {}, devices: [] };
+      }
+      if (!user.security.security) {
+        user.security.security = {};
+      }
+
+      user.security.security.emailVerificationCode = verificationCode;
+      user.security.security.emailVerificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.security.security.lastEmailVerificationSent = now;
+      user.security.security.pendingEmailVerification = emailToVerify;
+
+      await user.save();
+
+      // Enviar email
+      const lang = req.headers['accept-language']?.split(',')[0] || 'es';
+      const emailService = EmailService.getInstance();
+      await emailService.sendEmail({
+        to: emailToVerify,
+        subject: 'Check your email',
+        template: 'email-verification',
+        lang: lang,
+        context: {
+          userName: user.profile?.name || user.email,
+          verificationCode,
+          expiryMinutes: 10,
+          year: new Date().getFullYear(),
+          companyName: process.env.APP_NAME || 'PlaquitasCR',
+          logoUrl: process.env.LOGO_URL,
+          phoneNumber: process.env.PHONE_NUMBER,
+          facebookUrl: process.env.FACEBOOK_URL,
+          facebookUsername: process.env.FACEBOOK_USERNAME,
+          instagramUrl: process.env.INSTAGRAM_URL,
+          instagramUsername: process.env.INSTAGRAM_USERNAME,
+          supportEmail: process.env.SUPPORT_EMAIL,
+        },
+      });
+
+      res.json({
+        success: true,
+        message: 'Code successfully forwarded',
+        payload: {
+          email: emailToVerify,
+          expiresIn: 10,
+        },
+      });
+    } catch (error) {
+      console.error('Error resending email verification:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
       });
     }
   }

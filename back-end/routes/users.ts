@@ -89,4 +89,10 @@ router.delete('/removeDevice/:deviceId', authenticateToken, UserSecurityControll
 router.post('/signOutAllDevices', authenticateToken, UserSecurityController.signOutAllDevices);
 
 
+// ============================================
+// VERIFICACIÓN DE CORREO ELECTRÓNICO
+// ============================================
+router.post('/sendEmailVerification', authenticateToken, UserSecurityController.sendEmailVerification);
+router.post('/verifyEmailCode', authenticateToken, UserSecurityController.verifyEmailCode);
+router.post('/resendEmailVerification', authenticateToken, UserSecurityController.resendEmailVerification);
 export default router;

@@ -11,6 +11,13 @@ export interface IUserSecurity {
   backupEmail?: string;
   sessionVersion?: number;
   currentSessionToken?: string;
+  isEmailVerified?: boolean;
+  emailVerificationCode?: string;
+  emailVerificationCodeExpires?: Date;
+  emailVerificationAttempts?: number;
+  lastEmailVerificationSent?: number;
+  pendingEmailVerification?: string;
+  lastVerificationAttempt?: number;
 }
 export interface IUserDevices {
   id: string;

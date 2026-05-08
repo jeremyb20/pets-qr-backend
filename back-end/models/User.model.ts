@@ -12,7 +12,34 @@ import {
 } from '../interfaces/IUser';
 
 const UserSecuritySchema = new Schema<IUserSecurity>({
-
+  isEmailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  emailVerificationCode: {
+    type: String,
+    default: null,
+  },
+  emailVerificationCodeExpires: {
+    type: Date,
+    default: null,
+  },
+  emailVerificationAttempts: {
+    type: Number,
+    default: 0,
+  },
+  lastEmailVerificationSent: {
+    type: Number,
+    default: 0,
+  },
+  pendingEmailVerification: {
+    type: String,
+    default: null,
+  },
+  lastVerificationAttempt: {
+    type: Number,
+    default: 0,
+  },
   twoFactorEnabled: {
     type: Boolean,
     default: false,
