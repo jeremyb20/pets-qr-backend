@@ -144,71 +144,18 @@ interface UserController {
 const userCtl: UserController = {
   authenticate: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password, turnstileToken, twoFactorCode, deviceInfo } = req.body as AuthRequest & {};
+      const { email, password, turnstileToken, twoFactorCode, deviceInfo } = req.body;
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Modo desarrollo: Omitiendo verificación de Turnstile');
-      } else {
-        // 1. VALIDAR TOKEN DE TURNSTILE
-        if (!turnstileToken) {
-          res.status(400).json({
-            success: false,
-            message: 'Verificación de seguridad requerida',
-            code: 'SECURITY_REQUIRED',
-          });
-          return;
-        }
-
-        const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
-        if (!turnstileSecretKey) {
-          console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
-          res.status(500).json({
-            success: false,
-            message: 'Error de configuración de seguridad',
-            code: 'CONFIG_ERROR',
-          });
-          return;
-        }
-
-        const verificationUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-        const verificationResponse = await fetch(verificationUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
-        });
-
-        const verificationData = await verificationResponse.json();
-        console.log(verificationData, 'verificationData');
-
-        if (!verificationData.success) {
-          console.error('❌ Turnstile verification failed:', verificationData);
-          res.status(400).json({
-            success: false,
-            message: 'Verificación de seguridad fallida',
-            details: verificationData['error-codes'] || ['Unknown error'],
-          });
-          return;
-        }
-
-        if (verificationData.score !== undefined && verificationData.score < 0.5) {
-          console.warn(`⚠️ Low Turnstile score: ${verificationData.score} for email: ${email}`);
-        }
-      }
-      console.log('✅ Turnstile verification successful for:', email);
-
-      // 3. BUSCAR USUARIO
+      // 1. BUSCAR USUARIO
       const user = await User.findOne({ email });
       if (!user) {
         res.json({ success: false, message: 'Email not found' });
         return;
       }
 
-      // VERIFICAR CONTRASEÑA
+      // 2. VERIFICAR CONTRASEÑA
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        console.warn(`⚠️ Failed login attempt for: ${email} - Wrong password`);
         res.status(401).json({
           success: false,
           message: 'Wrong password',
@@ -217,20 +164,19 @@ const userCtl: UserController = {
         return;
       }
 
-      // VERIFICAR 2FA si está habilitado
+      // 3. VERIFICAR 2FA si está habilitado
       const is2FAEnabled = user.security?.security?.twoFactorEnabled || false;
       const twoFactorMethod = user.security?.security?.twoFactorMethod;
 
       if (is2FAEnabled) {
-        // Si no se proporcionó código 2FA, solicitar
+        // Si no se proporcionó código 2FA, solo respondemos que se requiere
+        // SIN validar Turnstile todavía
         if (!twoFactorCode) {
-          // Si el método es email, enviar un código por correo
+          // Si es por email, enviar el código
           if (twoFactorMethod === 'email') {
             try {
-              // Generar código de 6 dígitos
               const verificationCode = crypto.randomInt(100000, 999999).toString();
 
-              // Guardar código temporal en la base de datos
               if (!user.security) {
                 user.security = { security: {}, devices: [] };
               }
@@ -239,10 +185,9 @@ const userCtl: UserController = {
               }
 
               user.security.security.twoFactorTempCode = verificationCode;
-              user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+              user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
               await user.save();
 
-              // Enviar email con el código
               const emailService = EmailService.getInstance();
               const lang = req.headers['accept-language']?.split(',')[0] || 'es';
 
@@ -273,7 +218,7 @@ const userCtl: UserController = {
             }
           }
 
-          // Responder solicitando código 2FA
+          // Responder solicitando código 2FA (sin validar Turnstile)
           res.status(200).json({
             success: false,
             requiresTwoFactor: true,
@@ -307,7 +252,6 @@ const userCtl: UserController = {
           const now = new Date();
           isValid2FA = tempCode === twoFactorCode && !!tempCodeExpires && tempCodeExpires > now;
 
-          // Limpiar código temporal después de uso (éxito o fracaso)
           if (user.security?.security) {
             user.security.security.twoFactorTempCode = undefined;
             user.security.security.twoFactorTempCodeExpires = undefined;
@@ -326,8 +270,56 @@ const userCtl: UserController = {
       }
 
       // ============================================
-      // REGISTRAR DISPOSITIVO DESPUÉS DE LOGIN EXITOSO
+      // ✅ VALIDAR TURNSTILE SOLO AQUÍ (después de todo)
       // ============================================
+      if (process.env.NODE_ENV !== 'development') {
+        if (!turnstileToken) {
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad requerida',
+            code: 'SECURITY_REQUIRED',
+          });
+          return;
+        }
+
+        const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+        if (!turnstileSecretKey) {
+          console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
+          res.status(500).json({
+            success: false,
+            message: 'Error de configuración de seguridad',
+            code: 'CONFIG_ERROR',
+          });
+          return;
+        }
+
+        const verificationUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationResponse = await fetch(verificationUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
+        });
+
+        const verificationData = await verificationResponse.json();
+
+        if (!verificationData.success) {
+          console.error('❌ Turnstile verification failed:', verificationData);
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad fallida',
+            code: 'TURNSTILE_FAILED',
+            details: verificationData['error-codes'] || ['Unknown error'],
+          });
+          return;
+        }
+
+        if (verificationData.score !== undefined && verificationData.score < 0.5) {
+          console.warn(`⚠️ Low Turnstile score: ${verificationData.score}`);
+        }
+      }
+
+
+      // Registrar dispositivo
       if (deviceInfo && deviceInfo.name && deviceInfo.deviceType) {
         try {
           if (!user.security) {
@@ -353,7 +345,6 @@ const userCtl: UserController = {
             user.security.devices[existingDeviceIndex].lastActive = new Date();
             user.security.devices[existingDeviceIndex].ipAddress = clientIp;
             user.security.devices[existingDeviceIndex].location = deviceInfo.location || 'Unknown location';
-            console.log(`🔄 Device updated for user ${user.email}: ${deviceInfo.name}`);
           } else {
             const newDevice = {
               id: deviceId,
@@ -364,15 +355,11 @@ const userCtl: UserController = {
               userAgent: deviceInfo.userAgent || req.headers['user-agent'],
               ipAddress: clientIp,
             };
-
             user.security.devices.push(newDevice);
-
             if (user.security.devices.length > 20) {
               user.security.devices = user.security.devices.slice(-20);
             }
-            console.log(`✅ New device registered for user ${user.email}: ${deviceInfo.name}`);
           }
-
           await user.save();
         } catch (deviceError) {
           console.error('Error registering device:', deviceError);
@@ -410,7 +397,6 @@ const userCtl: UserController = {
         success: false,
         message: 'Internal server error, please try again later.',
         code: 'INTERNAL_ERROR',
-        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
       });
     }
   },
