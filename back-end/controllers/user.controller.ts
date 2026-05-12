@@ -95,6 +95,11 @@ interface UserController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
+  resend2FACodeForReset(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
   getAllPublishedProductList(
     req: Request,
     res: Response,
@@ -412,6 +417,13 @@ const userCtl: UserController = {
         return;
       }
 
+      const securitySettings = {
+        isEmailVerified: user.security.security.isEmailVerified || false,
+        twoFactorEnabled: user.security.security.twoFactorEnabled || false,
+        twoFactorMethod: user.security.security.twoFactorMethod || null,
+        backupEmail: user.security.security.backupEmail || null
+      }
+
       const userData = {
         _id: user._id,
         email: user.email,
@@ -422,6 +434,7 @@ const userCtl: UserController = {
         memberId: user.memberId,
         configuration: user.configuration,
         profile: user.profile,
+        security: securitySettings,
       };
 
       res.status(200).send({
@@ -1273,7 +1286,7 @@ const userCtl: UserController = {
       }
 
       // Validar que la mascota exista
-      const pet = await Pet.findOne({ memberPetId: petId });
+      const pet = await Pet.findOne({ memberPetId: petId }).populate('owner');
       if (!pet) {
         const errorResponse: ErrorResponse = {
           success: false,
@@ -1299,7 +1312,7 @@ const userCtl: UserController = {
 
       switch (type) {
         case 'vaccine':
-          // Validar que los datos sean del tipo correcto usando type guard
+          // Validar que los datos sean del tipo correcto
           if (!isVaccineInput(data)) {
             const errorResponse: ErrorResponse = {
               success: false,
@@ -1315,6 +1328,10 @@ const userCtl: UserController = {
             nextVaccineDate: data.nextVaccineDate,
             vaccineName: data.vaccineName,
             observations: data.observations || '',
+            // Campos de notificaciones
+            emailNotificationEnabled: data.emailNotificationEnabled ?? false,
+            notificationDaysBefore: data.notificationDaysBefore ?? 7,
+            lastNotificationSent: null,
             _id: new Types.ObjectId(),
             createdAt: timestamp,
             updatedAt: timestamp,
@@ -1329,7 +1346,7 @@ const userCtl: UserController = {
           break;
 
         case 'deworming':
-          // Validar que los datos sean del tipo correcto usando type guard
+          // Validar que los datos sean del tipo correcto
           if (!isDewormingInput(data)) {
             const errorResponse: ErrorResponse = {
               success: false,
@@ -1345,6 +1362,10 @@ const userCtl: UserController = {
             nextDewormingDate: data.nextDewormingDate,
             dewormerName: data.dewormerName,
             observations: data.observations || '',
+            // Campos de notificaciones
+            emailNotificationEnabled: data.emailNotificationEnabled ?? false,
+            notificationDaysBefore: data.notificationDaysBefore ?? 7,
+            lastNotificationSent: null,
             _id: new Types.ObjectId(),
             createdAt: timestamp,
             updatedAt: timestamp,
@@ -1359,7 +1380,7 @@ const userCtl: UserController = {
           break;
 
         case 'medical_visit':
-          // Validar que los datos sean del tipo correcto usando type guard
+          // Validar que los datos sean del tipo correcto
           if (!isMedicalVisitInput(data)) {
             const errorResponse: ErrorResponse = {
               success: false,
@@ -1375,6 +1396,10 @@ const userCtl: UserController = {
             reasonForVisit: data.reasonForVisit,
             veterinarianName: data.veterinarianName,
             observations: data.observations || '',
+            // Campos de notificaciones
+            emailNotificationEnabled: data.emailNotificationEnabled ?? false,
+            notificationDaysBefore: data.notificationDaysBefore ?? 7,
+            lastNotificationSent: null,
             _id: new Types.ObjectId(),
             createdAt: timestamp,
             updatedAt: timestamp,
@@ -1423,7 +1448,6 @@ const userCtl: UserController = {
       res.status(201).json(response);
     } catch (error) {
       console.error('❌ Error creating medical record:', error);
-
       res.status(500).send({
         success: false,
         message: 'Internal server error, please try again later.',
@@ -1432,6 +1456,7 @@ const userCtl: UserController = {
     }
   },
 
+  // Controlador para actualizar registro médico (actualizado)
   updateMedicalRecord: async (req: Request, res: Response): Promise<void> => {
     try {
       const { type, petId, recordId, data } = req.body as {
@@ -1487,10 +1512,24 @@ const userCtl: UserController = {
         updatedAt: new Date(),
       };
 
+      // Lista de campos permitidos para actualizar
+      const allowedFields = [
+        'dateOfApplication',
+        'nextVaccineDate',
+        'vaccineName',
+        'nextDewormingDate',
+        'dewormerName',
+        'visitDate',
+        'reasonForVisit',
+        'veterinarianName',
+        'observations',
+        'emailNotificationEnabled',
+        'notificationDaysBefore'
+      ];
+
       Object.keys(data).forEach((key) => {
-        if (data[key as keyof MedicalRecordInput] !== undefined) {
-          updateData[`${updateField}.$.${key}`] =
-            data[key as keyof MedicalRecordInput];
+        if (allowedFields.includes(key) && data[key as keyof MedicalRecordInput] !== undefined) {
+          updateData[`${updateField}.$.${key}`] = data[key as keyof MedicalRecordInput];
         }
       });
 
@@ -3422,7 +3461,7 @@ const userCtl: UserController = {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { token, newPassword, confirmPassword, lang } = req.body;
+      const { token, newPassword, confirmPassword, lang, twoFactorCode, turnstileToken } = req.body;
 
       // Validación de campos requeridos
       if (!token || !newPassword) {
@@ -3474,20 +3513,176 @@ const userCtl: UserController = {
         return;
       }
 
+      // VERIFICAR 2FA si está habilitado
+      const is2FAEnabled = user.security?.security?.twoFactorEnabled || false;
+      const twoFactorMethod = user.security?.security?.twoFactorMethod;
+
+      if (is2FAEnabled) {
+        // Si no se proporcionó código 2FA, solicitar SIN validar Turnstile aún
+        if (!twoFactorCode) {
+          // Si es por email, enviar el código
+          if (twoFactorMethod === 'email') {
+            try {
+              const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+              if (!user.security) {
+                user.security = { security: {}, devices: [] };
+              }
+              if (!user.security.security) {
+                user.security.security = {};
+              }
+
+              user.security.security.twoFactorTempCode = verificationCode;
+              user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+              await user.save();
+
+              const emailService = EmailService.getInstance();
+              const emailLang = lang || req.headers['accept-language']?.split(',')[0] || 'es';
+
+              await emailService.sendEmail({
+                to: user.email,
+                subject: 'Código de verificación 2FA',
+                template: 'email-2fa-verification',
+                lang: emailLang,
+                context: {
+                  userName: user.profile?.name || user.email,
+                  verificationCode,
+                  expiryMinutes: 10,
+                  year: new Date().getFullYear(),
+                  companyName: process.env.APP_NAME || 'PlaquitasCR',
+                  logoUrl: process.env.LOGO_URL,
+                  phoneNumber: process.env.PHONE_NUMBER,
+                  facebookUrl: process.env.FACEBOOK_URL,
+                  facebookUsername: process.env.FACEBOOK_USERNAME,
+                  instagramUrl: process.env.INSTAGRAM_URL,
+                  instagramUsername: process.env.INSTAGRAM_USERNAME,
+                  supportEmail: process.env.SUPPORT_EMAIL,
+                },
+              });
+
+              console.log(`📧 2FA code sent to ${user.email} for password reset`);
+            } catch (emailError) {
+              console.error('Error sending 2FA email for password reset:', emailError);
+            }
+          }
+
+          // Responder solicitando código 2FA (sin validar Turnstile)
+          res.status(200).json({
+            success: false,
+            payload: {
+              requiresTwoFactor: true,
+              method: twoFactorMethod,
+              tempToken: jwt.sign(
+                { id: user._id, email: user.email, twoFactorPending: true, action: 'reset_password' },
+                process.env.SECRET as string,
+                { expiresIn: '5m' }
+              )
+            },
+            message: twoFactorMethod === 'email'
+              ? 'Se ha enviado un código de verificación a tu correo electrónico para restablecer la contraseña'
+              : 'Two-factor authentication required to reset password',
+
+          });
+          return;
+        }
+
+        // Verificar código 2FA
+        let isValid2FA = false;
+        const storedSecret = user.security?.security?.twoFactorSecret;
+        const tempCode = user.security?.security?.twoFactorTempCode;
+        const tempCodeExpires = user.security?.security?.twoFactorTempCodeExpires;
+
+        if (twoFactorMethod === 'app' && storedSecret) {
+          isValid2FA = speakeasy.totp.verify({
+            secret: storedSecret,
+            encoding: 'base32',
+            token: twoFactorCode,
+            window: 1,
+          });
+        } else if (twoFactorMethod === 'email') {
+          const now = new Date();
+          isValid2FA = tempCode === twoFactorCode && !!tempCodeExpires && tempCodeExpires > now;
+
+          // Limpiar código temporal después de uso
+          if (user.security?.security) {
+            user.security.security.twoFactorTempCode = undefined;
+            user.security.security.twoFactorTempCodeExpires = undefined;
+            await user.save();
+          }
+        }
+
+        if (!isValid2FA) {
+          res.status(401).json({
+            success: false,
+            message: 'Invalid or expired verification code',
+            code: 'INVALID_2FA'
+          });
+          return;
+        }
+      }
+
+      // ============================================
+      // ✅ VALIDAR TURNSTILE SOLO AQUÍ (después de verificar 2FA)
+      // ============================================
+      if (process.env.NODE_ENV !== 'development') {
+        if (!turnstileToken) {
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad requerida',
+            code: 'SECURITY_REQUIRED',
+          });
+          return;
+        }
+
+        const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+        if (!turnstileSecretKey) {
+          console.error('❌ TURNSTILE_SECRET_KEY no está configurada');
+          res.status(500).json({
+            success: false,
+            message: 'Error de configuración de seguridad',
+            code: 'CONFIG_ERROR',
+          });
+          return;
+        }
+
+        const verificationUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationResponse = await fetch(verificationUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
+        });
+
+        const verificationData = await verificationResponse.json();
+
+        if (!verificationData.success) {
+          console.error('❌ Turnstile verification failed:', verificationData);
+          res.status(400).json({
+            success: false,
+            message: 'Verificación de seguridad fallida',
+            code: 'TURNSTILE_FAILED',
+            details: verificationData['error-codes'] || ['Unknown error'],
+          });
+          return;
+        }
+
+        if (verificationData.score !== undefined && verificationData.score < 0.5) {
+          console.warn(`⚠️ Low Turnstile score for password reset: ${verificationData.score}`);
+        }
+      }
+
       // Validar que la nueva contraseña sea diferente
       try {
         const isSamePassword = await bcrypt.compare(newPassword, user.password);
         if (isSamePassword) {
           res.status(400).json({
             success: false,
-            message:
-              'The new password must be different from the previous one.',
+            message: 'The new password must be different from the previous one.',
             code: 'SAME_PASSWORD',
           });
           return;
         }
       } catch (bcryptError) {
-        console.error('Error comparando contraseñas:', bcryptError);
+        console.error('Error comparing passwords:', bcryptError);
       }
 
       // Actualizar contraseña
@@ -3514,14 +3709,11 @@ const userCtl: UserController = {
           if (success) {
             console.log(`Email de confirmación enviado a ${user.email}`);
           } else {
-            console.warn(
-              `No se pudo enviar email de confirmación a ${user.email}`
-            );
+            console.warn(`No se pudo enviar email de confirmación a ${user.email}`);
           }
         })
         .catch((emailError) => {
           console.error('Error enviando email de confirmación:', emailError);
-          // NO fallar la respuesta principal por error de email
         });
 
       // Responder éxito inmediatamente
@@ -3549,6 +3741,107 @@ const userCtl: UserController = {
           code: 'INTERNAL_ERROR',
         });
       }
+    }
+  },
+
+  /**
+ * Reenviar código de verificación 2FA para reset password
+ */
+  async resend2FACodeForReset(req: Request, res: Response): Promise<void> {
+    try {
+      const { tempToken } = req.body;
+
+      if (!tempToken) {
+        res.status(400).json({
+          success: false,
+          message: 'Token temporal requerido',
+        });
+        return;
+      }
+
+      // Verificar el token temporal
+      let decoded: any;
+      try {
+        decoded = jwt.verify(tempToken, process.env.SECRET as string);
+      } catch (error) {
+        res.status(401).json({
+          success: false,
+          message: 'Token inválido o expirado',
+        });
+        return;
+      }
+
+      const userId = decoded.id;
+      const user = await User.findById(userId);
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado',
+        });
+        return;
+      }
+
+      const twoFactorMethod = user.security?.security?.twoFactorMethod;
+
+      if (twoFactorMethod !== 'email') {
+        res.status(400).json({
+          success: false,
+          message: '2FA por email no está habilitado para este usuario',
+        });
+        return;
+      }
+
+      // Generar nuevo código
+      const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+      if (!user.security) {
+        user.security = { security: {}, devices: [] };
+      }
+      if (!user.security.security) {
+        user.security.security = {};
+      }
+
+      user.security.security.twoFactorTempCode = verificationCode;
+      user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+      await user.save();
+
+      // Enviar email con el código
+      const emailService = EmailService.getInstance();
+      const lang = req.headers['accept-language']?.split(',')[0] || 'es';
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Nuevo código de verificación 2FA',
+        template: 'email-2fa-verification',
+        lang: lang,
+        context: {
+          userName: user.profile?.name || user.email,
+          verificationCode,
+          expiryMinutes: 10,
+          year: new Date().getFullYear(),
+          companyName: process.env.APP_NAME || 'PlaquitasCR',
+          logoUrl: process.env.LOGO_URL,
+          phoneNumber: process.env.PHONE_NUMBER,
+          facebookUrl: process.env.FACEBOOK_URL,
+          facebookUsername: process.env.FACEBOOK_USERNAME,
+          instagramUrl: process.env.INSTAGRAM_URL,
+          instagramUsername: process.env.INSTAGRAM_USERNAME,
+          supportEmail: process.env.SUPPORT_EMAIL,
+        },
+      });
+
+      console.log(`📧 Re-sent 2FA code for password reset to ${user.email}`);
+
+      res.json({
+        success: true,
+        message: 'Nuevo código de verificación enviado a tu email',
+      });
+    } catch (error) {
+      console.error('Error in resend2FACodeForReset:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+      });
     }
   },
 

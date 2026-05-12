@@ -57,6 +57,7 @@ router.put('/updatePassword', authenticateToken, userCtl.updatePassword);
 router.post('/forgotPassword', userCtl.forgotPassword);
 
 router.post('/resetPassword', userCtl.resetPassword);
+router.post('/resend2FACodeForReset', userCtl.resend2FACodeForReset)
 
 // Rutas públicas para usuarios
 router.get('/getActivePromotions', promotionController.getActivePromotions);

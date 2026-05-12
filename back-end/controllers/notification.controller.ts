@@ -53,6 +53,39 @@ interface SendResult {
 }
 
 export const notificationController = {
+
+  // Obtener dispositivos del usuario (NUEVO)
+  getSubscriptionDevices: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req.user as IUser)?.id?.toString();
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado',
+        });
+        return;
+      }
+      const query: any = { user: new Types.ObjectId(userId) };
+      const devices = await Subscription.find(query)
+        .sort({ 'deviceInfo.lastActive': -1 })
+        .lean();
+
+      res.status(200).json({
+        success: true,
+        payload: devices,
+      });
+    } catch (error) {
+      console.error('❌ Error en getSubscriptionDevices:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+
   // Guardar suscripción de usuario
   subscribe: async (req: Request, res: Response): Promise<void> => {
     try {
@@ -522,7 +555,6 @@ export const notificationController = {
   },
 
   // Función interna para enviar push notifications (MEJORADA para multi-dispositivo)
-
   sendPushNotification: async (
     userId: Types.ObjectId,
     payload: PushNotificationPayload
@@ -716,47 +748,6 @@ export const notificationController = {
     }
   },
 
-  // Obtener dispositivos del usuario (NUEVO)
-  getUserDevices: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const userId = (req.user as IUser)?.id?.toString();
-
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'Usuario no autenticado',
-        });
-        return;
-      }
-
-      const devices = await Subscription.find(
-        { user: new Types.ObjectId(userId), isActive: true },
-        {
-          'deviceInfo.type': 1,
-          'deviceInfo.browser': 1,
-          'deviceInfo.os': 1,
-          'deviceInfo.lastActive': 1,
-          'deviceInfo.deviceId': 1,
-          createdAt: 1,
-          endpoint: 1,
-        }
-      ).sort({ 'deviceInfo.lastActive': -1 });
-
-      res.status(200).json({
-        success: true,
-        devices,
-      });
-    } catch (error) {
-      console.error('❌ Error en getUserDevices:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error, please try again later.',
-        code: 'INTERNAL_ERROR',
-        error: (error as Error).message,
-      });
-    }
-  },
-
   // Desactivar dispositivo específico (NUEVO)
   deactivateDevice: async (req: Request, res: Response): Promise<void> => {
     try {
@@ -799,6 +790,39 @@ export const notificationController = {
       });
     }
   },
+
+  // Eliminar todas las suscripciones de un usuario
+  deleteAllSubscriptions: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req.user as IUser)?.id?.toString();
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User not found',
+        });
+        return;
+      }
+
+      const result = await Subscription.deleteMany({
+        user: new Types.ObjectId(userId),
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `${result.deletedCount} subscriptions successfully deleted`,
+      });
+    } catch (error) {
+      console.error('❌ Error en deleteAllSubscriptions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error, please try again later.',
+        code: 'INTERNAL_ERROR',
+        error: (error as Error).message,
+      });
+    }
+  },
+
 };
 
 export default notificationController;

@@ -1,3 +1,5 @@
+import { IDewormingControl, IMedicalVisits, IVaccinesControl } from "../interfaces/Ipet";
+
 export interface Permission {
   showPhoneInfo: boolean;
   showEmailInfo: boolean;
@@ -28,33 +30,14 @@ export interface MedicalRecordResponse {
   updatedAt: string;
 }
 
-interface VaccineInput {
-  dateOfApplication: string;
-  nextVaccineDate: string;
-  vaccineName: string;
-  observations?: string;
-}
 
-interface DewormingInput {
-  dateOfApplication: string;
-  nextDewormingDate: string;
-  dewormerName: string;
-  observations?: string;
-}
-
-interface MedicalVisitInput {
-  visitDate: string;
-  reasonForVisit: string;
-  veterinarianName: string;
-  observations?: string;
-}
 
 export type MedicalRecordInput =
-  | VaccineInput
-  | DewormingInput
-  | MedicalVisitInput;
+  | IVaccinesControl
+  | IDewormingControl
+  | IMedicalVisits;
 
-export const isVaccineInput = (data: any): data is VaccineInput => {
+export const isVaccineInput = (data: any): data is IVaccinesControl => {
   return (
     data.dateOfApplication !== undefined &&
     data.nextVaccineDate !== undefined &&
@@ -62,7 +45,7 @@ export const isVaccineInput = (data: any): data is VaccineInput => {
   );
 };
 
-export const isDewormingInput = (data: any): data is DewormingInput => {
+export const isDewormingInput = (data: any): data is IDewormingControl => {
   return (
     data.dateOfApplication !== undefined &&
     data.nextDewormingDate !== undefined &&
@@ -70,7 +53,7 @@ export const isDewormingInput = (data: any): data is DewormingInput => {
   );
 };
 
-export const isMedicalVisitInput = (data: any): data is MedicalVisitInput => {
+export const isMedicalVisitInput = (data: any): data is IMedicalVisits => {
   return (
     data.visitDate !== undefined &&
     data.reasonForVisit !== undefined &&

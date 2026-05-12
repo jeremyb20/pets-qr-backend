@@ -33,28 +33,38 @@ export interface IPetPermissions {
   showGenderInfo: boolean;
 }
 
-export interface IVaccinesControl {
+// Interfaz base para notificaciones
+export interface INotificationSettings {
+  emailNotificationEnabled: boolean;
+  lastNotificationSent: Date | null;
+  notificationDaysBefore: number;
+}
+
+// Interfaz base para registros médicos
+export interface IBaseMedicalRecord {
+  observations: string;
+  _id?: Types.ObjectId;
+}
+
+// Vacunas con notificaciones
+export interface IVaccinesControl extends IBaseMedicalRecord, INotificationSettings {
   dateOfApplication: string;
   nextVaccineDate: string;
   vaccineName: string;
-  observations: string;
-  _id?: Types.ObjectId;
 }
 
-export interface IDewormingControl {
+// Desparasitaciones con notificaciones
+export interface IDewormingControl extends IBaseMedicalRecord, INotificationSettings {
   dateOfApplication: string;
   nextDewormingDate: string;
   dewormerName: string;
-  observations: string;
-  _id?: Types.ObjectId;
 }
 
-export interface IMedicalVisits {
+// Visitas médicas con notificaciones
+export interface IMedicalVisits extends IBaseMedicalRecord, INotificationSettings {
   visitDate: string;
   reasonForVisit: string;
   veterinarianName: string;
-  observations: string;
-  _id?: Types.ObjectId;
 }
 
 export interface IMedicalRecord {
@@ -98,6 +108,7 @@ export interface IPet {
   ownerPetName: string;
   medicalRecord?: IMedicalRecord; // ← Objeto con tres arrays
   notes: string;
+  _id: Types.ObjectId;
 }
 
 export interface AddPetToExistingUserRequest {

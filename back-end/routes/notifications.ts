@@ -48,11 +48,13 @@ router.post('/send', authenticateToken, notificationCtl.send);
 router.post('/sendToAdmin', notificationCtl.sendToAdmin);
 
 // NUEVAS RUTAS PARA MULTI-DISPOSITIVO
-router.get('/devices', authenticateToken, notificationCtl.getUserDevices);
+router.get('/getSubscriptionDevices', authenticateToken, notificationCtl.getSubscriptionDevices);
 router.delete(
   '/devices/:deviceId',
   authenticateToken,
   notificationCtl.deactivateDevice
 );
+
+router.post('/deleteAllSubscriptions', authenticateToken, notificationCtl.deleteAllSubscriptions);
 
 export default router;

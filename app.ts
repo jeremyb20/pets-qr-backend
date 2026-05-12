@@ -13,7 +13,7 @@ dotenv.config();
 // Importar servicios y configuraciones
 import './back-end/config/redis'; // Inicializar Redis
 import NotificationScheduler from './back-end/services/notificationScheduler';
-
+import MedicalNotificationService from './back-end/services/emailNotificationScheduler';
 // Importar rutas
 import adminRoutes from './back-end/routes/admin';
 import userRoutes from './back-end/routes/users';
@@ -24,7 +24,7 @@ import petRoutes from './back-end/routes/pet';
 import publicRoutes from './back-end/routes/public';
 
 // Definir tipos para Multer
-interface MulterFile extends Express.Multer.File {}
+interface MulterFile extends Express.Multer.File { }
 
 const app: Application = express();
 
@@ -33,10 +33,10 @@ const corsOptions: CorsOptions = {
   origin:
     process.env.NODE_ENV === 'production'
       ? [
-          'https://plaquitascr.com',
-          'https://www.plaquitascr.com',
-          process.env.FRONTEND_URL || '',
-        ].filter(Boolean)
+        'https://plaquitascr.com',
+        'https://www.plaquitascr.com',
+        process.env.FRONTEND_URL || '',
+      ].filter(Boolean)
       : ['http://localhost:3000', 'http://localhost:8083'],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -140,6 +140,7 @@ app.get('*', (req: Request, res: Response, next: NextFunction): void => {
 
 // Inicializar el programador de notificaciones
 new NotificationScheduler();
+MedicalNotificationService.getInstance();
 
 // Manejo de errores global
 app.use(

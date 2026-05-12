@@ -64,18 +64,27 @@ class EmailService {
       `📧 Usando plantillas de idioma: ${selectedLang} (ruta: ${finalPath})`
     );
 
-    this.transporter.use(
-      'compile',
-      hbs({
-        viewEngine: {
-          extname: '.handlebars',
-          partialsDir: finalPath,
-          defaultLayout: false,
+    // Registrar helper eq para comparaciones en las plantillas
+    const hbsInstance = hbs({
+      viewEngine: {
+        extname: '.handlebars',
+        partialsDir: finalPath,
+        defaultLayout: false,
+        helpers: {
+          eq: function (a: any, b: any) {
+            return a === b;
+          },
+          // Helper para verificar si un valor está en un rango
+          between: function (value: number, min: number, max: number) {
+            return value >= min && value <= max;
+          }
         },
-        viewPath: finalPath,
-        extName: '.handlebars',
-      })
-    );
+      },
+      viewPath: finalPath,
+      extName: '.handlebars',
+    });
+
+    this.transporter.use('compile', hbsInstance);
   }
 
   private getSubject(key: string, lang: string = this.defaultLang): string {
@@ -95,6 +104,14 @@ class EmailService {
         vi: 'Mật khẩu đã được cập nhật thành công - PlaquitasCR',
         fr: 'Mot de passe mis à jour avec succès - PlaquitasCR',
         zh: '密码已成功更新 - PlaquitasCR',
+      },
+      'medical-reminder': {
+        en: 'Medical Reminder - PlaquitasCR',
+        es: 'Recordatorio Médico - PlaquitasCR',
+        ar: 'تذكير طبي - PlaquitasCR',
+        vi: 'Nhắc nhở y tế - PlaquitasCR',
+        fr: 'Rappel Médical - PlaquitasCR',
+        zh: '医疗提醒 - PlaquitasCR',
       },
     };
 
@@ -235,6 +252,67 @@ class EmailService {
         facebookUsername: process.env.FACEBOOK_USERNAME || '@PlaquitasCR',
         instagramUrl:
           process.env.INSTAGRAM_URL || 'https://www.instagram.com/plaquitas_cr',
+        instagramUsername: process.env.INSTAGRAM_USERNAME || '@plaquitas_cr',
+        supportEmail: process.env.SUPPORT_EMAIL || 'support@plaquitascr.com',
+      },
+    });
+  }
+
+  /**
+   * Envía recordatorio médico para mascotas
+   */
+  async sendMedicalReminderEmail(
+    email: string,
+    context: {
+      userName: string;
+      petName: string;
+      eventType: string;
+      eventName: string;
+      eventDate: string;
+      daysUntilEvent: number;
+      urgencyLevel: string;
+      observations: string;
+      dashboardUrl: string;
+      year: number;
+      companyName: string;
+      logoUrl: string;
+      phoneNumber: string;
+      facebookUrl: string;
+      facebookUsername: string;
+      instagramUrl: string;
+      instagramUsername: string;
+      supportEmail: string;
+    },
+    lang: string = 'es'
+  ): Promise<boolean> {
+    // Construir el subject basado en la urgencia
+    let subjectPrefix = '';
+    if (context.daysUntilEvent <= 1) {
+      subjectPrefix = '⚠️ URGENTE - ';
+    } else if (context.daysUntilEvent <= 3) {
+      subjectPrefix = '🔴 IMPORTANTE - ';
+    } else {
+      subjectPrefix = '📅 Recordatorio - ';
+    }
+
+    const subject = `${subjectPrefix}${context.eventType} de ${context.petName} - ${context.eventName}`;
+
+    return this.sendEmail({
+      to: email,
+      subject: subject,
+      template: 'medical-reminder',
+      lang: lang,
+      context: {
+        ...context,
+        // Asegurar valores por defecto
+        observations: context.observations || 'Sin observaciones adicionales',
+        year: new Date().getFullYear(),
+        companyName: 'PlaquitasCR',
+        logoUrl: process.env.LOGO_URL || 'https://plaquitascr.com/assets/images/plaquitascr.png',
+        phoneNumber: process.env.PHONE_NUMBER || '+50670160434',
+        facebookUrl: process.env.FACEBOOK_URL || 'https://www.facebook.com/profile.php?id=100064041162056',
+        facebookUsername: process.env.FACEBOOK_USERNAME || '@PlaquitasCR',
+        instagramUrl: process.env.INSTAGRAM_URL || 'https://www.instagram.com/plaquitas_cr',
         instagramUsername: process.env.INSTAGRAM_USERNAME || '@plaquitas_cr',
         supportEmail: process.env.SUPPORT_EMAIL || 'support@plaquitascr.com',
       },

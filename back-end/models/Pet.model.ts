@@ -26,6 +26,7 @@ export const DefaultPermissions = {
   showGenderInfo: true, // Muestra información de género
 };
 
+// models/MedicalRecord.model.ts (actualización)
 const VaccineSchema = new Schema<IVaccinesControl>({
   dateOfApplication: {
     type: String,
@@ -42,6 +43,18 @@ const VaccineSchema = new Schema<IVaccinesControl>({
   observations: {
     type: String,
     required: false,
+  },
+  emailNotificationEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  lastNotificationSent: {
+    type: Date,
+    default: null,
+  },
+  notificationDaysBefore: {
+    type: Number,
+    default: 7,
   },
 });
 
@@ -62,6 +75,18 @@ const DewormingSchema = new Schema<IDewormingControl>({
     type: String,
     required: false,
   },
+  emailNotificationEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  lastNotificationSent: {
+    type: Date,
+    default: null,
+  },
+  notificationDaysBefore: {
+    type: Number,
+    default: 7,
+  },
 });
 
 const DatesOfMedicalVisitsSchema = new Schema<IMedicalVisits>({
@@ -80,6 +105,18 @@ const DatesOfMedicalVisitsSchema = new Schema<IMedicalVisits>({
   observations: {
     type: String,
     required: false,
+  },
+  emailNotificationEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  lastNotificationSent: {
+    type: Date,
+    default: null,
+  },
+  notificationDaysBefore: {
+    type: Number,
+    default: 7,
   },
 });
 
