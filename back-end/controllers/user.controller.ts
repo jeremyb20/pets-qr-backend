@@ -30,7 +30,7 @@ import {
   IUserThemeConfig,
   RegistrationRequest,
 } from '../interfaces/IUser';
-import { IPet } from '../interfaces/Ipet';
+import { IDewormingControl, IMedicalVisits, IPet, IVaccinesControl } from '../interfaces/Ipet';
 import { IProductTableFilters } from '../types/product.types';
 import { Product } from '../models/Product.model';
 import cacheService from '../config/redis';
@@ -38,6 +38,9 @@ import { validatePasswordStrength } from '../utils/validate-password';
 import EmailService from '../services/emailService';
 import { AdminNotificationService } from '../services/adminNotification.service';
 import speakeasy from 'speakeasy';
+import { ICalendarEvent } from '../types/calendar';
+import { getReasonLabel } from '../utils/medical-helpers';
+import { calculateAge, getDaysUntilNextBirthday, getNextBirthday } from '../utils/dateUtils';
 
 const cloudinaryV2 = cloudinary.v2;
 export interface DeviceInfo {
@@ -141,6 +144,11 @@ interface UserController {
     next: NextFunction
   ): Promise<void>;
   registerPetView(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
+  getAllMedicalAppointmentsByUser(
     req: Request,
     res: Response,
     next: NextFunction
@@ -3865,6 +3873,18 @@ const userCtl: UserController = {
       let petsNeedingVaccination = 0;
       let vetVisitsCount = 0;
 
+      // Array para almacenar próximos cumpleaños
+      const upcomingBirthdays: Array<{
+        memberPetId: string;
+        petName: string;
+        birthDate: Date;
+        nextBirthday: Date;
+        daysUntil: number;
+        age: number;
+        photo?: string;
+        petStatus: string;
+      }> = [];
+
       userPets.forEach((pet) => {
         // Contar vacunas registradas en el historial médico
         if (
@@ -3900,12 +3920,42 @@ const userCtl: UserController = {
         ) {
           vetVisitsCount += pet.medicalRecord.datesOfMedicalVisits.length;
         }
+
+        // Calcular próximo cumpleaños
+        if (pet.birthDate) {
+          const birthDate = new Date(pet.birthDate);
+          const nextBirthday = getNextBirthday(birthDate, currentDate);
+          const daysUntil = getDaysUntilNextBirthday(birthDate, currentDate);
+
+          // Solo incluir cumpleaños que están por venir
+          if (daysUntil >= 0) {
+            const age = calculateAge(birthDate, currentDate);
+
+            upcomingBirthdays.push({
+              memberPetId: pet.memberPetId,
+              petName: pet.petName,
+              birthDate: birthDate,
+              nextBirthday: nextBirthday,
+              daysUntil: daysUntil,
+              photo: pet.photo,
+              petStatus: pet.petStatus,
+              age: age,
+            });
+          }
+        }
       });
+
+      // Ordenar los cumpleaños por días hasta la fecha (más cercano primero)
+      upcomingBirthdays.sort((a, b) => a.daysUntil - b.daysUntil);
 
       // Obtener próximas citas (asumiendo que tienes un modelo de Appointment)
       // Si no tienes citas aún, puedes devolver 0 o implementar después
       let appointmentsCount = 0;
       let upcomingAppointments = 0;
+
+      const upcomingBirthdaysNext30Days = upcomingBirthdays
+        .filter(birthday => birthday.daysUntil <= 30)
+        .sort((a, b) => a.daysUntil - b.daysUntil);
 
       res.json({
         success: true,
@@ -3916,6 +3966,9 @@ const userCtl: UserController = {
           vetVisitsCount,
           petsNeedingVaccination,
           upcomingAppointments,
+          upcomingBirthdays, // Array con los próximos cumpleaños
+          upcomingBirthdaysCount: upcomingBirthdays.length, // Cantidad de cumpleaños próximos,
+          upcomingBirthdaysNext30Days: upcomingBirthdaysNext30Days,
           date: new Date().toISOString(),
         },
       });
@@ -4322,7 +4375,6 @@ const userCtl: UserController = {
     }
   },
   // En tu controlador de pets (pet.controller.ts)
-
   registerPetView: async (req: Request, res: Response): Promise<void> => {
     try {
       const { memberPetId } = req.params;
@@ -4376,6 +4428,122 @@ const userCtl: UserController = {
       });
     } catch (error) {
       console.error('Error registering pet view:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  // controllers/pet.controller.ts
+  getAllMedicalAppointmentsByUser: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        res.status(400).json({
+          success: false,
+          message: 'userId is required',
+        });
+        return;
+      }
+
+      // Verificar que el usuario existe
+      const userExists = await User.findById(userId);
+      if (!userExists) {
+        res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+        return;
+      }
+
+      // Obtener todas las mascotas del usuario con sus registros médicos
+      const pets = await Pet.find({ owner: userId })
+        .select('petName medicalRecord _id')
+        .lean();
+
+      // Transformar los registros médicos en eventos de calendario
+      const calendarEvents: ICalendarEvent[] = [];
+
+      pets.forEach((pet) => {
+        const petName = pet.petName;
+        const petId = pet._id.toString();
+
+        // Procesar visitas médicas
+        if (pet.medicalRecord?.datesOfMedicalVisits) {
+          pet.medicalRecord.datesOfMedicalVisits.forEach((visit: IMedicalVisits) => {
+            if (visit.visitDate) {
+              calendarEvents.push({
+                id: `${petId}_visit_${visit._id}`,
+                title: `${petName} - ${getReasonLabel(visit.reasonForVisit)}`,
+                description: `Veterinario: ${visit.veterinarianName}\nObservaciones: ${visit.observations || 'Sin observaciones'}`,
+                start: new Date(visit.visitDate).getTime(),
+                end: new Date(visit.visitDate).getTime(),
+                allDay: true,
+                color: '#FF6B6B', // Rojo para visitas médicas
+                petId,
+                petName,
+                recordId: visit._id?.toString(),
+                recordType: 'medical_visit',
+                originalData: visit,
+              } as any);
+            }
+          });
+        }
+
+        // Procesar vacunas próximas (opcional: también mostrar próximas vacunas)
+        if (pet.medicalRecord?.vaccines) {
+          pet.medicalRecord.vaccines.forEach((vaccine: IVaccinesControl) => {
+            if (vaccine.nextVaccineDate) {
+              calendarEvents.push({
+                id: `${petId}_vaccine_${vaccine._id}`,
+                title: `${petName} - Vacuna: ${vaccine.vaccineName}`,
+                description: `Próxima vacuna: ${vaccine.vaccineName}\nFecha aplicación: ${new Date(vaccine.dateOfApplication).toLocaleDateString()}\nObservaciones: ${vaccine.observations || 'Sin observaciones'}`,
+                start: new Date(vaccine.nextVaccineDate).getTime(),
+                end: new Date(vaccine.nextVaccineDate).getTime(),
+                allDay: true,
+                color: '#4ECDC4', // Turquesa para vacunas
+                petId,
+                petName,
+                recordId: vaccine._id?.toString(),
+                recordType: 'vaccine',
+                originalData: vaccine,
+              } as any);
+            }
+          });
+        }
+
+        // Procesar desparasitaciones próximas
+        if (pet.medicalRecord?.deworming) {
+          pet.medicalRecord.deworming.forEach((deworming: IDewormingControl) => {
+            if (deworming.nextDewormingDate) {
+              calendarEvents.push({
+                id: `${petId}_deworming_${deworming._id}`,
+                title: `${petName} - Desparasitación: ${deworming.dewormerName}`,
+                description: `Próxima desparasitación: ${deworming.dewormerName}\nFecha aplicación: ${new Date(deworming.dateOfApplication).toLocaleDateString()}\nObservaciones: ${deworming.observations || 'Sin observaciones'}`,
+                start: new Date(deworming.nextDewormingDate).getTime(),
+                end: new Date(deworming.nextDewormingDate).getTime(),
+                allDay: true,
+                color: '#FFE66D', // Amarillo para desparasitaciones
+                petId,
+                petName,
+                recordId: deworming._id?.toString(),
+                recordType: 'deworming',
+                originalData: deworming,
+              } as any);
+            }
+          });
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        payload: { events: calendarEvents, total: calendarEvents.length, },
+      });
+    } catch (error) {
+      console.error('Error getting medical appointments:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error',

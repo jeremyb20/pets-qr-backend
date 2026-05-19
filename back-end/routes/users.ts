@@ -70,6 +70,7 @@ router.post('/registerPetView/:memberPetId', userCtl.registerPetView);
 
 router.get('/getSecurityConfig', authenticateToken, UserSecurityController.getSecurityConfig);
 router.put('/updateSecurityConfig', authenticateToken, UserSecurityController.updateSecurityConfig);
+router.get('/getAllMedicalAppointmentsByUser/:userId', authenticateToken, userCtl.getAllMedicalAppointmentsByUser);
 
 // ============================================
 // AUTENTICACIÓN DE DOS FACTORES (2FA)
