@@ -1,5 +1,11 @@
 // models/Promotion.ts
-import { Schema, model, Document, Model } from 'mongoose';
+import {
+  Schema,
+  model,
+  Document,
+  Model,
+  CallbackWithoutResultAndOptionalError,
+} from 'mongoose';
 
 export interface IPromotion extends Document {
   title: string;
@@ -154,24 +160,22 @@ PromotionSchema.statics.getFeaturedPromotion = async function () {
 };
 
 // Middleware para actualizar status automáticamente
-PromotionSchema.pre('save', function (next) {
+PromotionSchema.pre('save', async function () {
   const now = new Date();
   if (this.validUntil < now) {
     this.status = 'expired';
   }
-  next();
 });
 
 // Middleware para actualizar status antes de actualizar
-PromotionSchema.pre('findOneAndUpdate', function (next) {
+PromotionSchema.pre('findOneAndUpdate', async function () {
   const update = this.getUpdate() as any;
-  if (update.validUntil) {
+  if (update && update.validUntil) {
     const now = new Date();
     if (new Date(update.validUntil) < now) {
       update.status = 'expired';
     }
   }
-  next();
 });
 
 interface IPromotionModel extends Model<IPromotion> {

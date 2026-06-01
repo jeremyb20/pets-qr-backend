@@ -135,7 +135,7 @@ const adminCtl: AdminController = {
       const dbQueryTime = Date.now() - startTime;
       console.log(`📊 MongoDB query took: ${dbQueryTime}ms`);
 
-      const payload = users.map((item: FlattenMaps<IUser>) => {
+      const payload = users.map((item) => {
         const petsArray: IPet[] = [];
 
         if (item.pets && item.pets.length > 0) {

@@ -30,7 +30,12 @@ import {
   IUserThemeConfig,
   RegistrationRequest,
 } from '../interfaces/IUser';
-import { IDewormingControl, IMedicalVisits, IPet, IVaccinesControl } from '../interfaces/Ipet';
+import {
+  IDewormingControl,
+  IMedicalVisits,
+  IPet,
+  IVaccinesControl,
+} from '../interfaces/Ipet';
 import { IProductTableFilters } from '../types/product.types';
 import { Product } from '../models/Product.model';
 import cacheService from '../config/redis';
@@ -39,8 +44,18 @@ import EmailService from '../services/emailService';
 import { AdminNotificationService } from '../services/adminNotification.service';
 import speakeasy from 'speakeasy';
 import { ICalendarEvent } from '../types/calendar';
+
+interface TurnstileResponse {
+  success: boolean;
+  score?: number;
+  'error-codes'?: string[];
+}
 import { getReasonLabel } from '../utils/medical-helpers';
-import { calculateAge, getDaysUntilNextBirthday, getNextBirthday } from '../utils/dateUtils';
+import {
+  calculateAge,
+  getDaysUntilNextBirthday,
+  getNextBirthday,
+} from '../utils/dateUtils';
 
 const cloudinaryV2 = cloudinary.v2;
 export interface DeviceInfo {
@@ -64,8 +79,6 @@ interface UserController {
   getAllPetsByUser(req: Request, res: Response): Promise<void>;
   getSettings(req: Request, res: Response): Promise<void>;
   updateSettings(req: Request, res: Response): Promise<void>;
-  getProfileById(req: Request, res: Response): Promise<void>;
-  getPublicProfileById(req: Request, res: Response): Promise<void>;
   getMedicalRecordsByPet(req: Request, res: Response): Promise<void>;
   createMedicalRecord(req: Request, res: Response): Promise<void>;
   updateMedicalRecord(req: Request, res: Response): Promise<void>;
@@ -157,7 +170,8 @@ interface UserController {
 const userCtl: UserController = {
   authenticate: async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password, turnstileToken, twoFactorCode, deviceInfo } = req.body;
+      const { email, password, turnstileToken, twoFactorCode, deviceInfo } =
+        req.body;
 
       // 1. BUSCAR USUARIO
       const user = await User.findOne({ email });
@@ -188,7 +202,9 @@ const userCtl: UserController = {
           // Si es por email, enviar el código
           if (twoFactorMethod === 'email') {
             try {
-              const verificationCode = crypto.randomInt(100000, 999999).toString();
+              const verificationCode = crypto
+                .randomInt(100000, 999999)
+                .toString();
 
               if (!user.security) {
                 user.security = { security: {}, devices: [] };
@@ -198,11 +214,14 @@ const userCtl: UserController = {
               }
 
               user.security.security.twoFactorTempCode = verificationCode;
-              user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+              user.security.security.twoFactorTempCodeExpires = new Date(
+                Date.now() + 10 * 60 * 1000
+              );
               await user.save();
 
               const emailService = EmailService.getInstance();
-              const lang = req.headers['accept-language']?.split(',')[0] || 'es';
+              const lang =
+                req.headers['accept-language']?.split(',')[0] || 'es';
 
               await emailService.sendEmail({
                 to: user.email,
@@ -235,15 +254,16 @@ const userCtl: UserController = {
           res.status(200).json({
             success: false,
             requiresTwoFactor: true,
-            message: twoFactorMethod === 'email'
-              ? 'Se ha enviado un código de verificación a tu correo electrónico'
-              : 'Two-factor authentication required',
+            message:
+              twoFactorMethod === 'email'
+                ? 'Se ha enviado un código de verificación a tu correo electrónico'
+                : 'Two-factor authentication required',
             method: twoFactorMethod,
             tempToken: jwt.sign(
               { id: user._id, email: user.email, twoFactorPending: true },
               process.env.SECRET as string,
               { expiresIn: '5m' }
-            )
+            ),
           });
           return;
         }
@@ -252,7 +272,8 @@ const userCtl: UserController = {
         let isValid2FA = false;
         const storedSecret = user.security?.security?.twoFactorSecret;
         const tempCode = user.security?.security?.twoFactorTempCode;
-        const tempCodeExpires = user.security?.security?.twoFactorTempCodeExpires;
+        const tempCodeExpires =
+          user.security?.security?.twoFactorTempCodeExpires;
 
         if (twoFactorMethod === 'app' && storedSecret) {
           isValid2FA = speakeasy.totp.verify({
@@ -263,7 +284,10 @@ const userCtl: UserController = {
           });
         } else if (twoFactorMethod === 'email') {
           const now = new Date();
-          isValid2FA = tempCode === twoFactorCode && !!tempCodeExpires && tempCodeExpires > now;
+          isValid2FA =
+            tempCode === twoFactorCode &&
+            !!tempCodeExpires &&
+            tempCodeExpires > now;
 
           if (user.security?.security) {
             user.security.security.twoFactorTempCode = undefined;
@@ -276,7 +300,7 @@ const userCtl: UserController = {
           res.status(401).json({
             success: false,
             message: 'Invalid or expired verification code',
-            code: 'INVALID_2FA'
+            code: 'INVALID_2FA',
           });
           return;
         }
@@ -306,14 +330,16 @@ const userCtl: UserController = {
           return;
         }
 
-        const verificationUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationUrl =
+          'https://challenges.cloudflare.com/turnstile/v0/siteverify';
         const verificationResponse = await fetch(verificationUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
         });
 
-        const verificationData = await verificationResponse.json();
+        const verificationData =
+          (await verificationResponse.json()) as TurnstileResponse;
 
         if (!verificationData.success) {
           console.error('❌ Turnstile verification failed:', verificationData);
@@ -326,11 +352,13 @@ const userCtl: UserController = {
           return;
         }
 
-        if (verificationData.score !== undefined && verificationData.score < 0.5) {
+        if (
+          verificationData.score !== undefined &&
+          verificationData.score < 0.5
+        ) {
           console.warn(`⚠️ Low Turnstile score: ${verificationData.score}`);
         }
       }
-
 
       // Registrar dispositivo
       if (deviceInfo && deviceInfo.name && deviceInfo.deviceType) {
@@ -350,14 +378,17 @@ const userCtl: UserController = {
           const deviceId = crypto.randomBytes(16).toString('hex');
 
           const existingDeviceIndex = user.security.devices.findIndex(
-            (device: any) => device.name === deviceInfo.name &&
-              device.userAgent === (deviceInfo.userAgent || req.headers['user-agent'])
+            (device: any) =>
+              device.name === deviceInfo.name &&
+              device.userAgent ===
+                (deviceInfo.userAgent || req.headers['user-agent'])
           );
 
           if (existingDeviceIndex !== -1) {
             user.security.devices[existingDeviceIndex].lastActive = new Date();
             user.security.devices[existingDeviceIndex].ipAddress = clientIp;
-            user.security.devices[existingDeviceIndex].location = deviceInfo.location || 'Unknown location';
+            user.security.devices[existingDeviceIndex].location =
+              deviceInfo.location || 'Unknown location';
           } else {
             const newDevice = {
               id: deviceId,
@@ -429,8 +460,8 @@ const userCtl: UserController = {
         isEmailVerified: user.security.security.isEmailVerified || false,
         twoFactorEnabled: user.security.security.twoFactorEnabled || false,
         twoFactorMethod: user.security.security.twoFactorMethod || null,
-        backupEmail: user.security.security.backupEmail || null
-      }
+        backupEmail: user.security.security.backupEmail || null,
+      };
 
       const userData = {
         _id: user._id,
@@ -628,385 +659,6 @@ const userCtl: UserController = {
       res.status(500).send({
         success: false,
         message: 'Internal server error, please try again later.',
-        error: (error as Error).message,
-      });
-    }
-  },
-
-  getPublicProfileById: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { id } = req.params;
-
-      // Buscar en el modelo Pet por memberPetId
-      const pet = await Pet.findOne({ memberPetId: id }).select(
-        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
-      );
-
-      // Si se encuentra la mascota (QR ya convertido en perfil)
-      if (pet) {
-        let user = null;
-
-        // Asegurarnos de que tenemos el owner id
-        const ownerId = pet.owner;
-
-        if (ownerId) {
-          try {
-            // Intentar buscar el usuario usando el ObjectId directamente
-            user = await User.findById(ownerId)
-              .select('username email profile')
-              .lean();
-
-            // Si no se encuentra, podría ser que owner sea un string en lugar de ObjectId
-            if (!user && typeof ownerId === 'string') {
-              // Intentar buscar como string
-              user = await User.findOne({ _id: ownerId })
-                .select('username email profile')
-                .lean();
-            }
-
-            // Otra posibilidad: el owner podría estar en otro campo diferente
-            if (!user) {
-              console.log(
-                'Owner ID encontrado pero no coincide con usuario:',
-                ownerId
-              );
-            }
-          } catch (error) {
-            console.error('Error buscando usuario:', error);
-          }
-        }
-
-        // Convertir el documento de Mongoose a objeto plano
-        const petObject = pet.toObject ? pet.toObject() : pet;
-
-        // Obtener permisos (combinar con permisos por defecto si no existen)
-        const permissions = petObject.permissions || DefaultPermissions;
-
-        // Función para filtrar datos según permisos (solo incluye campos permitidos)
-        const filterByPermissions = (data: any, perms: any) => {
-          const filtered: any = {};
-
-          // Campos que siempre se muestran
-          filtered._id = data._id;
-          filtered.memberPetId = data.memberPetId;
-          filtered.petName = data.petName;
-          filtered.petFirstSurname = data.petFirstSurname;
-          filtered.petSecondSurname = data.petSecondSurname;
-          filtered.petStatus = data.petStatus;
-          filtered.photo = data.photo;
-          filtered.isDigitalIdentificationActive =
-            data.isDigitalIdentificationActive;
-          filtered.petViewCounter = data.petViewCounter;
-          filtered.petStatusReport = data.petStatusReport;
-          filtered.createdAt = data.createdAt;
-          filtered.updatedAt = data.updatedAt;
-          filtered.notes = data.notes;
-          filtered.permissions = perms;
-
-          // Campos condicionales (solo se añaden si el permiso está activo)
-          if (perms.showBreedInfo) {
-            filtered.breed = data.breed;
-          }
-
-          if (perms.showWeightInfo) {
-            filtered.weight = data.weight;
-          }
-
-          if (perms.showPhoneInfo) {
-            filtered.phone = data.phone;
-          }
-
-          if (perms.showOwnerPetName) {
-            filtered.ownerPetName = data.ownerPetName;
-          }
-
-          if (perms.showBirthDate) {
-            filtered.birthDate = data.birthDate;
-          }
-
-          if (perms.showAddressInfo) {
-            filtered.address = data.address;
-          }
-
-          if (perms.showVeterinarianContact) {
-            filtered.veterinarianContact = data.veterinarianContact;
-          }
-
-          if (perms.showPhoneVeterinarian) {
-            filtered.phoneVeterinarian = data.phoneVeterinarian;
-          }
-
-          if (perms.showHealthAndRequirements) {
-            filtered.healthAndRequirements = data.healthAndRequirements;
-          }
-
-          if (perms.showFavoriteActivities) {
-            filtered.favoriteActivities = data.favoriteActivities;
-          }
-
-          if (perms.showGenderInfo) {
-            filtered.genderSelected = data.genderSelected;
-          }
-
-          if (perms.showLocationInfo) {
-            filtered.lat = data.lat;
-            filtered.lng = data.lng;
-          }
-
-          return filtered;
-        };
-
-        // Preparar datos del owner (solo incluye campos permitidos)
-        const getOwnerData = (userData: any, ownerIdValue: any, perms: any) => {
-          const ownerInfo: any = {
-            _id: userData?._id || ownerIdValue,
-          };
-
-          // Nombre siempre visible
-          if (userData?.profile?.name) {
-            ownerInfo.name = userData.profile.name;
-          }
-
-          // Foto de perfil siempre visible si existe
-          if (userData?.profile?.photoProfile) {
-            ownerInfo.photoProfile = userData.profile.photoProfile;
-          }
-
-          // Avatar siempre visible
-          ownerInfo.avatarProfile = userData?.profile?.avatarProfile || '2';
-
-          // Username (solo si hay algún permiso de contacto)
-          if (perms.showEmailInfo || perms.showPhoneInfo) {
-            const username =
-              userData?.profile?.username || userData?.username || '';
-            if (username) {
-              ownerInfo.username = username;
-            }
-          }
-
-          // Email (solo si permiso activo y existe)
-          if (perms.showEmailInfo && userData?.email) {
-            ownerInfo.email = userData.email;
-          }
-
-          // Teléfono (solo si permiso activo y existe)
-          if (perms.showPhoneInfo && userData?.profile?.phone) {
-            ownerInfo.phone = userData.profile.phone;
-          }
-
-          // Dirección (solo si permiso activo y existe)
-          if (perms.showAddressInfo) {
-            if (userData?.profile?.address) {
-              ownerInfo.address = userData.profile.address;
-            }
-            if (userData?.profile?.city) {
-              ownerInfo.city = userData.profile.city;
-            }
-            if (userData?.profile?.state) {
-              ownerInfo.state = userData.profile.state;
-            }
-            if (userData?.profile?.country) {
-              ownerInfo.country = userData.profile.country;
-            }
-          }
-
-          return ownerInfo;
-        };
-
-        // Aplicar filtros a los datos de la mascota
-        const filteredPetData = filterByPermissions(petObject, permissions);
-
-        // Preparar datos del owner aplicando permisos
-        const ownerData = getOwnerData(user, ownerId, permissions);
-
-        // Combinar los datos filtrados
-        const petWithOwner = {
-          ...filteredPetData,
-          owner: ownerData,
-        };
-
-        res.status(200).json({
-          success: true,
-          payload: petWithOwner,
-          type: 'pet_profile',
-        });
-        return;
-      }
-
-      // Si no se encuentra en Pet, verificar si existe como QR no registrado
-      const qrCode = await QrCode.findOne({ randomCode: id }).select(
-        'randomCode isAssigned assignedPet createdAt'
-      );
-
-      // Si existe el QR (no registrado aún)
-      if (qrCode) {
-        const QRdata = {
-          randomCode: qrCode.randomCode,
-          assignedPet: qrCode.assignedPet,
-          createdAt: qrCode.createdAt,
-        };
-        res.status(200).json({
-          success: true,
-          payload: null,
-          qrCode: QRdata,
-          type: 'qr_code_unregistered',
-        });
-        return;
-      }
-
-      // No se encuentra ni en Pet ni en QrCode
-      res.status(404).json({
-        success: false,
-        message: 'Código o mascota no encontrada',
-        type: 'not_found',
-      });
-    } catch (error) {
-      console.error('Error in getPublicProfileById:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error, please try again later.',
-        code: 'INTERNAL_ERROR',
-        error: (error as Error).message,
-      });
-    }
-  },
-
-  getProfileById: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { id } = req.params;
-      const authenticatedUserId = (req.user as IUser)?.id?.toString(); // Ajusta según cómo manejas la autenticación
-
-      // Buscar en el modelo Pet por memberPetId
-      const pet = await Pet.findOne({ memberPetId: id }).select(
-        'memberPetId petName petFirstSurname petSecondSurname genderSelected breed weight petStatus birthDate favoriteActivities healthAndRequirements phoneVeterinarian veterinarianContact photo address lat lng isDigitalIdentificationActive petViewCounter permissions petStatusReport createdAt updatedAt phone ownerPetName owner lat lng notes'
-      );
-
-      // Si se encuentra la mascota (QR ya convertido en perfil)
-      if (pet) {
-        // Verificar si el usuario autenticado es el propietario
-        const isOwner = pet.owner.toString() === authenticatedUserId;
-
-        // Si NO es el propietario, retornar error
-        if (!isOwner) {
-          res.status(403).json({
-            success: false,
-            message: 'No tienes permiso para acceder a esta mascota',
-            type: 'unauthorized_access',
-          });
-          return;
-        }
-
-        let user = null;
-
-        // Asegurarnos de que tenemos el owner id
-        const ownerId = pet.owner;
-
-        if (ownerId) {
-          try {
-            // Intentar buscar el usuario usando el ObjectId directamente
-            user = await User.findById(ownerId)
-              .select('username email profile')
-              .lean();
-
-            // Si no se encuentra, podría ser que owner sea un string en lugar de ObjectId
-            if (!user && typeof ownerId === 'string') {
-              // Intentar buscar como string
-              user = await User.findOne({ _id: ownerId })
-                .select('username email profile')
-                .lean();
-            }
-
-            // Otra posibilidad: el owner podría estar en otro campo diferente
-            if (!user) {
-              console.log(
-                'Owner ID encontrado pero no coincide con usuario:',
-                ownerId
-              );
-            }
-          } catch (error) {
-            console.error('Error buscando usuario:', error);
-          }
-        }
-
-        // Convertir el documento de Mongoose a objeto plano
-        const petObject = pet.toObject ? pet.toObject() : pet;
-
-        // Preparar datos del owner
-        const ownerData = user
-          ? {
-            _id: user._id,
-            username: user.profile?.username || user.username || '',
-            email: user.email || '',
-            name: user.profile?.name || '',
-            phone: user.profile?.phone || '',
-            address: user.profile?.address || '',
-            city: user.profile?.city || '',
-            state: user.profile?.state || '',
-            country: user.profile?.country || '',
-            photoProfile: user.profile?.photoProfile || '',
-            avatarProfile: user.profile?.avatarProfile || '2',
-          }
-          : {
-            _id: ownerId,
-            username: '',
-            email: '',
-            name: '',
-            phone: '',
-            address: '',
-            city: '',
-            state: '',
-            country: '',
-            photoProfile: '',
-            avatarProfile: '2',
-          };
-
-        // Combinar los datos de forma correcta
-        const petWithOwner = {
-          ...petObject,
-          owner: ownerData,
-        };
-
-        res.status(200).json({
-          success: true,
-          payload: petWithOwner,
-          type: 'pet_profile',
-        });
-        return;
-      }
-
-      // Si no se encuentra en Pet, verificar si existe como QR no registrado
-      const qrCode = await QrCode.findOne({ randomCode: id }).select(
-        'randomCode isAssigned assignedPet createdAt'
-      );
-
-      // Si existe el QR (no registrado aún)
-      if (qrCode) {
-        const QRdata = {
-          randomCode: qrCode.randomCode,
-          assignedPet: qrCode.assignedPet,
-          createdAt: qrCode.createdAt,
-        };
-        res.status(200).json({
-          success: true,
-          payload: null,
-          qrCode: QRdata,
-          type: 'qr_code_unregistered',
-        });
-        return;
-      }
-
-      // No se encuentra ni en Pet ni en QrCode
-      res.status(404).json({
-        success: false,
-        message: 'Código o mascota no encontrada',
-        type: 'not_found',
-      });
-    } catch (error) {
-      console.error('Error in getProfileById:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error, please try again later.',
-        code: 'INTERNAL_ERROR',
         error: (error as Error).message,
       });
     }
@@ -1532,12 +1184,16 @@ const userCtl: UserController = {
         'veterinarianName',
         'observations',
         'emailNotificationEnabled',
-        'notificationDaysBefore'
+        'notificationDaysBefore',
       ];
 
       Object.keys(data).forEach((key) => {
-        if (allowedFields.includes(key) && data[key as keyof MedicalRecordInput] !== undefined) {
-          updateData[`${updateField}.$.${key}`] = data[key as keyof MedicalRecordInput];
+        if (
+          allowedFields.includes(key) &&
+          data[key as keyof MedicalRecordInput] !== undefined
+        ) {
+          updateData[`${updateField}.$.${key}`] =
+            data[key as keyof MedicalRecordInput];
         }
       });
 
@@ -1758,7 +1414,7 @@ const userCtl: UserController = {
         profile,
         avatarProfile,
       } = req.body;
-      const id = (req.user as IUser)?.id?.toString();
+      const id = (req as any).user?.id?.toString();
       // Construir el objeto de actualización
       const updateData: any = {
         email,
@@ -1966,7 +1622,8 @@ const userCtl: UserController = {
           body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
         });
 
-        const verificationData = await verificationResponse.json();
+        const verificationData =
+          (await verificationResponse.json()) as TurnstileResponse;
 
         // Verificar si el reCAPTCHA fue exitoso
         if (!verificationData.success) {
@@ -2775,7 +2432,7 @@ const userCtl: UserController = {
 
       // Verificar que el usuario esté autenticado y coincida con el userId
 
-      const authenticatedUser = (req.user as IUser)?.id?.toString();
+      const authenticatedUser = (req as any).user?.id?.toString();
 
       if (!authenticatedUser) {
         res.status(401).json({
@@ -3032,7 +2689,7 @@ const userCtl: UserController = {
     next?: NextFunction
   ): Promise<void> => {
     try {
-      const { code } = req.query;
+      const { code } = req.params;
 
       if (!code) {
         res.status(400).json({
@@ -3042,7 +2699,7 @@ const userCtl: UserController = {
         return;
       }
 
-      const qrCode = await QrCode.findOne({ randomCode: code });
+      const qrCode = await QrCode.findOne({ randomCode: code as string });
 
       if (!qrCode) {
         res.status(404).json({
@@ -3078,11 +2735,11 @@ const userCtl: UserController = {
   },
 
   // Obtener lista de productos publicados con paginación, búsqueda y filtros
-  async getAllPublishedProductList(
+  getAllPublishedProductList: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       const {
         page = 1,
@@ -3171,11 +2828,11 @@ const userCtl: UserController = {
     }
   },
   //
-  async searchProducts(
+  searchProducts: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       const {
         query = '',
@@ -3246,14 +2903,14 @@ const userCtl: UserController = {
   },
 
   // Obtener un producto publicado por su ID
-  async getProductPublishedById(
+  getProductPublishedById: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       const { id } = req.query;
-      const product = await Product.findOne({ productId: id })
+      const product = await Product.findOne({ productId: Number(id) })
         .populate({
           path: 'reviews',
           options: { sort: { postedAt: -1 } },
@@ -3277,13 +2934,13 @@ const userCtl: UserController = {
     }
   },
   // Actualiza la contrasenna del usuario autenticado
-  async updatePassword(
+  updatePassword: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id;
+      const userId = (req as any).user?.id?.toString();
       const { oldPassword, newPassword } = req.body;
 
       if (!userId) {
@@ -3327,11 +2984,11 @@ const userCtl: UserController = {
     }
   },
 
-  async forgotPassword(
+  forgotPassword: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       const { email, lang, turnstileToken } = req.body;
       if (process.env.NODE_ENV === 'development') {
@@ -3371,7 +3028,8 @@ const userCtl: UserController = {
           body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
         });
 
-        const verificationData = await verificationResponse.json();
+        const verificationData =
+          (await verificationResponse.json()) as TurnstileResponse;
         console.log(verificationData, 'verificationDataverificationData');
         // Verificar si el reCAPTCHA fue exitoso
         if (!verificationData.success) {
@@ -3463,13 +3121,20 @@ const userCtl: UserController = {
     }
   },
 
-  async resetPassword(
+  resetPassword: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
-      const { token, newPassword, confirmPassword, lang, twoFactorCode, turnstileToken } = req.body;
+      const {
+        token,
+        newPassword,
+        confirmPassword,
+        lang,
+        twoFactorCode,
+        turnstileToken,
+      } = req.body;
 
       // Validación de campos requeridos
       if (!token || !newPassword) {
@@ -3531,7 +3196,9 @@ const userCtl: UserController = {
           // Si es por email, enviar el código
           if (twoFactorMethod === 'email') {
             try {
-              const verificationCode = crypto.randomInt(100000, 999999).toString();
+              const verificationCode = crypto
+                .randomInt(100000, 999999)
+                .toString();
 
               if (!user.security) {
                 user.security = { security: {}, devices: [] };
@@ -3541,11 +3208,14 @@ const userCtl: UserController = {
               }
 
               user.security.security.twoFactorTempCode = verificationCode;
-              user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+              user.security.security.twoFactorTempCodeExpires = new Date(
+                Date.now() + 10 * 60 * 1000
+              );
               await user.save();
 
               const emailService = EmailService.getInstance();
-              const emailLang = lang || req.headers['accept-language']?.split(',')[0] || 'es';
+              const emailLang =
+                lang || req.headers['accept-language']?.split(',')[0] || 'es';
 
               await emailService.sendEmail({
                 to: user.email,
@@ -3568,9 +3238,14 @@ const userCtl: UserController = {
                 },
               });
 
-              console.log(`📧 2FA code sent to ${user.email} for password reset`);
+              console.log(
+                `📧 2FA code sent to ${user.email} for password reset`
+              );
             } catch (emailError) {
-              console.error('Error sending 2FA email for password reset:', emailError);
+              console.error(
+                'Error sending 2FA email for password reset:',
+                emailError
+              );
             }
           }
 
@@ -3581,15 +3256,20 @@ const userCtl: UserController = {
               requiresTwoFactor: true,
               method: twoFactorMethod,
               tempToken: jwt.sign(
-                { id: user._id, email: user.email, twoFactorPending: true, action: 'reset_password' },
+                {
+                  id: user._id,
+                  email: user.email,
+                  twoFactorPending: true,
+                  action: 'reset_password',
+                },
                 process.env.SECRET as string,
                 { expiresIn: '5m' }
-              )
+              ),
             },
-            message: twoFactorMethod === 'email'
-              ? 'Se ha enviado un código de verificación a tu correo electrónico para restablecer la contraseña'
-              : 'Two-factor authentication required to reset password',
-
+            message:
+              twoFactorMethod === 'email'
+                ? 'Se ha enviado un código de verificación a tu correo electrónico para restablecer la contraseña'
+                : 'Two-factor authentication required to reset password',
           });
           return;
         }
@@ -3598,7 +3278,8 @@ const userCtl: UserController = {
         let isValid2FA = false;
         const storedSecret = user.security?.security?.twoFactorSecret;
         const tempCode = user.security?.security?.twoFactorTempCode;
-        const tempCodeExpires = user.security?.security?.twoFactorTempCodeExpires;
+        const tempCodeExpires =
+          user.security?.security?.twoFactorTempCodeExpires;
 
         if (twoFactorMethod === 'app' && storedSecret) {
           isValid2FA = speakeasy.totp.verify({
@@ -3609,7 +3290,10 @@ const userCtl: UserController = {
           });
         } else if (twoFactorMethod === 'email') {
           const now = new Date();
-          isValid2FA = tempCode === twoFactorCode && !!tempCodeExpires && tempCodeExpires > now;
+          isValid2FA =
+            tempCode === twoFactorCode &&
+            !!tempCodeExpires &&
+            tempCodeExpires > now;
 
           // Limpiar código temporal después de uso
           if (user.security?.security) {
@@ -3623,7 +3307,7 @@ const userCtl: UserController = {
           res.status(401).json({
             success: false,
             message: 'Invalid or expired verification code',
-            code: 'INVALID_2FA'
+            code: 'INVALID_2FA',
           });
           return;
         }
@@ -3653,14 +3337,16 @@ const userCtl: UserController = {
           return;
         }
 
-        const verificationUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verificationUrl =
+          'https://challenges.cloudflare.com/turnstile/v0/siteverify';
         const verificationResponse = await fetch(verificationUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: `secret=${turnstileSecretKey}&response=${turnstileToken}`,
         });
 
-        const verificationData = await verificationResponse.json();
+        const verificationData =
+          (await verificationResponse.json()) as TurnstileResponse;
 
         if (!verificationData.success) {
           console.error('❌ Turnstile verification failed:', verificationData);
@@ -3673,8 +3359,13 @@ const userCtl: UserController = {
           return;
         }
 
-        if (verificationData.score !== undefined && verificationData.score < 0.5) {
-          console.warn(`⚠️ Low Turnstile score for password reset: ${verificationData.score}`);
+        if (
+          verificationData.score !== undefined &&
+          verificationData.score < 0.5
+        ) {
+          console.warn(
+            `⚠️ Low Turnstile score for password reset: ${verificationData.score}`
+          );
         }
       }
 
@@ -3684,7 +3375,8 @@ const userCtl: UserController = {
         if (isSamePassword) {
           res.status(400).json({
             success: false,
-            message: 'The new password must be different from the previous one.',
+            message:
+              'The new password must be different from the previous one.',
             code: 'SAME_PASSWORD',
           });
           return;
@@ -3717,7 +3409,9 @@ const userCtl: UserController = {
           if (success) {
             console.log(`Email de confirmación enviado a ${user.email}`);
           } else {
-            console.warn(`No se pudo enviar email de confirmación a ${user.email}`);
+            console.warn(
+              `No se pudo enviar email de confirmación a ${user.email}`
+            );
           }
         })
         .catch((emailError) => {
@@ -3753,9 +3447,9 @@ const userCtl: UserController = {
   },
 
   /**
- * Reenviar código de verificación 2FA para reset password
- */
-  async resend2FACodeForReset(req: Request, res: Response): Promise<void> {
+   * Reenviar código de verificación 2FA para reset password
+   */
+  resend2FACodeForReset: async (req: Request, res: Response): Promise<void> => {
     try {
       const { tempToken } = req.body;
 
@@ -3811,7 +3505,9 @@ const userCtl: UserController = {
       }
 
       user.security.security.twoFactorTempCode = verificationCode;
-      user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.security.security.twoFactorTempCodeExpires = new Date(
+        Date.now() + 10 * 60 * 1000
+      );
       await user.save();
 
       // Enviar email con el código
@@ -3853,13 +3549,13 @@ const userCtl: UserController = {
     }
   },
 
-  async getUserPetStats(
+  getUserPetStats: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id; // Asumiendo que tienes el usuario autenticado en req.user
+      const userId = (req as any).user?.id?.toString(); // Asumiendo que tienes el usuario autenticado en req.user
       const currentDate = new Date();
 
       // Obtener todas las mascotas del usuario
@@ -3900,7 +3596,7 @@ const userCtl: UserController = {
                 const nextDate = new Date(vaccine.nextVaccineDate);
                 const daysUntilNext = Math.ceil(
                   (nextDate.getTime() - currentDate.getTime()) /
-                  (1000 * 3600 * 24)
+                    (1000 * 3600 * 24)
                 );
                 return daysUntilNext <= 30 && daysUntilNext > 0;
               }
@@ -3954,7 +3650,7 @@ const userCtl: UserController = {
       let upcomingAppointments = 0;
 
       const upcomingBirthdaysNext30Days = upcomingBirthdays
-        .filter(birthday => birthday.daysUntil <= 30)
+        .filter((birthday) => birthday.daysUntil <= 30)
         .sort((a, b) => a.daysUntil - b.daysUntil);
 
       res.json({
@@ -3982,13 +3678,13 @@ const userCtl: UserController = {
       });
     }
   },
-  async getUserUpcomingAppointments(
+  getUserUpcomingAppointments: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id;
+      const userId = (req as any).user?.id?.toString();
       const {
         days = '30',
         includePast = 'false',
@@ -4028,7 +3724,7 @@ const userCtl: UserController = {
               const nextDate = new Date(vaccine.nextVaccineDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                (1000 * 3600 * 24)
+                  (1000 * 3600 * 24)
               );
 
               // Determinar si incluir esta cita
@@ -4074,7 +3770,7 @@ const userCtl: UserController = {
               const nextDate = new Date(deworming.nextDewormingDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                (1000 * 3600 * 24)
+                  (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
@@ -4119,7 +3815,7 @@ const userCtl: UserController = {
               const visitDate = new Date(visit.visitDate);
               const daysUntil = Math.ceil(
                 (visitDate.getTime() - currentDate.getTime()) /
-                (1000 * 3600 * 24)
+                  (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
@@ -4216,13 +3912,13 @@ const userCtl: UserController = {
       });
     }
   },
-  async getUserUpcomingAppointmentsGrouped(
+  getUserUpcomingAppointmentsGrouped: async (
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id;
+      const userId = (req as any).user?.id?.toString();
       const { days = '30', includePast = 'false' } =
         req.query as UpcomingAppointmentsQueryParams;
 
@@ -4249,7 +3945,7 @@ const userCtl: UserController = {
               const nextDate = new Date(vaccine.nextVaccineDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                (1000 * 3600 * 24)
+                  (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
@@ -4290,7 +3986,7 @@ const userCtl: UserController = {
               const nextDate = new Date(deworming.nextDewormingDate);
               const daysUntil = Math.ceil(
                 (nextDate.getTime() - currentDate.getTime()) /
-                (1000 * 3600 * 24)
+                  (1000 * 3600 * 24)
               );
 
               const isUpcoming = daysUntil >= 0 && daysUntil <= daysToConsider;
@@ -4437,7 +4133,10 @@ const userCtl: UserController = {
   },
 
   // controllers/pet.controller.ts
-  getAllMedicalAppointmentsByUser: async (req: Request, res: Response): Promise<void> => {
+  getAllMedicalAppointmentsByUser: async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       const { userId } = req.params;
 
@@ -4473,24 +4172,26 @@ const userCtl: UserController = {
 
         // Procesar visitas médicas
         if (pet.medicalRecord?.datesOfMedicalVisits) {
-          pet.medicalRecord.datesOfMedicalVisits.forEach((visit: IMedicalVisits) => {
-            if (visit.visitDate) {
-              calendarEvents.push({
-                id: `${petId}_visit_${visit._id}`,
-                title: `${petName} - ${getReasonLabel(visit.reasonForVisit)}`,
-                description: `Veterinario: ${visit.veterinarianName}\nObservaciones: ${visit.observations || 'Sin observaciones'}`,
-                start: new Date(visit.visitDate).getTime(),
-                end: new Date(visit.visitDate).getTime(),
-                allDay: true,
-                color: '#FF6B6B', // Rojo para visitas médicas
-                petId,
-                petName,
-                recordId: visit._id?.toString(),
-                recordType: 'medical_visit',
-                originalData: visit,
-              } as any);
+          pet.medicalRecord.datesOfMedicalVisits.forEach(
+            (visit: IMedicalVisits) => {
+              if (visit.visitDate) {
+                calendarEvents.push({
+                  id: `${petId}_visit_${visit._id}`,
+                  title: `${petName} - ${getReasonLabel(visit.reasonForVisit)}`,
+                  description: `Veterinario: ${visit.veterinarianName}\nObservaciones: ${visit.observations || 'Sin observaciones'}`,
+                  start: new Date(visit.visitDate).getTime(),
+                  end: new Date(visit.visitDate).getTime(),
+                  allDay: true,
+                  color: '#FF6B6B', // Rojo para visitas médicas
+                  petId,
+                  petName,
+                  recordId: visit._id?.toString(),
+                  recordType: 'medical_visit',
+                  originalData: visit,
+                } as any);
+              }
             }
-          });
+          );
         }
 
         // Procesar vacunas próximas (opcional: también mostrar próximas vacunas)
@@ -4517,30 +4218,32 @@ const userCtl: UserController = {
 
         // Procesar desparasitaciones próximas
         if (pet.medicalRecord?.deworming) {
-          pet.medicalRecord.deworming.forEach((deworming: IDewormingControl) => {
-            if (deworming.nextDewormingDate) {
-              calendarEvents.push({
-                id: `${petId}_deworming_${deworming._id}`,
-                title: `${petName} - Desparasitación: ${deworming.dewormerName}`,
-                description: `Próxima desparasitación: ${deworming.dewormerName}\nFecha aplicación: ${new Date(deworming.dateOfApplication).toLocaleDateString()}\nObservaciones: ${deworming.observations || 'Sin observaciones'}`,
-                start: new Date(deworming.nextDewormingDate).getTime(),
-                end: new Date(deworming.nextDewormingDate).getTime(),
-                allDay: true,
-                color: '#FFE66D', // Amarillo para desparasitaciones
-                petId,
-                petName,
-                recordId: deworming._id?.toString(),
-                recordType: 'deworming',
-                originalData: deworming,
-              } as any);
+          pet.medicalRecord.deworming.forEach(
+            (deworming: IDewormingControl) => {
+              if (deworming.nextDewormingDate) {
+                calendarEvents.push({
+                  id: `${petId}_deworming_${deworming._id}`,
+                  title: `${petName} - Desparasitación: ${deworming.dewormerName}`,
+                  description: `Próxima desparasitación: ${deworming.dewormerName}\nFecha aplicación: ${new Date(deworming.dateOfApplication).toLocaleDateString()}\nObservaciones: ${deworming.observations || 'Sin observaciones'}`,
+                  start: new Date(deworming.nextDewormingDate).getTime(),
+                  end: new Date(deworming.nextDewormingDate).getTime(),
+                  allDay: true,
+                  color: '#FFE66D', // Amarillo para desparasitaciones
+                  petId,
+                  petName,
+                  recordId: deworming._id?.toString(),
+                  recordType: 'deworming',
+                  originalData: deworming,
+                } as any);
+              }
             }
-          });
+          );
         }
       });
 
       res.status(200).json({
         success: true,
-        payload: { events: calendarEvents, total: calendarEvents.length, },
+        payload: { events: calendarEvents, total: calendarEvents.length },
       });
     } catch (error) {
       console.error('Error getting medical appointments:', error);

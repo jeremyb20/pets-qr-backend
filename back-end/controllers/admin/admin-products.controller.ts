@@ -161,7 +161,7 @@ const adminProductCtl: AdminProductController = {
   ): Promise<void> {
     try {
       const { id } = req.query;
-      const product = await Product.findOne({ productId: id })
+      const product = await Product.findOne({ productId: Number(id) })
         .populate({
           path: 'reviews',
           options: { sort: { postedAt: -1 } },
@@ -288,13 +288,13 @@ const adminProductCtl: AdminProductController = {
       //   priceSale = null;
       // }
 
-      const generateProductId = async (): Promise<string> => {
-        let productId: string;
+      const generateProductId = async (): Promise<number> => {
+        let productId: number;
         let isUnique = false;
         let attempts = 0;
 
         while (!isUnique && attempts < 100) {
-          productId = Math.floor(100000 + Math.random() * 900000).toString();
+          productId = Math.floor(100000 + Math.random() * 900000);
           const existingProduct = await Product.findOne({ productId });
           if (!existingProduct) isUnique = true;
           attempts++;

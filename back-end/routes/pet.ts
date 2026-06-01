@@ -1,13 +1,15 @@
 import { Router } from 'express';
 
+import PetController from '../controllers/pet.controller';
 import userCtl from '../controllers/user.controller';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { uploadSingleImage } from '../middlewares/uploadMiddleware';
 
 const router = Router();
 
-router.get('/getProfileById/:id', authenticateToken, userCtl.getProfileById);
-router.get('/getPublicProfileById/:id', userCtl.getPublicProfileById);
+router.get('/getPublicProfileById/:id', PetController.getPublicProfileById);
+router.get('/getProfileById/:id', authenticateToken, PetController.getProfileById);
+
 
 router.put(
   '/updatePetById',

@@ -24,7 +24,7 @@ import petRoutes from './back-end/routes/pet';
 import publicRoutes from './back-end/routes/public';
 
 // Definir tipos para Multer
-interface MulterFile extends Express.Multer.File { }
+interface MulterFile extends Express.Multer.File {}
 
 const app: Application = express();
 
@@ -33,10 +33,10 @@ const corsOptions: CorsOptions = {
   origin:
     process.env.NODE_ENV === 'production'
       ? [
-        'https://plaquitascr.com',
-        'https://www.plaquitascr.com',
-        process.env.FRONTEND_URL || '',
-      ].filter(Boolean)
+          'https://plaquitascr.com',
+          'https://www.plaquitascr.com',
+          process.env.FRONTEND_URL || '',
+        ].filter(Boolean)
       : ['http://localhost:3000', 'http://localhost:8083'],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -109,7 +109,7 @@ app.use('/api/pet', petRoutes);
 app.use(express.static(path.join(__dirname, '../dist/plaquitas-cr')));
 
 // 3. Ruta catch-all para SPA (PERO EXCLUYENDO /api/)
-app.get('*', (req: Request, res: Response, next: NextFunction): void => {
+app.get('/*path', (req: Request, res: Response, next: NextFunction): void => {
   // EXCLUIR rutas que empiecen con /api/
   if (req.path.startsWith('/api/')) {
     console.log(`❌ API route not found: ${req.path}`);

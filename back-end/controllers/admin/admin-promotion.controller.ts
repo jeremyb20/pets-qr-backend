@@ -190,7 +190,7 @@ export class PromotionController {
     try {
       const { id } = req.params;
 
-      if (!Types.ObjectId.isValid(id)) {
+      if (!Types.ObjectId.isValid(id as string)) {
         res.status(400).json({
           success: false,
           message: 'Invalid promotion ID',
@@ -232,7 +232,7 @@ export class PromotionController {
       const { id } = req.params;
       const updates = req.body as UpdatePromotionRequest;
 
-      if (!Types.ObjectId.isValid(id)) {
+      if (!Types.ObjectId.isValid(id as string)) {
         res.status(400).json({
           success: false,
           message: 'Invalid promotion ID',
@@ -309,7 +309,7 @@ export class PromotionController {
     try {
       const { id } = req.params;
 
-      if (!Types.ObjectId.isValid(id)) {
+      if (!Types.ObjectId.isValid(id as string)) {
         res.status(400).json({
           success: false,
           message: 'Invalid promotion ID',

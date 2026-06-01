@@ -148,7 +148,7 @@ export class AdminNotificationService {
     changes: string[];
   }): Promise<void> {
     try {
-      const admins = await User.find({ role: 'admin', isActive: true });
+      const admins = await User.find({ role: 0, userStatus: 3 });
 
       if (!admins.length) return;
 

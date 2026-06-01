@@ -53,11 +53,13 @@ interface SendResult {
 }
 
 export const notificationController = {
-
   // Obtener dispositivos del usuario (NUEVO)
-  getSubscriptionDevices: async (req: Request, res: Response): Promise<void> => {
+  getSubscriptionDevices: async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -92,7 +94,7 @@ export const notificationController = {
       const subscription: PushSubscription = req.body;
       const { deviceId } = req.body; // Nuevo: recibir deviceId del frontend
 
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -181,7 +183,7 @@ export const notificationController = {
   unsubscribe: async (req: Request, res: Response): Promise<void> => {
     try {
       const { endpoint, deviceId } = req.body; // Aceptar deviceId
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -224,7 +226,7 @@ export const notificationController = {
 
   send: async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -275,7 +277,7 @@ export const notificationController = {
         image,
       }: PushNotificationPayload = req.body;
 
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -373,7 +375,7 @@ export const notificationController = {
         targetDevices = ['all'],
         image,
       }: PushNotificationPayload = req.body;
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -423,7 +425,7 @@ export const notificationController = {
   // Obtener notificaciones del usuario
   getUserNotifications: async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { page = 1, limit = 20, unreadOnly = false } = req.query;
 
       if (!userId) {
@@ -469,7 +471,7 @@ export const notificationController = {
   markAsRead: async (req: Request, res: Response): Promise<void> => {
     try {
       const { notificationId } = req.params;
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -481,8 +483,8 @@ export const notificationController = {
 
       const notification = await Notification.findOneAndUpdate(
         {
-          _id: new Types.ObjectId(notificationId),
-          user: new Types.ObjectId(userId),
+          _id: new Types.ObjectId(notificationId as string),
+          user: new Types.ObjectId(userId as string),
         },
         { read: true },
         { new: true }
@@ -516,7 +518,7 @@ export const notificationController = {
   deleteNotification: async (req: Request, res: Response): Promise<void> => {
     try {
       const { notificationId } = req.params;
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -527,8 +529,8 @@ export const notificationController = {
       }
 
       const notification = await Notification.findOneAndDelete({
-        _id: new Types.ObjectId(notificationId),
-        user: new Types.ObjectId(userId),
+        _id: new Types.ObjectId(notificationId as string),
+        user: new Types.ObjectId(userId as string),
       });
 
       if (!notification) {
@@ -752,7 +754,7 @@ export const notificationController = {
   deactivateDevice: async (req: Request, res: Response): Promise<void> => {
     try {
       const { deviceId } = req.params;
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -792,9 +794,12 @@ export const notificationController = {
   },
 
   // Eliminar todas las suscripciones de un usuario
-  deleteAllSubscriptions: async (req: Request, res: Response): Promise<void> => {
+  deleteAllSubscriptions: async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       if (!userId) {
         res.status(401).json({
@@ -822,7 +827,6 @@ export const notificationController = {
       });
     }
   },
-
 };
 
 export default notificationController;

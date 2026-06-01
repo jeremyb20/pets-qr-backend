@@ -16,6 +16,7 @@ export interface IQrCode extends Document {
   hostName?: string;
   createdAt: Date;
   updatedAt: Date;
+  id?: string;
 }
 
 export interface ICreateQrCode {

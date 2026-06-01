@@ -23,7 +23,7 @@ class EmailService {
     this.transporter = nodemailer.createTransport({
       host: process.env.ZOHO_HOST || process.env.EMAIL_HOST,
       port: parseInt(process.env.ZOHO_PORT || process.env.EMAIL_PORT || '587'),
-      secure: process.env.ZOHO_SECURE === 'true' || true,
+      secure: process.env.ZOHO_SECURE !== 'false',
       auth: {
         user: process.env.ZOHO_USER || process.env.EMAIL_USER,
         pass: process.env.ZOHO_PASSWORD || process.env.EMAIL_PASSWORD,
@@ -69,15 +69,15 @@ class EmailService {
       viewEngine: {
         extname: '.handlebars',
         partialsDir: finalPath,
-        defaultLayout: false,
+        defaultLayout: 'false',
         helpers: {
           eq: function (a: any, b: any) {
             return a === b;
           },
           // Helper para verificar si un valor está en un rango
-          between: function (value: number, min: number, max: number) {
+          between: function (value: number, min: number, max: number): boolean {
             return value >= min && value <= max;
-          }
+          },
         },
       },
       viewPath: finalPath,
@@ -308,11 +308,16 @@ class EmailService {
         observations: context.observations || 'Sin observaciones adicionales',
         year: new Date().getFullYear(),
         companyName: 'PlaquitasCR',
-        logoUrl: process.env.LOGO_URL || 'https://plaquitascr.com/assets/images/plaquitascr.png',
+        logoUrl:
+          process.env.LOGO_URL ||
+          'https://plaquitascr.com/assets/images/plaquitascr.png',
         phoneNumber: process.env.PHONE_NUMBER || '+50670160434',
-        facebookUrl: process.env.FACEBOOK_URL || 'https://www.facebook.com/profile.php?id=100064041162056',
+        facebookUrl:
+          process.env.FACEBOOK_URL ||
+          'https://www.facebook.com/profile.php?id=100064041162056',
         facebookUsername: process.env.FACEBOOK_USERNAME || '@PlaquitasCR',
-        instagramUrl: process.env.INSTAGRAM_URL || 'https://www.instagram.com/plaquitas_cr',
+        instagramUrl:
+          process.env.INSTAGRAM_URL || 'https://www.instagram.com/plaquitas_cr',
         instagramUsername: process.env.INSTAGRAM_USERNAME || '@plaquitas_cr',
         supportEmail: process.env.SUPPORT_EMAIL || 'support@plaquitascr.com',
       },

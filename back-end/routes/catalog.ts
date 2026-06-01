@@ -11,11 +11,11 @@ router.get('/getPromoList', catalogCtl.getPromoList);
 
 router.post('/createCatalog', catalogCtl.createCatalog);
 
-router.get('/getCatalogById?:id', catalogCtl.getCatalogById);
+router.get('/getCatalogById/:id', catalogCtl.getCatalogById);
 
 router.put('/editCatalog', catalogCtl.editCatalog);
 
-router.delete('/deleteCatalog?:id', catalogCtl.deleteCatalog);
+router.delete('/deleteCatalog/:id', catalogCtl.deleteCatalog);
 
 router.post('/addCatalogImages', catalogCtl.addCatalogImages);
 

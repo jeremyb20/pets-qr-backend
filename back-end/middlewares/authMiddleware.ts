@@ -68,7 +68,7 @@ export const authenticateToken = (
           return;
         }
 
-        req.user = decoded;
+        (req as any).user = decoded;
         next();
       }
     );
@@ -88,7 +88,7 @@ export const requireAuth = (
   res: Response,
   next: NextFunction
 ): void => {
-  if (!req.user) {
+  if (!(req as any).user) {
     res.status(401).json({
       success: false,
       message: 'Authentication required',

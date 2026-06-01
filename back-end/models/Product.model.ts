@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import { Schema, model, Document, Types, CallbackWithoutResultAndOptionalError } from 'mongoose';
 import { IProduct, IRating, ILabel } from '../types/product.types';
 
 const ratingSchema = new Schema<IRating>({
@@ -216,7 +216,7 @@ productSchema.virtual('id').get(function (this: Document) {
 });
 
 // Middleware para calcular el inventoryType automáticamente
-productSchema.pre('save', function (next) {
+productSchema.pre<IProduct>('save', async function () {
   if (this.quantity > 10) {
     this.inventoryType = 'in_stock';
   } else if (this.quantity > 0 && this.quantity <= 10) {
@@ -224,7 +224,6 @@ productSchema.pre('save', function (next) {
   } else {
     this.inventoryType = 'out_of_stock';
   }
-  next();
 });
 
 // ✅ ÍNDICES CORREGIDOS - Solo definir una vez por campo

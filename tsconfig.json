@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "CommonJS",
+    "module": "commonjs",
     "outDir": "./dist",
     "rootDir": ".",  
     "strict": true,
@@ -18,7 +18,8 @@
     "noImplicitThis": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
+    "moduleResolution": "node10",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./back-end/*"],
@@ -31,6 +32,7 @@
       "@utils/*": ["./back-end/utils/*"]
     },
     "typeRoots": ["./node_modules/@types", "./back-end/types"],
+    "types": ["node", "express"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
@@ -38,8 +40,8 @@
     "app.ts",    
     "index.ts",   
     "back-end/**/*.ts",
-    "back-end/**/*.handlebars",  // 👈 AÑADE ESTO
-    "back-end/views/**/*",       // 👈 Y ESTO
+    "back-end/**/*.handlebars",
+    "back-end/views/**/*",
     "back-end/types/**/*.d.ts"
   ],
   "exclude": [

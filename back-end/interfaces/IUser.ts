@@ -1,5 +1,4 @@
-import { Types } from 'mongoose';
-
+import { Document, Types } from 'mongoose';
 
 export interface IUserSecurity {
   twoFactorEnabled?: boolean;

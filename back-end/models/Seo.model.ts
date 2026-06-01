@@ -47,7 +47,7 @@ interface ISeo {
 export interface SeoFilters {
   pageId?: { $regex: string; $options: string };
   route?: { $regex: string; $options: string };
-  status?: string;
+  status?: 'active' | 'draft' | 'inactive';
   contentType?: string;
   'multiLanguageContent.language'?: string;
   'multiLanguageContent.canonicalUrl'?: {

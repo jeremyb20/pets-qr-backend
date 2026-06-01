@@ -44,7 +44,7 @@ router.post(
   userCtl.addPetToAuthenticatedUser
 );
 
-router.get('/validateQrCode?:code', userCtl.validateQrCode);
+router.get('/validateQrCode/:code', userCtl.validateQrCode);
 
 router.get('/getAllPublishedProductList', userCtl.getAllPublishedProductList);
 
@@ -57,7 +57,7 @@ router.put('/updatePassword', authenticateToken, userCtl.updatePassword);
 router.post('/forgotPassword', userCtl.forgotPassword);
 
 router.post('/resetPassword', userCtl.resetPassword);
-router.post('/resend2FACodeForReset', userCtl.resend2FACodeForReset)
+router.post('/resend2FACodeForReset', userCtl.resend2FACodeForReset);
 
 // Rutas públicas para usuarios
 router.get('/getActivePromotions', promotionController.getActivePromotions);
@@ -67,34 +67,80 @@ router.post('/usePromoCode/:code', promotionController.usePromoCode);
 
 router.post('/registerPetView/:memberPetId', userCtl.registerPetView);
 
-
-router.get('/getSecurityConfig', authenticateToken, UserSecurityController.getSecurityConfig);
-router.put('/updateSecurityConfig', authenticateToken, UserSecurityController.updateSecurityConfig);
-router.get('/getAllMedicalAppointmentsByUser/:userId', authenticateToken, userCtl.getAllMedicalAppointmentsByUser);
+router.get(
+  '/getSecurityConfig',
+  authenticateToken,
+  UserSecurityController.getSecurityConfig
+);
+router.put(
+  '/updateSecurityConfig',
+  authenticateToken,
+  UserSecurityController.updateSecurityConfig
+);
+router.get(
+  '/getAllMedicalAppointmentsByUser/:userId',
+  authenticateToken,
+  userCtl.getAllMedicalAppointmentsByUser
+);
 
 // ============================================
 // AUTENTICACIÓN DE DOS FACTORES (2FA)
 // ============================================
 
 router.post('/enable2FA', authenticateToken, UserSecurityController.enable2FA);
-router.post('/verify2FACode', authenticateToken, UserSecurityController.verify2FACode);
-router.post('/resend2FACode', authenticateToken, UserSecurityController.resend2FACode);
-router.post('/disable2FA', authenticateToken, UserSecurityController.disable2FA);
+router.post(
+  '/verify2FACode',
+  authenticateToken,
+  UserSecurityController.verify2FACode
+);
+router.post(
+  '/resend2FACode',
+  authenticateToken,
+  UserSecurityController.resend2FACode
+);
+router.post(
+  '/disable2FA',
+  authenticateToken,
+  UserSecurityController.disable2FA
+);
 
 // ============================================
 // GESTIÓN DE DISPOSITIVOS
 // ============================================
 
 router.get('/getDevices', authenticateToken, UserSecurityController.getDevices);
-router.post('/registerDevice', authenticateToken, UserSecurityController.registerDevice);
-router.delete('/removeDevice/:deviceId', authenticateToken, UserSecurityController.removeDevice);
-router.post('/signOutAllDevices', authenticateToken, UserSecurityController.signOutAllDevices);
-
+router.post(
+  '/registerDevice',
+  authenticateToken,
+  UserSecurityController.registerDevice
+);
+router.delete(
+  '/removeDevice/:deviceId',
+  authenticateToken,
+  UserSecurityController.removeDevice
+);
+router.post(
+  '/signOutAllDevices',
+  authenticateToken,
+  UserSecurityController.signOutAllDevices
+);
 
 // ============================================
 // VERIFICACIÓN DE CORREO ELECTRÓNICO
 // ============================================
-router.post('/sendEmailVerification', authenticateToken, UserSecurityController.sendEmailVerification);
-router.post('/verifyEmailCode', authenticateToken, UserSecurityController.verifyEmailCode);
-router.post('/resendEmailVerification', authenticateToken, UserSecurityController.resendEmailVerification);
+router.post(
+  '/sendEmailVerification',
+  authenticateToken,
+  UserSecurityController.sendEmailVerification
+);
+router.post(
+  '/verifyEmailCode',
+  authenticateToken,
+  UserSecurityController.verifyEmailCode
+);
+router.post(
+  '/resendEmailVerification',
+  authenticateToken,
+  UserSecurityController.resendEmailVerification
+);
 export default router;

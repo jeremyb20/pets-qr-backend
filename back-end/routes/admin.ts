@@ -29,7 +29,7 @@ router.put(
 
 router.get('/getNewCodes', verification, adminCtl.getNewCodes);
 
-router.delete('/deleteUserById?:id', verification, adminCtl.deleteUserById);
+router.delete('/deleteUserById/:id', verification, adminCtl.deleteUserById);
 
 router.put('/editUserSecondLevel', verification, adminCtl.editUserSecondLevel);
 

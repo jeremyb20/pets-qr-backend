@@ -25,7 +25,7 @@ export class UserSecurityController {
         sendEmail: async () => {
           console.warn('⚠️ EmailService no disponible, email no enviado');
           return false;
-        }
+        },
       } as unknown as EmailService;
     }
   }
@@ -35,7 +35,7 @@ export class UserSecurityController {
    */
   async getSecurityConfig(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       const user = await User.findById(userId).select('security profile email');
 
@@ -87,7 +87,7 @@ export class UserSecurityController {
    */
   async updateSecurityConfig(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { backupEmail } = req.body;
 
       const updateData: any = {};
@@ -132,13 +132,12 @@ export class UserSecurityController {
     }
   }
 
-
   /**
- * Habilitar 2FA
- */
+   * Habilitar 2FA
+   */
   async enable2FA(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { method, verificationCode } = req.body;
 
       const user = await User.findById(userId);
@@ -186,7 +185,8 @@ export class UserSecurityController {
             payload: {
               secret: twoFactorSecret.base32,
               qrCode,
-              message: 'Escanea el código QR con tu aplicación de autenticación',
+              message:
+                'Escanea el código QR con tu aplicación de autenticación',
             },
           });
           return;
@@ -254,10 +254,14 @@ export class UserSecurityController {
       else if (method === 'email') {
         // Enviar código de verificación
         if (!verificationCode) {
-          const newVerificationCode = crypto.randomInt(100000, 999999).toString();
+          const newVerificationCode = crypto
+            .randomInt(100000, 999999)
+            .toString();
 
           user.security.security.twoFactorTempCode = newVerificationCode;
-          user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+          user.security.security.twoFactorTempCodeExpires = new Date(
+            Date.now() + 10 * 60 * 1000
+          );
           await user.save();
 
           const emailService = EmailService.getInstance();
@@ -295,7 +299,8 @@ export class UserSecurityController {
 
         // Verificar código y habilitar
         const now = new Date();
-        const isValid = user.security.security.twoFactorTempCode === verificationCode &&
+        const isValid =
+          user.security.security.twoFactorTempCode === verificationCode &&
           user.security.security.twoFactorTempCodeExpires &&
           user.security.security.twoFactorTempCodeExpires > now;
 
@@ -367,7 +372,7 @@ export class UserSecurityController {
    */
   async verify2FACode(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { code, method } = req.body;
 
       const user = await User.findById(userId);
@@ -391,9 +396,11 @@ export class UserSecurityController {
         });
       } else if (method === 'email') {
         const now = new Date();
-        isValid = !!(user.security?.security?.twoFactorTempCode === code &&
+        isValid = !!(
+          user.security?.security?.twoFactorTempCode === code &&
           user.security?.security?.twoFactorTempCodeExpires &&
-          user.security.security.twoFactorTempCodeExpires > now);
+          user.security.security.twoFactorTempCodeExpires > now
+        );
       }
 
       if (!isValid) {
@@ -425,11 +432,11 @@ export class UserSecurityController {
    * Deshabilitar 2FA
    */
   /**
- * Deshabilitar 2FA (requiere código de verificación)
- */
+   * Deshabilitar 2FA (requiere código de verificación)
+   */
   async disable2FA(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { verificationCode, method } = req.body;
 
       // Validar que se proporcione el código
@@ -472,13 +479,14 @@ export class UserSecurityController {
           token: verificationCode,
           window: 1,
         });
-      }
-      else if (twoFactorMethod === 'email') {
+      } else if (twoFactorMethod === 'email') {
         // Verificar código enviado por email
         const now = new Date();
-        isValid = !!(user.security.security.twoFactorTempCode === verificationCode &&
+        isValid = !!(
+          user.security.security.twoFactorTempCode === verificationCode &&
           user.security.security.twoFactorTempCodeExpires &&
-          user.security.security.twoFactorTempCodeExpires > now);
+          user.security.security.twoFactorTempCodeExpires > now
+        );
       }
 
       if (!isValid) {
@@ -554,7 +562,7 @@ export class UserSecurityController {
    */
   async signOutAllDevices(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       const user = await User.findByIdAndUpdate(
         userId,
@@ -621,7 +629,7 @@ export class UserSecurityController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
 
       const user = await User.findById(userId).select('security.devices');
 
@@ -661,7 +669,7 @@ export class UserSecurityController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { deviceName, deviceType, location } = req.body;
 
       const user = await User.findById(userId);
@@ -714,7 +722,7 @@ export class UserSecurityController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { deviceId } = req.params;
 
       const user = await User.findByIdAndUpdate(
@@ -805,7 +813,9 @@ export class UserSecurityController {
       }
 
       user.security.security.twoFactorTempCode = verificationCode;
-      user.security.security.twoFactorTempCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.security.security.twoFactorTempCodeExpires = new Date(
+        Date.now() + 10 * 60 * 1000
+      );
       await user.save();
 
       // Enviar email con el código
@@ -848,11 +858,11 @@ export class UserSecurityController {
   }
 
   /**
-  * Enviar código de verificación al email
-  */
+   * Enviar código de verificación al email
+   */
   async sendEmailVerification(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { email } = req.body;
       const user = await User.findById(userId);
       if (!user) {
@@ -877,7 +887,10 @@ export class UserSecurityController {
       }
 
       // Verificar si Your email address has already been verified
-      if (user.security?.security?.isEmailVerified && emailToVerify === user.email) {
+      if (
+        user.security?.security?.isEmailVerified &&
+        emailToVerify === user.email
+      ) {
         res.status(400).json({
           success: false,
           message: 'Your email address has already been verified',
@@ -904,7 +917,8 @@ export class UserSecurityController {
       // Verificar límite de intentos (máximo 5)
       const attempts = user.security?.security?.emailVerificationAttempts || 0;
       if (attempts >= 5) {
-        const lastAttempt = user.security?.security?.lastVerificationAttempt || 0;
+        const lastAttempt =
+          user.security?.security?.lastVerificationAttempt || 0;
         const hoursSinceLastAttempt = (now - lastAttempt) / (1000 * 60 * 60);
 
         if (hoursSinceLastAttempt < 1) {
@@ -935,7 +949,9 @@ export class UserSecurityController {
 
       // Guardar código en la base de datos
       user.security.security.emailVerificationCode = verificationCode;
-      user.security.security.emailVerificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.security.security.emailVerificationCodeExpires = new Date(
+        Date.now() + 10 * 60 * 1000
+      );
       user.security.security.emailVerificationAttempts = attempts + 1;
       user.security.security.lastVerificationAttempt = now;
       user.security.security.lastEmailVerificationSent = now;
@@ -988,7 +1004,7 @@ export class UserSecurityController {
       res.status(500).json({
         success: false,
         message: 'Internal server error, please try again later.',
-        code: error
+        code: error,
       });
     }
   }
@@ -998,7 +1014,7 @@ export class UserSecurityController {
    */
   async verifyEmailCode(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { code } = req.body;
 
       if (!code || code.length !== 6) {
@@ -1119,7 +1135,7 @@ export class UserSecurityController {
    */
   async resendEmailVerification(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.user as IUser)?.id?.toString();
+      const userId = (req as any).user?.id?.toString();
       const { email } = req.body;
 
       const user = await User.findById(userId);
@@ -1138,7 +1154,8 @@ export class UserSecurityController {
       const lastSent = user.security?.security?.lastEmailVerificationSent || 0;
       const timeSinceLastSent = (now - lastSent) / 1000;
 
-      if (timeSinceLastSent < 30) { // 30 segundos de cooldown para reenvío
+      if (timeSinceLastSent < 30) {
+        // 30 segundos de cooldown para reenvío
         const remainingSeconds = Math.ceil(30 - timeSinceLastSent);
         res.status(429).json({
           success: false,
@@ -1160,7 +1177,9 @@ export class UserSecurityController {
       }
 
       user.security.security.emailVerificationCode = verificationCode;
-      user.security.security.emailVerificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.security.security.emailVerificationCodeExpires = new Date(
+        Date.now() + 10 * 60 * 1000
+      );
       user.security.security.lastEmailVerificationSent = now;
       user.security.security.pendingEmailVerification = emailToVerify;
 

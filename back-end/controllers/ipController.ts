@@ -63,7 +63,7 @@ export const getIpInfo = async (
       : `https://ipinfo.io/json?token=${process.env.IPINFO_TOKEN}`;
 
     const ipinfoResponse = await fetch(ipinfoUrl);
-    const ipinfoData = await ipinfoResponse.json();
+    const ipinfoData = (await ipinfoResponse.json()) as any;
 
     // Verificar si ipinfo.io funcionó correctamente y tiene datos válidos
     if (!ipinfoData.error && ipinfoData.ip) {
@@ -103,7 +103,7 @@ export const getIpInfo = async (
         : 'http://ip-api.com/json/';
 
       const fallbackResponse = await fetch(fallbackUrl);
-      const fallbackData = await fallbackResponse.json();
+      const fallbackData = (await fallbackResponse.json()) as any;
 
       if (fallbackData.status === 'success') {
         console.log('✅ Success with ip-api.com (fallback)');

@@ -1,7 +1,7 @@
 import {
   Strategy as JwtStrategy,
   ExtractJwt,
-  StrategyOptions,
+  StrategyOptionsWithoutRequest,
 } from 'passport-jwt';
 import passport, { PassportStatic } from 'passport';
 import User from '../models/User.model';
@@ -18,7 +18,7 @@ interface JwtPayload {
   exp?: number;
 }
 
-const opts: StrategyOptions = {
+const opts: StrategyOptionsWithoutRequest = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: process.env.SECRET as string,
 };

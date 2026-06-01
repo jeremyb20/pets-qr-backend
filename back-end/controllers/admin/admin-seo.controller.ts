@@ -44,7 +44,7 @@ const adminSeoCtrl = {
       const limitNum = parseInt(limit, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      let filter: SeoFilters = {};
+      let filter: any = {};
 
       // Búsqueda general en múltiples campos
       if (search) {
