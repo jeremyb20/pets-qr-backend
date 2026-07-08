@@ -53,6 +53,7 @@ class EmailService {
     const selectedLang = this.validLangs.includes(lang)
       ? lang
       : this.defaultLang;
+
     const viewsPath = path.resolve(__dirname, '..', 'views');
     const langPath = path.join(viewsPath, selectedLang);
 
@@ -60,21 +61,31 @@ class EmailService {
       ? langPath
       : path.join(viewsPath, this.defaultLang);
 
-    console.log(
-      `📧 Usando plantillas de idioma: ${selectedLang} (ruta: ${finalPath})`
-    );
+    console.log(`📧 Usando plantillas de: ${finalPath}`);
 
-    // Registrar helper eq para comparaciones en las plantillas
+    // ✅ Crear carpeta layouts y un layout vacío
+    const layoutsDir = path.join(viewsPath, 'layouts');
+    if (!fs.existsSync(layoutsDir)) {
+      fs.mkdirSync(layoutsDir, { recursive: true });
+    }
+
+    // Crear un layout vacío
+    const emptyLayoutPath = path.join(layoutsDir, 'empty.handlebars');
+    if (!fs.existsSync(emptyLayoutPath)) {
+      fs.writeFileSync(emptyLayoutPath, '{{{body}}}');
+      console.log('✅ Layout vacío creado:', emptyLayoutPath);
+    }
+
     const hbsInstance = hbs({
       viewEngine: {
         extname: '.handlebars',
         partialsDir: finalPath,
-        defaultLayout: 'false',
+        layoutsDir: layoutsDir,
+        defaultLayout: 'empty', // ✅ Usar el layout vacío
         helpers: {
           eq: function (a: any, b: any) {
             return a === b;
           },
-          // Helper para verificar si un valor está en un rango
           between: function (value: number, min: number, max: number): boolean {
             return value >= min && value <= max;
           },
@@ -124,8 +135,10 @@ class EmailService {
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
+      // Configurar plantillas para el idioma
       this.configureTemplatesForLang(options.lang);
 
+      // Verificar conexión
       await this.transporter.verify();
       console.log('✅ Servidor de correo listo');
 
