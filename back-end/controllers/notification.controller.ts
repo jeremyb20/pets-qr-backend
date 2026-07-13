@@ -487,7 +487,7 @@ export const notificationController = {
           user: new Types.ObjectId(userId as string),
         },
         { read: true },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
       if (!notification) {
@@ -767,7 +767,7 @@ export const notificationController = {
       const result = await Subscription.findOneAndUpdate(
         { user: new Types.ObjectId(userId), 'deviceInfo.deviceId': deviceId },
         { isActive: false },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
       if (!result) {

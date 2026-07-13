@@ -1086,7 +1086,7 @@ const userCtl: UserController = {
       const updatedPet = await Pet.findOneAndUpdate(
         { memberPetId: petId },
         updateOperation,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
 
       if (!updatedPet) {
@@ -1204,7 +1204,7 @@ const userCtl: UserController = {
           [`${updateField}._id`]: new Types.ObjectId(recordId),
         },
         { $set: updateData },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
 
       if (!updatedPet) {
@@ -1348,7 +1348,9 @@ const userCtl: UserController = {
       };
 
       // Actualizar la mascota
-      await Pet.findByIdAndUpdate(id, finalUpdateData, { new: true });
+      await Pet.findByIdAndUpdate(id, finalUpdateData, {
+        returnDocument: 'after',
+      });
 
       res.status(200).json({
         success: true,
@@ -1527,7 +1529,7 @@ const userCtl: UserController = {
             ...(permissions && { 'configuration.permissions': permissions }),
           },
         },
-        { new: true } // Para retornar el documento actualizado
+        { returnDocument: 'after' } // Para retornar el documento actualizado
       );
 
       res.status(200).json({

@@ -124,7 +124,7 @@ const adminCtl: AdminController = {
           .populate({
             path: 'pets',
             select:
-              'petName memberPetId phone photo birthDate ownerPetName petStatus petViewCounter photo_id isDigitalIdentificationActive permissions weight genderSelected breed favoriteActivities healthAndRequirements address phoneVeterinarian veterinarianContact',
+              'petName memberPetId phone photo birthDate ownerPetName petStatus petStatusReport petViewCounter photo_id isDigitalIdentificationActive permissions weight genderSelected breed favoriteActivities healthAndRequirements address phoneVeterinarian veterinarianContact',
           })
           .skip(skip)
           .limit(limitNum)
@@ -156,7 +156,7 @@ const adminCtl: AdminController = {
               isDigitalIdentificationActive:
                 !!pet.isDigitalIdentificationActive,
               permissions: pet.permissions,
-              petStatusReport: [],
+              petStatusReport: pet.petStatusReport,
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
               weight: pet.weight || null,
@@ -605,7 +605,7 @@ const adminCtl: AdminController = {
       await User.findByIdAndUpdate(
         req.body.id,
         { $push: { newPetProfile: newPet } },
-        { new: true }
+        { returnDocument: 'after' }
       ).then(async function (data) {
         res.json({
           success: true,

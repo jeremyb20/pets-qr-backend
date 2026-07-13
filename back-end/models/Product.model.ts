@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types, CallbackWithoutResultAndOptionalError } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 import { IProduct, IRating, ILabel } from '../types/product.types';
 
 const ratingSchema = new Schema<IRating>({

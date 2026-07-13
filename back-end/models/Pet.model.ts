@@ -301,14 +301,32 @@ const PetSchema = new Schema<IPet>(
         default: true,
       },
     },
-    petStatusReport: [
-      {
-        lastPlaceLost: String,
-        date: String,
-        petStatus: String,
-        descriptionLost: String,
+    petStatusReport: {
+      lostDate: {
+        type: String,
+        default: '',
       },
-    ],
+      lastSeenLocation: {
+        type: String,
+        default: '',
+      },
+      lostDescription: {
+        type: String,
+        default: '',
+      },
+      rewardAmount: {
+        type: String,
+        default: '',
+      },
+      isMicrochipped: {
+        type: Boolean,
+        default: false,
+      },
+      microchipNumber: {
+        type: String,
+        default: '',
+      },
+    },
     qrCode: {
       type: Schema.Types.ObjectId,
       ref: 'QrCode',
@@ -347,24 +365,6 @@ PetSchema.statics.findByOwner = function (
 
 PetSchema.statics.findActivePets = function (): Promise<IPet[]> {
   return this.find({ petStatus: 'active' }).populate('owner').exec();
-};
-
-// Métodos de instancia para la mascota
-PetSchema.methods.markAsLost = function (lostData: {
-  lastPlaceLost: string;
-  descriptionLost: string;
-}): Promise<IPet> {
-  const report: IPetStatusReport = {
-    lastPlaceLost: lostData.lastPlaceLost,
-    descriptionLost: lostData.descriptionLost,
-    date: new Date().toISOString(),
-    petStatus: 'lost',
-  };
-
-  this.petStatus = 'lost';
-  this.petStatusReport.push(report);
-
-  return this.save();
 };
 
 PetSchema.methods.markAsFound = function (): Promise<IPet> {

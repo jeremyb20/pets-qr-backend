@@ -537,7 +537,7 @@ const adminProductCtl: AdminProductController = {
           ...updateData,
           available: updateProductDto.quantity,
         },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       )
         .populate('reviews')
         .exec();
@@ -751,7 +751,7 @@ const adminProductCtl: AdminProductController = {
       const review = await ProductReview.findByIdAndUpdate(
         reviewId,
         updateData,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
 
       if (!review) {

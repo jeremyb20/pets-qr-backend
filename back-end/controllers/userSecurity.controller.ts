@@ -107,7 +107,7 @@ export class UserSecurityController {
       const user = await User.findByIdAndUpdate(
         userId,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
 
       if (!user) {
@@ -510,7 +510,7 @@ export class UserSecurityController {
             'security.security.twoFactorTempCodeExpires': null,
           },
         },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
       if (!updatedUser) {
@@ -573,7 +573,7 @@ export class UserSecurityController {
           },
           $inc: { 'security.security.sessionVersion': 1 },
         },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
       if (!user) {
@@ -730,7 +730,7 @@ export class UserSecurityController {
         {
           $pull: { 'security.devices': { id: deviceId } },
         },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
       if (!user) {

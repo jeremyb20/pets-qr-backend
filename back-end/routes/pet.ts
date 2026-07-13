@@ -8,8 +8,11 @@ import { uploadSingleImage } from '../middlewares/uploadMiddleware';
 const router = Router();
 
 router.get('/getPublicProfileById/:id', PetController.getPublicProfileById);
-router.get('/getProfileById/:id', authenticateToken, PetController.getProfileById);
-
+router.get(
+  '/getProfileById/:id',
+  authenticateToken,
+  PetController.getProfileById
+);
 
 router.put(
   '/updatePetById',
@@ -49,4 +52,8 @@ router.get(
   authenticateToken,
   userCtl.getUserUpcomingAppointmentsGrouped
 );
+
+router.get('/getAllPetsByStatus', PetController.getAllPetsByStatus);
+router.get('/searchPetsByName', PetController.searchPetsByName);
+
 export default router;
