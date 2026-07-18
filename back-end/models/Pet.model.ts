@@ -20,7 +20,7 @@ export const DefaultPermissions = {
   showHealthAndRequirements: true, // Muestra información de salud
   showFavoriteActivities: true, // Muestra actividades favoritas
   showLocationInfo: true, // Muestra ubicación (lat/lng)
-  showLocationConsent: true, // Consentimiento de ubicación
+  showLocationConsent: false, // Consentimiento de ubicación
   showBreedInfo: true, // Muestra información de raza
   showWeightInfo: true, // Muestra información de peso
   showGenderInfo: true, // Muestra información de género

@@ -169,7 +169,7 @@ export class AdminNotificationService {
               ownerId: petData.ownerId.toString(),
               ownerName: petData.ownerName,
               changes: petData.changes,
-              actionUrl: '/admin/pets/' + petData.petId,
+              actionUrl: '/dashboard/admin/users',
             },
             targetDevices: ['all'],
           }
@@ -177,6 +177,126 @@ export class AdminNotificationService {
       }
     } catch (error) {
       console.error('❌ Error notificando actualización de mascota:', error);
+    }
+  }
+  /**
+   * Enviar notificación al admin cuando se recibe un nuevo feedback
+   */
+  static async notifyNewFeedback(feedbackData: any): Promise<void> {
+    try {
+      // Obtener administradores (role: 0, userStatus: 3 = activo)
+      const admins = await User.find({
+        role: 0,
+        userStatus: 3,
+      });
+
+      if (!admins.length) {
+        console.log('ℹ️ No admins found to notify about feedback');
+        return;
+      }
+
+      // Determinar emoji y color según el tipo de feedback
+      const feedbackTypeMap = {
+        bug: {
+          emoji: '🐛',
+          color: '#DC3545',
+          title: '🐛 Nuevo Bug Reportado',
+          priority: 'critical',
+        },
+        improvement: {
+          emoji: '💡',
+          color: '#FFC107',
+          title: '💡 Nueva Sugerencia de Mejora',
+          priority: 'high',
+        },
+        suggestion: {
+          emoji: '📝',
+          color: '#17A2B8',
+          title: '📝 Nueva Sugerencia',
+          priority: 'medium',
+        },
+        question: {
+          emoji: '❓',
+          color: '#6C757D',
+          title: '❓ Nueva Pregunta',
+          priority: 'low',
+        },
+      };
+
+      const typeInfo =
+        feedbackTypeMap[feedbackData.type as keyof typeof feedbackTypeMap] ||
+        feedbackTypeMap.suggestion;
+
+      // Construir título y mensaje según el tipo
+      const title = typeInfo.title;
+      const body = `${feedbackData.user?.name || 'Usuario anónimo'} reportó: "${feedbackData.title}"`;
+
+      // Construir datos para la notificación
+      const notificationData = {
+        type: 'feedback',
+        feedbackId: feedbackData._id,
+        feedbackType: feedbackData.type,
+        title: feedbackData.title,
+        description: feedbackData.description,
+        priority: feedbackData.priority,
+        category: feedbackData.category,
+        user: {
+          id: feedbackData.user?.id,
+          name: feedbackData.user?.name || 'Anonymous',
+          email: feedbackData.user?.email || 'No email',
+          phone: feedbackData.user?.phone,
+        },
+        metadata: {
+          url: feedbackData.metadata?.url,
+          userAgent: feedbackData.metadata?.userAgent,
+          screenSize: feedbackData.metadata?.screenSize,
+        },
+        timestamp: feedbackData.createdAt || new Date().toISOString(),
+        actionUrl: '/dashboard/admin/feedback', // URL para ver todos los feedbacks
+      };
+
+      // Enviar notificación a cada administrador
+      for (const admin of admins) {
+        try {
+          // Enviar push notification
+          await notificationController.sendPushNotification(
+            admin._id as Types.ObjectId,
+
+            {
+              title,
+              body,
+              type: 'system',
+              data: notificationData,
+              targetDevices: ['all'],
+            }
+          );
+
+          // Guardar en base de datos
+          const notification = new Notification({
+            user: admin._id,
+            title: title.trim(),
+            body: body.trim(),
+            type: 'system',
+            data: notificationData,
+            status: 'sent',
+            sentAt: new Date(),
+            icon: admin.profile.photoProfile || process.env.LOGO_URL,
+            image: process.env.LOGO_URL,
+            priority: feedbackData.priority || 'medium',
+            category: feedbackData.category || 'Other',
+          });
+
+          await notification.save();
+
+          console.log(`✅ Feedback notification sent to admin: ${admin.email}`);
+        } catch (adminError) {
+          console.error(`❌ Error notifying admin ${admin.email}:`, adminError);
+        }
+      }
+
+      console.log(`✅ Feedback notifications sent to ${admins.length} admins`);
+    } catch (error) {
+      console.error('❌ Error sending feedback notifications:', error);
     }
   }
 }

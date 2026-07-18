@@ -14,6 +14,7 @@ import { AdminController } from '../../types/admin.types';
 import { FlattenMaps } from 'mongoose';
 import { IUser } from '../../interfaces/IUser';
 import { IPet } from '../../interfaces/Ipet';
+import FeedbackModel from '../../models/Feedback.model';
 
 const cloudinaryV2 = cloudinary.v2;
 
@@ -548,6 +549,7 @@ const adminCtl: AdminController = {
       ownerPetName,
       petName,
       petStatus,
+      petStatusReport,
       phone,
       phoneVeterinarian,
       photo,
@@ -590,7 +592,7 @@ const adminCtl: AdminController = {
       permissions: permissions,
       petName,
       petStatus,
-      petStatusReport: [],
+      petStatusReport,
       phone,
       phoneVeterinarian,
       photo,
@@ -953,6 +955,141 @@ const adminCtl: AdminController = {
         message: 'Internal server error, please try again later.',
         code: 'INTERNAL_ERROR',
         error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
+   * Obtener todos los feedbacks con filtros y paginación
+   */
+  getAllFeedback: async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const {
+        type,
+        status,
+        priority,
+        category,
+        rating,
+        search,
+        startDate,
+        endDate,
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+      } = req.query;
+
+      // Construir filtros
+      const filters: any = {};
+
+      // Filtros exactos
+      if (type) filters.type = type;
+      if (status) filters.status = status;
+      if (priority) filters.priority = priority;
+      if (category) filters.category = category;
+
+      // Filtro por rating (para general_feedback)
+      if (rating) {
+        filters.rating = Number(rating);
+      }
+
+      // Búsqueda por texto en title, description, reason o comments
+      if (search) {
+        filters.$or = [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { reason: { $regex: search, $options: 'i' } },
+          { comments: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      // Filtro por rango de fechas
+      if (startDate || endDate) {
+        filters.createdAt = {};
+        if (startDate) filters.createdAt.$gte = new Date(startDate as string);
+        if (endDate) filters.createdAt.$lte = new Date(endDate as string);
+      }
+
+      // Calcular paginación
+      const skip = (Number(page) - 1) * Number(limit);
+      const sortOptions: any = {};
+      sortOptions[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
+
+      // Obtener feedbacks
+      const [feedbacks, total] = await Promise.all([
+        FeedbackModel.find(filters)
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(Number(limit))
+          .lean(),
+        FeedbackModel.countDocuments(filters),
+      ]);
+
+      // Calcular estadísticas adicionales
+      const stats = await FeedbackModel.aggregate([
+        { $match: filters },
+        {
+          $group: {
+            _id: null,
+            averageRating: { $avg: '$rating' },
+            totalRating: {
+              $sum: { $cond: [{ $ifNull: ['$rating', false] }, 1, 0] },
+            },
+            feedbacksWithRating: {
+              $sum: { $cond: [{ $ne: ['$rating', null] }, 1, 0] },
+            },
+          },
+        },
+      ]);
+
+      res.status(200).json({
+        success: true,
+        // payload: {
+        //   feedbacks,
+        //   stats:
+        //     stats.length > 0
+        //       ? {
+        //           averageRating:
+        //             Math.round(stats[0].averageRating * 10) / 10 || 0,
+        //           totalRating: stats[0].totalRating || 0,
+        //           feedbacksWithRating: stats[0].feedbacksWithRating || 0,
+        //         }
+        //       : {
+        //           averageRating: 0,
+        //           totalRating: 0,
+        //           feedbacksWithRating: 0,
+        //         },
+        // },
+        payload: feedbacks,
+        stats:
+          stats.length > 0
+            ? {
+                averageRating:
+                  Math.round(stats[0].averageRating * 10) / 10 || 0,
+                totalRating: stats[0].totalRating || 0,
+                feedbacksWithRating: stats[0].feedbacksWithRating || 0,
+              }
+            : {
+                averageRating: 0,
+                totalRating: 0,
+                feedbacksWithRating: 0,
+              },
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit)),
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching feedbacks',
       });
     }
   },

@@ -143,4 +143,6 @@ router.post(
   authenticateToken,
   UserSecurityController.resendEmailVerification
 );
+
+router.post('/submitFeedback', userCtl.submitFeedback);
 export default router;

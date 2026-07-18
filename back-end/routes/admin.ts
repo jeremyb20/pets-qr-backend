@@ -237,4 +237,11 @@ router.delete(
   promotionController.deletePromotion
 );
 
+router.get(
+  '/getAllFeedback',
+  authenticateToken,
+  isAdmin,
+  adminCtl.getAllFeedback
+);
+
 export default router;

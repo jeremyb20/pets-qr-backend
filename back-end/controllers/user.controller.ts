@@ -56,6 +56,7 @@ import {
   getDaysUntilNextBirthday,
   getNextBirthday,
 } from '../utils/dateUtils';
+import FeedbackModel from '../models/Feedback.model';
 
 const cloudinaryV2 = cloudinary.v2;
 export interface DeviceInfo {
@@ -162,6 +163,11 @@ interface UserController {
     next: NextFunction
   ): Promise<void>;
   getAllMedicalAppointmentsByUser(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void>;
+  submitFeedback(
     req: Request,
     res: Response,
     next: NextFunction
@@ -2346,6 +2352,14 @@ const userCtl: UserController = {
       // Paso 5: Actualizar el usuario
       existingUser.pets.push(savedPet._id);
       await existingUser.save();
+      // Actualizar código QR
+      qrCode.status = 'activated';
+      qrCode.assignedTo = existingUser._id;
+      qrCode.assignedPet = savedPet._id as unknown as any;
+      qrCode.activatedBy = undefined;
+      qrCode.activationDate = new Date();
+      qrCode.hostName = req.headers.host;
+      await qrCode.save();
       AdminNotificationService.notifyNewPet(savedPet, existingUser).catch(
         (error) => {
           console.error(
@@ -2592,17 +2606,17 @@ const userCtl: UserController = {
 
       // Paso 6: Crear un registro de QR code para esta mascota (opcional)
       // Si quieres mantener el mismo sistema de QR codes
-      const newQrCode = new QrCode({
-        randomCode: memberPetId,
-        status: 'assigned',
-        assignedTo: existingUser._id,
-        assignedPet: savedPet._id,
-        activationDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      // const newQrCode = new QrCode({
+      //   randomCode: memberPetId,
+      //   status: 'assigned',
+      //   assignedTo: existingUser._id,
+      //   assignedPet: savedPet._id,
+      //   activationDate: new Date(),
+      //   createdAt: new Date(),
+      //   updatedAt: new Date(),
+      // });
 
-      await newQrCode.save();
+      // await newQrCode.save();
 
       AdminNotificationService.notifyNewPet(savedPet, existingUser).catch(
         (error) => {
@@ -2631,7 +2645,7 @@ const userCtl: UserController = {
             memberPetId: savedPet.memberPetId, // Código generado
             breed: savedPet.breed,
             photo: savedPet.photo,
-            qrCode: newQrCode.randomCode, // Código del QR
+            // qrCode: newQrCode.randomCode, // Código del QR
           },
           qrCode: {
             code: memberPetId,
@@ -4094,10 +4108,19 @@ const userCtl: UserController = {
         return;
       }
 
-      // Buscar la mascota por memberPetId
-      const pet = await Pet.findOne({ memberPetId });
+      const newView = {
+        lat: lat.toString(),
+        lng: lng.toString(),
+        dateViewed: new Date().toISOString(),
+      };
 
-      if (!pet) {
+      const result = await Pet.findOneAndUpdate(
+        { memberPetId },
+        { $push: { petViewCounter: newView } },
+        { new: true, select: 'petViewCounter' }
+      );
+
+      if (!result) {
         res.status(404).json({
           success: false,
           message: 'Pet not found',
@@ -4105,23 +4128,11 @@ const userCtl: UserController = {
         return;
       }
 
-      // Agregar la vista al petViewCounter
-      const newView = {
-        lat: lat.toString(),
-        lng: lng.toString(),
-        dateViewed: new Date().toISOString(),
-      };
-
-      pet.petViewCounter = pet.petViewCounter || [];
-      pet.petViewCounter.push(newView);
-
-      await pet.save();
-
       res.status(200).json({
         success: true,
         message: 'Pet view registered successfully',
         data: {
-          viewCount: pet.petViewCounter.length,
+          viewCount: result.petViewCounter.length,
         },
       });
     } catch (error) {
@@ -4253,6 +4264,257 @@ const userCtl: UserController = {
         success: false,
         message: 'Internal server error',
         error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
+   * Enviar Comentarios y mejoras
+   */
+  async submitFeedback(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        type,
+        title,
+        description,
+        steps,
+        expected,
+        actual,
+        priority,
+        category,
+        user,
+        metadata,
+        // Nuevos campos para general_feedback
+        rating,
+        reason,
+        improvements,
+        comments,
+        contact,
+      } = req.body;
+
+      // Validar tipo de feedback
+      const validTypes = [
+        'improvement',
+        'bug',
+        'suggestion',
+        'question',
+        'general_feedback',
+      ];
+      if (type && !validTypes.includes(type)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid feedback type',
+        });
+        return;
+      }
+
+      // Validaciones específicas para general_feedback
+      if (type === 'general_feedback') {
+        // Validar que rating existe
+        if (rating === undefined || rating === null) {
+          res.status(400).json({
+            success: false,
+            message: 'Rating is required for general feedback',
+            errors: {
+              rating: 'Please provide a rating',
+            },
+          });
+          return;
+        }
+
+        // Validar que rating esté entre 1 y 5
+        if (rating < 1 || rating > 5) {
+          res.status(400).json({
+            success: false,
+            message: 'Rating must be between 1 and 5',
+            errors: {
+              rating: 'Rating must be between 1 and 5',
+            },
+          });
+          return;
+        }
+
+        // Si rating es bajo (<= 3), reason es obligatorio
+        if (rating <= 3 && (!reason || !reason.trim())) {
+          res.status(400).json({
+            success: false,
+            message: 'Reason is required for low ratings',
+            errors: {
+              reason: 'Please tell us why you gave this rating',
+            },
+          });
+          return;
+        }
+
+        // Validar email si se proporciona
+        if (
+          contact?.email &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)
+        ) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid email format',
+            errors: {
+              email: 'Please enter a valid email address',
+            },
+          });
+          return;
+        }
+
+        // Validar teléfono si se proporciona
+        if (contact?.phone && !/^[+]?[\d\s-]{8,}$/.test(contact.phone)) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid phone number',
+            errors: {
+              phone: 'Please enter a valid phone number',
+            },
+          });
+          return;
+        }
+      } else {
+        // Validaciones para los tipos tradicionales (improvement, bug, suggestion, question)
+
+        // Validar datos obligatorios
+        if (!title || !description) {
+          res.status(400).json({
+            success: false,
+            message: 'Title and description are required',
+            errors: {
+              title: !title ? 'Title is required' : undefined,
+              description: !description ? 'Description is required' : undefined,
+            },
+          });
+          return;
+        }
+
+        // Si es un bug, steps es obligatorio
+        if (type === 'bug' && !steps) {
+          res.status(400).json({
+            success: false,
+            message: 'Steps to reproduce are required for bug reports',
+            errors: {
+              steps: 'Steps to reproduce are required for bug reports',
+            },
+          });
+          return;
+        }
+      }
+
+      // Validar prioridad
+      const validPriorities = ['low', 'medium', 'high', 'critical'];
+      if (priority && !validPriorities.includes(priority)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid priority level',
+        });
+        return;
+      }
+
+      // Construir el objeto de feedback
+      const feedbackData: any = {
+        type: type || 'suggestion',
+        priority: priority || 'medium',
+        category: category || 'Other',
+        user: {
+          id: user?.id,
+          email: user?.email,
+          name: user?.name,
+          phone: user?.phone,
+        },
+        metadata: {
+          url: metadata?.url || req.headers.referer || 'Unknown',
+          userAgent:
+            metadata?.userAgent || req.headers['user-agent'] || 'Unknown',
+          screenSize: metadata?.screenSize || 'Unknown',
+          language:
+            metadata?.language ||
+            req.headers['accept-language']?.split(',')[0] ||
+            'en',
+          trigger: metadata?.trigger || 'manual',
+          timestamp: metadata?.timestamp || new Date(),
+        },
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Si es general_feedback, agregar campos específicos
+      if (type === 'general_feedback') {
+        feedbackData.rating = rating;
+        feedbackData.reason = reason?.trim() || '';
+        feedbackData.improvements = improvements || [];
+        feedbackData.comments = comments?.trim() || '';
+        feedbackData.contact = {
+          email: contact?.email || '',
+          phone: contact?.phone || '',
+          consent: contact?.consent || false,
+        };
+        // Estos campos no son necesarios para general_feedback
+        feedbackData.title = `Feedback - Rating ${rating}`;
+        feedbackData.description =
+          reason?.trim() ||
+          comments?.trim() ||
+          'No additional details provided';
+      } else {
+        // Para tipos tradicionales
+        feedbackData.title = title.trim();
+        feedbackData.description = description.trim();
+        feedbackData.steps = steps?.trim() || '';
+        feedbackData.expected = expected?.trim() || '';
+        feedbackData.actual = actual?.trim() || '';
+      }
+
+      // Crear el feedback en la base de datos
+      const feedback = new FeedbackModel(feedbackData);
+      const feedbackRes = await feedback.save();
+
+      // Enviar notificación al admin (no crítico)
+      AdminNotificationService.notifyNewFeedback(feedbackRes).catch((error) => {
+        console.error(
+          'Error enviando notificación al admin (no crítico):',
+          error
+        );
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Feedback submitted successfully',
+        data: {
+          id: feedback._id,
+          type: feedback.type,
+          title:
+            feedback.type === 'general_feedback'
+              ? `Feedback - Rating ${feedback.rating}`
+              : feedback.title,
+          status: feedback.status,
+          rating: feedback.rating,
+          createdAt: feedback.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+
+      // Manejar errores de validación de Mongoose
+      if ((error as any).name === 'ValidationError') {
+        const errors = Object.values((error as any).errors).map(
+          (err: any) => err.message
+        );
+        res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error submitting feedback. Please try again later.',
+        error:
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
+            : undefined,
       });
     }
   },

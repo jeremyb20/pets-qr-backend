@@ -107,4 +107,9 @@ export interface AdminController {
   ): Promise<void>;
   getPetStats(req: Request, res: Response, next?: NextFunction): Promise<void>;
   getPetGrowth(req: Request, res: Response, next?: NextFunction): Promise<void>;
+  getAllFeedback(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void>;
 }

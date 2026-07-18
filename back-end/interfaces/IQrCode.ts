@@ -68,5 +68,5 @@ export interface IQrCodeTableFilters {
   assignedTo?: string[];
   activatedBy?: string[];
   hostName?: string[];
-  // Puedes agregar más filtros según necesites
+  hasPet?: string; // 'true' | 'false'
 }
