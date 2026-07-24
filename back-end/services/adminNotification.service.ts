@@ -6,6 +6,7 @@ import User from '../models/User.model';
 import { IPet } from '../interfaces/Ipet';
 import 'dotenv/config';
 import { IUser } from '../interfaces/IUser';
+import { IPetTagOrder } from '../types/pet-tag.types';
 
 export class AdminNotificationService {
   /**
@@ -182,6 +183,58 @@ export class AdminNotificationService {
   /**
    * Enviar notificación al admin cuando se recibe un nuevo feedback
    */
+  static async notifyNewPetTagOrder(orderData: IPetTagOrder): Promise<void> {
+    try {
+      const admins = await User.find({ role: 0, userStatus: 3 });
+      if (!admins.length) return;
+
+      const title = '¡Nueva orden de pet tag! 🏷️';
+      const body = `${orderData.contactName} (${orderData.contactPhone}) ordenó un tag ${orderData.shape} de ${orderData.material} - Talla: ${orderData.size}`;
+      const notificationData = {
+        type: 'pet_tag_order',
+        contactName: orderData.contactName,
+        contactPhone: orderData.contactPhone,
+        shape: orderData.shape,
+        material: orderData.material,
+        size: orderData.size,
+        petType: orderData.petType,
+        timestamp: new Date().toISOString(),
+        actionUrl: '/dashboard/admin/pet-tags',
+      };
+
+      for (const admin of admins) {
+        await notificationController.sendPushNotification(
+          admin._id as Types.ObjectId,
+          {
+            title,
+            body,
+            type: 'alert',
+            data: notificationData,
+            icon: admin.profile.photoProfile || process.env.LOGO_URL,
+            targetDevices: ['all'],
+            image: process.env.LOGO_URL,
+          }
+        );
+
+        const notification = new Notification({
+          user: admin._id,
+          title: title.trim(),
+          body: body.trim(),
+          type: 'alert',
+          data: notificationData,
+          status: 'sent',
+          sentAt: new Date(),
+          icon: admin.profile.photoProfile || process.env.LOGO_URL,
+          image: process.env.LOGO_URL,
+        });
+
+        await notification.save();
+      }
+    } catch (error) {
+      console.error('❌ Error notificando nueva orden de pet tag:', error);
+    }
+  }
+
   static async notifyNewFeedback(feedbackData: any): Promise<void> {
     try {
       // Obtener administradores (role: 0, userStatus: 3 = activo)

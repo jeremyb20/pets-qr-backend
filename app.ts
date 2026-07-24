@@ -22,6 +22,7 @@ import notificationRoutes from './back-end/routes/notifications';
 import seoRoutes from './back-end/routes/seo';
 import petRoutes from './back-end/routes/pet';
 import publicRoutes from './back-end/routes/public';
+import petTagRoutes from './back-end/routes/petTag';
 
 // Definir tipos para Multer
 interface MulterFile extends Express.Multer.File {}
@@ -104,6 +105,7 @@ app.use('/api/catalog', catalogRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/seo', seoRoutes);
 app.use('/api/pet', petRoutes);
+app.use('/api/pet-tag', petTagRoutes);
 
 // 2. Servir archivos estáticos para el frontend (SOLO si existe)
 app.use(express.static(path.join(__dirname, '../dist/plaquitas-cr')));
