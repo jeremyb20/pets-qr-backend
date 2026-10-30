@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import cloudinary from 'cloudinary';
+import { deleteImage, uploadImageFromBuffer } from '../services/r2';
 import User from '../models/User.model';
 import Pet, { DefaultPermissions } from '../models/Pet.model';
 import bcrypt from 'bcryptjs';
@@ -58,7 +58,6 @@ import {
 } from '../utils/dateUtils';
 import FeedbackModel from '../models/Feedback.model';
 
-const cloudinaryV2 = cloudinary.v2;
 export interface DeviceInfo {
   name: string;
   deviceType: 'mobile' | 'desktop' | 'tablet';
@@ -1283,15 +1282,15 @@ const userCtl: UserController = {
 
       if (shouldRemovePhoto && pet.photo_id) {
         try {
-          // Eliminar de Cloudinary
-          await cloudinaryV2.uploader.destroy(pet.photo_id);
-          console.log(`Deleted old photo from Cloudinary: ${pet.photo_id}`);
+          // Eliminar de R2
+          await deleteImage(pet.photo_id);
+          console.log(`Deleted old photo from R2: ${pet.photo_id}`);
 
           // Limpiar campos de foto
           updateFields.photo = null;
           updateFields.photo_id = null;
         } catch (error) {
-          console.error('Error deleting old photo from Cloudinary:', error);
+          console.error('Error deleting old photo from R2:', error);
         }
       }
 
@@ -1301,41 +1300,23 @@ const userCtl: UserController = {
           // Eliminar foto anterior si existe
           if (pet.photo_id) {
             try {
-              await cloudinaryV2.uploader.destroy(pet.photo_id);
-              console.log(`Deleted old photo from Cloudinary: ${pet.photo_id}`);
+              await deleteImage(pet.photo_id);
+              console.log(`Deleted old photo from R2: ${pet.photo_id}`);
             } catch (error) {
-              console.error('Error deleting old photo from Cloudinary:', error);
+              console.error('Error deleting old photo from R2:', error);
             }
           }
 
-          // Subir nueva foto a Cloudinary
-          const uploadResult = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinaryV2.uploader.upload_stream(
-              {
-                folder: 'pets',
-                transformation: [
-                  { width: 500, height: 500, crop: 'fill' },
-                  { quality: 'auto' },
-                  { format: 'auto' },
-                ],
-              },
-              (error, result) => {
-                if (error) {
-                  reject(error);
-                } else {
-                  resolve(result);
-                }
-              }
-            );
-
-            uploadStream.end(req.file!.buffer);
+          // Subir nueva foto a R2
+          const uploadResult = await uploadImageFromBuffer(req.file.buffer, {
+            folder: 'pets',
           });
 
           // Actualizar campos de foto
-          updateFields.photo = (uploadResult as any).secure_url;
-          updateFields.photo_id = (uploadResult as any).public_id;
+          updateFields.photo = uploadResult.imageUrl;
+          updateFields.photo_id = uploadResult.imageId;
         } catch (uploadError) {
-          console.error('Error uploading to Cloudinary:', uploadError);
+          console.error('Error uploading to R2:', uploadError);
           res.status(500).json({
             success: false,
             message: 'Internal server error, please try again later.',
@@ -1957,25 +1938,14 @@ const userCtl: UserController = {
 
       if (req.file) {
         try {
-          console.log('📸 Subiendo foto de mascota a Cloudinary...');
+          console.log('📸 Subiendo foto de mascota a R2...');
 
-          const result = await cloudinaryV2.uploader.upload(
-            `data:${req.file.mimetype};base64,${req.file.buffer.toString(
-              'base64'
-            )}`,
-            {
-              folder: 'mascotas_cr',
-              resource_type: 'image',
-              transformation: [
-                { width: 500, height: 500, crop: 'fill' },
-                { quality: 'auto' },
-                { format: 'webp' },
-              ],
-            }
-          );
+          const result = await uploadImageFromBuffer(req.file.buffer, {
+            folder: 'mascotas_cr',
+          });
 
-          petPhotoUrl = result.secure_url;
-          petPhotoId = result.public_id;
+          petPhotoUrl = result.imageUrl;
+          petPhotoId = result.imageId;
           console.log(`✅ Foto subida: ${petPhotoUrl}`);
         } catch (uploadError) {
           console.error('❌ Error subiendo foto:', uploadError);
@@ -2297,23 +2267,12 @@ const userCtl: UserController = {
 
       if (req.file) {
         try {
-          const result = await cloudinaryV2.uploader.upload(
-            `data:${req.file.mimetype};base64,${req.file.buffer.toString(
-              'base64'
-            )}`,
-            {
-              folder: 'mascotas_cr',
-              resource_type: 'image',
-              transformation: [
-                { width: 500, height: 500, crop: 'fill' },
-                { quality: 'auto' },
-                { format: 'webp' },
-              ],
-            }
-          );
+          const result = await uploadImageFromBuffer(req.file.buffer, {
+            folder: 'mascotas_cr',
+          });
 
-          petPhotoUrl = result.secure_url;
-          petPhotoId = result.public_id;
+          petPhotoUrl = result.imageUrl;
+          petPhotoId = result.imageId;
         } catch (uploadError) {
           console.error('❌ Error subiendo foto:', uploadError);
         }
@@ -2545,23 +2504,12 @@ const userCtl: UserController = {
 
       if (req.file) {
         try {
-          const result = await cloudinaryV2.uploader.upload(
-            `data:${req.file.mimetype};base64,${req.file.buffer.toString(
-              'base64'
-            )}`,
-            {
-              folder: 'mascotas_cr',
-              resource_type: 'image',
-              transformation: [
-                { width: 500, height: 500, crop: 'fill' },
-                { quality: 'auto' },
-                { format: 'webp' },
-              ],
-            }
-          );
+          const result = await uploadImageFromBuffer(req.file.buffer, {
+            folder: 'mascotas_cr',
+          });
 
-          petPhotoUrl = result.secure_url;
-          petPhotoId = result.public_id;
+          petPhotoUrl = result.imageUrl;
+          petPhotoId = result.imageId;
         } catch (uploadError) {
           console.error('❌ Error subiendo foto:', uploadError);
           // No fallar si hay error en la foto, continuar sin ella

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import cloudinary from 'cloudinary';
+import { deleteImage } from '../../services/r2';
 import User from '../../models/User.model';
 import Pet from '../../models/Pet.model';
 import { cacheService } from '../../config/redis';
@@ -15,8 +15,6 @@ import { FlattenMaps } from 'mongoose';
 import { IUser } from '../../interfaces/IUser';
 import { IPet } from '../../interfaces/Ipet';
 import FeedbackModel from '../../models/Feedback.model';
-
-const cloudinaryV2 = cloudinary.v2;
 
 // Interfaces para los tipos
 const adminCtl: AdminController = {
@@ -327,7 +325,7 @@ const adminCtl: AdminController = {
   deleteUserById: async (req: Request, res: Response): Promise<void> => {
     const photo = await User.findByIdAndDelete(req.query.id);
     if (photo && (photo as any).image_id) {
-      await cloudinaryV2.uploader.destroy((photo as any).image_id);
+      await deleteImage((photo as any).image_id);
     }
 
     res.send({
@@ -412,7 +410,7 @@ const adminCtl: AdminController = {
         $pull: { newPetProfile: { _id: req.body.idSecond } },
       }).then(async function (data) {
         if (req.body.photo_id) {
-          await cloudinaryV2.uploader.destroy(req.body.photo_id);
+          await deleteImage(req.body.photo_id);
         }
 
         res.json({ success: true, message: 'Delete successfull.' });

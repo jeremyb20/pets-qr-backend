@@ -3,8 +3,8 @@
   "version": "5.0.0",
   "description": "Backend para sistema de mascotas con QR - TypeScript",
   "engines": {
-    "node": "20.19.6",
-    "npm": "10.33.4"
+    "node": "22.23.4",
+    "npm": "10.22.0"
   },
   "scripts": {
     "start": "node dist/index.js",
@@ -34,11 +34,11 @@
   },
   "private": true,
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1159.0",
     "@upstash/redis": "^1.38.0",
     "async": "^3.2.6",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
-    "cloudinary": "^2.10.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

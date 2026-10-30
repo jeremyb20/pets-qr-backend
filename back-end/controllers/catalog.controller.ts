@@ -1,9 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
 import fs from 'fs-extra';
-import cloudinary from 'cloudinary';
 import Catalog, { ICatalog, ICatalogImage } from '../models/catalog';
+import {
+  deleteImage,
+  uploadImage,
+  uploadImageFromBuffer,
+} from '../services/r2';
 
-const cloudinaryV2 = cloudinary.v2;
+const uploadCatalogImage = async (req: Request) => {
+  if (req.file) {
+    return uploadImageFromBuffer(req.file.buffer, { folder: 'catalog' });
+  }
+
+  const image = req.body.image;
+  if (typeof image === 'string' && /^https?:\/\//.test(image)) {
+    return { imageId: '', imageUrl: image };
+  }
+
+  return uploadImage(image, { folder: 'catalog' });
+};
 
 // Interfaces para los tipos
 interface CatalogResponse {
@@ -118,14 +133,11 @@ const catalogCtl: CatalogController = {
     } = req.body as CreateCatalogRequest;
 
     try {
-      const imagePath = req.file != undefined ? req.file.path : req.body.image;
-      const result = await cloudinaryV2.uploader.upload(imagePath, {
-        folder: 'catalog',
-      });
+      const result = await uploadCatalogImage(req);
 
       const dataImage: ICatalogImage = {
-        image_id: result.public_id,
-        imageURL: result.secure_url,
+        image_id: result.imageId,
+        imageURL: result.imageUrl,
       };
 
       const catalog = new Catalog({
@@ -206,7 +218,7 @@ const catalogCtl: CatalogController = {
         req.query.id
       );
       if (photo && photo.images && photo.images.length > 0) {
-        await cloudinaryV2.uploader.destroy(photo.images[0].image_id);
+        await deleteImage(photo.images[0].image_id);
       }
       res.send({
         message: 'The information was updated correctly',
@@ -223,14 +235,11 @@ const catalogCtl: CatalogController = {
 
   addCatalogImages: async (req: Request, res: Response): Promise<void> => {
     try {
-      const imagePath = req.file != undefined ? req.file.path : req.body.image;
-      const result = await cloudinaryV2.uploader.upload(imagePath, {
-        folder: 'catalog',
-      });
+      const result = await uploadCatalogImage(req);
 
       const dataImage: ICatalogImage = {
-        image_id: result.public_id,
-        imageURL: result.secure_url,
+        image_id: result.imageId,
+        imageURL: result.imageUrl,
       };
 
       if (req.file) {
@@ -265,7 +274,7 @@ const catalogCtl: CatalogController = {
       );
 
       if (req.body.imageCloud) {
-        await cloudinaryV2.uploader.destroy(req.body.imageCloud);
+        await deleteImage(req.body.imageCloud);
       }
 
       res.send({

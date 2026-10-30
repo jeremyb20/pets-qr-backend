@@ -3,10 +3,8 @@ import Pet, { DefaultPermissions } from '../models/Pet.model';
 import User from '../models/User.model';
 import QrCode from '../models/QrCode.model';
 import 'dotenv/config';
-import cloudinary from 'cloudinary';
 import { IUser } from '../interfaces/IUser';
 import cacheService from '../config/redis';
-const cloudinaryV2 = cloudinary.v2;
 
 interface IPetController {
   getPublicProfileById(req: Request, res: Response): Promise<void>;

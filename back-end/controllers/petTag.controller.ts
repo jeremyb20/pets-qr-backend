@@ -2,7 +2,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { PetTagOrder } from '../models/PetTag.model';
-import cloudinary from '../config/cloudinary.config';
+import { deleteImage, uploadImageFromBuffer } from '../services/r2';
 import { AdminNotificationService } from '../services/adminNotification.service';
 
 export class PetTagOrderController {
@@ -32,11 +32,13 @@ export class PetTagOrderController {
 
       for (const file of imageFiles) {
         try {
-          const result = await cloudinary.uploader.upload(
-            `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-            { folder: 'pet-tags', resource_type: 'image' }
-          );
-          uploaded[file.fieldname] = { imageURL: result.secure_url, imageID: result.public_id };
+          const result = await uploadImageFromBuffer(file.buffer, {
+            folder: 'pet-tags',
+          });
+          uploaded[file.fieldname] = {
+            imageURL: result.imageUrl,
+            imageID: result.imageId,
+          };
         } catch (uploadError) {
           console.error('❌ Error subiendo imagen:', uploadError);
         }
@@ -231,11 +233,13 @@ export class PetTagOrderController {
       const uploaded: Record<string, { imageURL: string; imageID: string }> = {};
       for (const file of imageFiles) {
         try {
-          const result = await cloudinary.uploader.upload(
-            `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-            { folder: 'pet-tags', resource_type: 'image' }
-          );
-          uploaded[file.fieldname] = { imageURL: result.secure_url, imageID: result.public_id };
+          const result = await uploadImageFromBuffer(file.buffer, {
+            folder: 'pet-tags',
+          });
+          uploaded[file.fieldname] = {
+            imageURL: result.imageUrl,
+            imageID: result.imageId,
+          };
         } catch (uploadError) {
           console.error('❌ Error subiendo imagen:', uploadError);
         }
@@ -290,7 +294,7 @@ export class PetTagOrderController {
         order.front?.image?.imageID,
         order.back?.image?.imageID,
       ].filter(Boolean);
-      await Promise.all(imageIDs.map((pid) => cloudinary.uploader.destroy(pid!)));
+      await Promise.all(imageIDs.map((pid) => deleteImage(pid!)));
 
       // 3. Eliminar de la base de datos
       await PetTagOrder.findByIdAndDelete(id);

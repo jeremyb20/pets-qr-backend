@@ -1,7 +1,7 @@
 import multer from 'multer';
 import { Request } from 'express';
 
-// Configuración para productos (memory storage para Cloudinary)
+// Configuración para productos (memory storage para subir a R2)
 const memoryStorage = multer.memoryStorage();
 
 export const uploadImages = multer({

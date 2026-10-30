@@ -1,4 +1,3 @@
-
 # Para actualizar necesitas varias cosas
 
 npx web-push generate-vapid-keys --json
@@ -23,3 +22,6 @@ fly launch --now
 fly deploy
 
 npx web-push generate-vapid-keys
+
+R2 Cloudfare config
+https://www.youtube.com/watch?v=eHXSuyXR-jk

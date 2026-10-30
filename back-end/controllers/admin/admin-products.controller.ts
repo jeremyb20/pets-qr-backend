@@ -12,7 +12,7 @@ import {
   IProductTableFilters,
 } from '../../types/product.types';
 
-import cloudinary from '../../config/cloudinary.config';
+import { uploadImageFromBuffer } from '../../services/r2';
 // import { AdminProductController } from '@/types/admin.types';
 import { AdminProductController } from '../../types/admin.types';
 
@@ -245,20 +245,16 @@ const adminProductCtl: AdminProductController = {
 
         for (const file of imageFiles) {
           try {
-            const result = await cloudinary.uploader.upload(
-              `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-              {
-                folder: 'products',
-                resource_type: 'image',
-              }
-            );
-
-            productImages.push({
-              image_id: result.public_id,
-              imageURL: result.secure_url,
+            const result = await uploadImageFromBuffer(file.buffer, {
+              folder: 'products',
             });
 
-            console.log(`✅ Imagen subida: ${result.secure_url}`);
+            productImages.push({
+              image_id: result.imageId,
+              imageURL: result.imageUrl,
+            });
+
+            console.log(`✅ Imagen subida: ${result.imageUrl}`);
           } catch (uploadError) {
             console.error('❌ Error subiendo imagen:', uploadError);
           }
@@ -320,14 +316,6 @@ const adminProductCtl: AdminProductController = {
           typeof productData.newLabel === 'object'
             ? productData.newLabel
             : { enabled: false, content: '' },
-      });
-
-      console.log('💾 Guardando producto en base de datos...');
-      console.log('📊 Datos procesados:', {
-        tags: createProductDto.tags,
-        colors: createProductDto.colors,
-        sizes: createProductDto.sizes,
-        gender: createProductDto.gender,
       });
 
       // Crear el producto
@@ -464,20 +452,16 @@ const adminProductCtl: AdminProductController = {
 
         for (const file of newImageFiles) {
           try {
-            const result = await cloudinary.uploader.upload(
-              `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-              {
-                folder: 'products',
-                resource_type: 'image',
-              }
-            );
-
-            newProductImages.push({
-              image_id: result.public_id,
-              imageURL: result.secure_url,
+            const result = await uploadImageFromBuffer(file.buffer, {
+              folder: 'products',
             });
 
-            console.log(`✅ Nueva imagen subida: ${result.secure_url}`);
+            newProductImages.push({
+              image_id: result.imageId,
+              imageURL: result.imageUrl,
+            });
+
+            console.log(`✅ Nueva imagen subida: ${result.imageUrl}`);
           } catch (uploadError) {
             console.error('❌ Error subiendo nueva imagen:', uploadError);
           }
