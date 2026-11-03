@@ -9,7 +9,7 @@ import {
   IPet,
   IVaccinesControl,
   IDewormingControl,
-  IMedicalVisits
+  IMedicalVisits,
 } from '../interfaces/Ipet';
 
 interface MedicalEvent {
@@ -52,11 +52,11 @@ class MedicalNotificationService {
       const now = new Date();
 
       // Buscar todas las mascotas con sus owners poblados
-      const pets = await Pet.find()
-        .populate('owner')
-        .lean();
+      const pets = await Pet.find().populate('owner').lean();
 
-      console.log(`🔍 Verificando eventos médicos para ${pets.length} mascotas`);
+      console.log(
+        `🔍 Verificando eventos médicos para ${pets.length} mascotas`
+      );
 
       for (const pet of pets) {
         if (!pet.owner) {
@@ -93,29 +93,37 @@ class MedicalNotificationService {
     // Verificar Vacunas
     if (medicalRecords.vaccines && medicalRecords.vaccines.length > 0) {
       for (const vaccine of medicalRecords.vaccines) {
-        if (!vaccine.emailNotificationEnabled || !vaccine.nextVaccineDate) continue;
+        if (!vaccine.emailNotificationEnabled || !vaccine.nextVaccineDate)
+          continue;
 
         const nextDate = new Date(vaccine.nextVaccineDate);
         const daysUntilEvent = Math.ceil(
           (nextDate.getTime() - now.getTime()) / (1000 * 3600 * 24)
         );
 
-        console.log(`💉 Vacuna ${vaccine.vaccineName}: ${daysUntilEvent} días restantes`);
-
         // Verificar si está en el rango de notificación
-        if (daysUntilEvent <= vaccine.notificationDaysBefore && daysUntilEvent >= 0) {
-          await this.sendNotificationIfNeeded({
-            type: 'vaccine',
-            eventDate: nextDate,
-            name: vaccine.vaccineName || 'Vacuna',
-            petId: pet._id,
-            petName: pet.petName,
-            ownerEmail: user.email,
-            ownerName: user.name || user.email || 'Usuario',
-            recordId: vaccine._id!,
-            observations: vaccine.observations,
-            notificationDaysBefore: vaccine.notificationDaysBefore,
-          }, vaccine.lastNotificationSent);
+        if (
+          daysUntilEvent <= vaccine.notificationDaysBefore &&
+          daysUntilEvent >= 0
+        ) {
+          console.log(
+            `💉 Vacuna ${vaccine.vaccineName}: ${daysUntilEvent} días restantes`
+          );
+          await this.sendNotificationIfNeeded(
+            {
+              type: 'vaccine',
+              eventDate: nextDate,
+              name: vaccine.vaccineName || 'Vacuna',
+              petId: pet._id,
+              petName: pet.petName,
+              ownerEmail: user.email,
+              ownerName: user.name || user.email || 'Usuario',
+              recordId: vaccine._id!,
+              observations: vaccine.observations,
+              notificationDaysBefore: vaccine.notificationDaysBefore,
+            },
+            vaccine.lastNotificationSent
+          );
         }
       }
     }
@@ -123,34 +131,46 @@ class MedicalNotificationService {
     // Verificar Desparasitaciones
     if (medicalRecords.deworming && medicalRecords.deworming.length > 0) {
       for (const deworming of medicalRecords.deworming) {
-        if (!deworming.emailNotificationEnabled || !deworming.nextDewormingDate) continue;
+        if (!deworming.emailNotificationEnabled || !deworming.nextDewormingDate)
+          continue;
 
         const nextDate = new Date(deworming.nextDewormingDate);
         const daysUntilEvent = Math.ceil(
           (nextDate.getTime() - now.getTime()) / (1000 * 3600 * 24)
         );
 
-        console.log(`🐛 Desparasitante ${deworming.dewormerName}: ${daysUntilEvent} días restantes`);
+        console.log(
+          `🐛 Desparasitante ${deworming.dewormerName}: ${daysUntilEvent} días restantes`
+        );
 
-        if (daysUntilEvent <= deworming.notificationDaysBefore && daysUntilEvent >= 0) {
-          await this.sendNotificationIfNeeded({
-            type: 'deworming',
-            eventDate: nextDate,
-            name: deworming.dewormerName || 'Desparasitante',
-            petId: pet._id,
-            petName: pet.petName,
-            ownerEmail: user.email,
-            ownerName: user.name || user.email || 'Usuario',
-            recordId: deworming._id!,
-            observations: deworming.observations,
-            notificationDaysBefore: deworming.notificationDaysBefore,
-          }, deworming.lastNotificationSent);
+        if (
+          daysUntilEvent <= deworming.notificationDaysBefore &&
+          daysUntilEvent >= 0
+        ) {
+          await this.sendNotificationIfNeeded(
+            {
+              type: 'deworming',
+              eventDate: nextDate,
+              name: deworming.dewormerName || 'Desparasitante',
+              petId: pet._id,
+              petName: pet.petName,
+              ownerEmail: user.email,
+              ownerName: user.name || user.email || 'Usuario',
+              recordId: deworming._id!,
+              observations: deworming.observations,
+              notificationDaysBefore: deworming.notificationDaysBefore,
+            },
+            deworming.lastNotificationSent
+          );
         }
       }
     }
 
     // Verificar Visitas Médicas
-    if (medicalRecords.datesOfMedicalVisits && medicalRecords.datesOfMedicalVisits.length > 0) {
+    if (
+      medicalRecords.datesOfMedicalVisits &&
+      medicalRecords.datesOfMedicalVisits.length > 0
+    ) {
       for (const visit of medicalRecords.datesOfMedicalVisits) {
         if (!visit.emailNotificationEnabled || !visit.visitDate) continue;
 
@@ -159,21 +179,29 @@ class MedicalNotificationService {
           (visitDate.getTime() - now.getTime()) / (1000 * 3600 * 24)
         );
 
-        console.log(`🏥 Visita médica (${this.getReasonLabel(visit.reasonForVisit)}): ${daysUntilEvent} días restantes`);
+        console.log(
+          `🏥 Visita médica (${this.getReasonLabel(visit.reasonForVisit)}): ${daysUntilEvent} días restantes`
+        );
 
-        if (daysUntilEvent <= visit.notificationDaysBefore && daysUntilEvent >= 0) {
-          await this.sendNotificationIfNeeded({
-            type: 'medical_visit',
-            eventDate: visitDate,
-            name: this.getReasonLabel(visit.reasonForVisit),
-            petId: pet._id,
-            petName: pet.petName,
-            ownerEmail: user.email,
-            ownerName: user.name || user.email || 'Usuario',
-            recordId: visit._id!,
-            observations: visit.observations,
-            notificationDaysBefore: visit.notificationDaysBefore,
-          }, visit.lastNotificationSent);
+        if (
+          daysUntilEvent <= visit.notificationDaysBefore &&
+          daysUntilEvent >= 0
+        ) {
+          await this.sendNotificationIfNeeded(
+            {
+              type: 'medical_visit',
+              eventDate: visitDate,
+              name: this.getReasonLabel(visit.reasonForVisit),
+              petId: pet._id,
+              petName: pet.petName,
+              ownerEmail: user.email,
+              ownerName: user.name || user.email || 'Usuario',
+              recordId: visit._id!,
+              observations: visit.observations,
+              notificationDaysBefore: visit.notificationDaysBefore,
+            },
+            visit.lastNotificationSent
+          );
         }
       }
     }
@@ -183,23 +211,35 @@ class MedicalNotificationService {
     event: MedicalEvent,
     lastNotificationSent: Date | null
   ): Promise<void> {
-    const shouldSend = !lastNotificationSent ||
-      this.shouldResendNotification(new Date(lastNotificationSent), event.eventDate);
+    const shouldSend =
+      !lastNotificationSent ||
+      this.shouldResendNotification(
+        new Date(lastNotificationSent),
+        event.eventDate
+      );
 
     if (!shouldSend) {
-      console.log(`⏭️ Omitiendo notificación para ${event.type} - ya enviada recientemente`);
+      console.log(
+        `⏭️ Omitiendo notificación para ${event.type} - ya enviada recientemente`
+      );
       return;
     }
 
-    console.log(`📧 Enviando recordatorio para ${event.type}: ${event.name} a ${event.ownerEmail}`);
+    console.log(
+      `📧 Enviando recordatorio para ${event.type}: ${event.name} a ${event.ownerEmail}`
+    );
 
     const success = await this.sendMedicalReminderEmail(event);
 
     if (success) {
-      console.log(`✅ Notificación enviada exitosamente para ${event.type}: ${event.name}`);
+      console.log(
+        `✅ Notificación enviada exitosamente para ${event.type}: ${event.name}`
+      );
       await this.updateLastNotificationSent(event);
     } else {
-      console.log(`❌ Falló el envío de notificación para ${event.type}: ${event.name}`);
+      console.log(
+        `❌ Falló el envío de notificación para ${event.type}: ${event.name}`
+      );
     }
   }
 
@@ -216,13 +256,17 @@ class MedicalNotificationService {
     const shouldResend = daysSinceLastNotification >= 3 && daysUntilEvent >= 1;
 
     if (shouldResend) {
-      console.log(`📨 Reenviando notificación - última vez hace ${daysSinceLastNotification} días, faltan ${daysUntilEvent} días`);
+      console.log(
+        `📨 Reenviando notificación - última vez hace ${daysSinceLastNotification} días, faltan ${daysUntilEvent} días`
+      );
     }
 
     return shouldResend;
   }
 
-  private async sendMedicalReminderEmail(event: MedicalEvent): Promise<boolean> {
+  private async sendMedicalReminderEmail(
+    event: MedicalEvent
+  ): Promise<boolean> {
     const daysUntilEvent = Math.ceil(
       (event.eventDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24)
     );
@@ -241,7 +285,7 @@ class MedicalNotificationService {
           month: 'long',
           day: 'numeric',
           hour: '2-digit',
-          minute: '2-digit'
+          minute: '2-digit',
         }),
         daysUntilEvent: daysUntilEvent,
         urgencyLevel: this.getUrgencyLevel(daysUntilEvent),
@@ -249,11 +293,16 @@ class MedicalNotificationService {
         dashboardUrl: `${process.env.FRONTEND_URL}/dashboard/pet/${event.petId}`,
         year: new Date().getFullYear(),
         companyName: 'PlaquitasCR',
-        logoUrl: process.env.LOGO_URL || 'https://plaquitascr.com/assets/images/plaquitascr.png',
+        logoUrl:
+          process.env.LOGO_URL ||
+          'https://plaquitascr.com/assets/images/plaquitascr.png',
         phoneNumber: process.env.PHONE_NUMBER || '+50670160434',
-        facebookUrl: process.env.FACEBOOK_URL || 'https://www.facebook.com/profile.php?id=100064041162056',
+        facebookUrl:
+          process.env.FACEBOOK_URL ||
+          'https://www.facebook.com/profile.php?id=100064041162056',
         facebookUsername: process.env.FACEBOOK_USERNAME || '@PlaquitasCR',
-        instagramUrl: process.env.INSTAGRAM_URL || 'https://www.instagram.com/plaquitas_cr',
+        instagramUrl:
+          process.env.INSTAGRAM_URL || 'https://www.instagram.com/plaquitas_cr',
         instagramUsername: process.env.INSTAGRAM_USERNAME || '@plaquitas_cr',
         supportEmail: process.env.SUPPORT_EMAIL || 'support@plaquitascr.com',
       },
@@ -269,45 +318,48 @@ class MedicalNotificationService {
       switch (event.type) {
         case 'vaccine':
           updateQuery = {
-            'medicalRecord.vaccines.$[elem].lastNotificationSent': new Date()
+            'medicalRecord.vaccines.$[elem].lastNotificationSent': new Date(),
           };
           await Pet.updateOne(
             { _id: event.petId },
             { $set: updateQuery },
             {
-              arrayFilters: [{ 'elem._id': event.recordId }]
+              arrayFilters: [{ 'elem._id': event.recordId }],
             }
           );
           break;
 
         case 'deworming':
           updateQuery = {
-            'medicalRecord.deworming.$[elem].lastNotificationSent': new Date()
+            'medicalRecord.deworming.$[elem].lastNotificationSent': new Date(),
           };
           await Pet.updateOne(
             { _id: event.petId },
             { $set: updateQuery },
             {
-              arrayFilters: [{ 'elem._id': event.recordId }]
+              arrayFilters: [{ 'elem._id': event.recordId }],
             }
           );
           break;
 
         case 'medical_visit':
           updateQuery = {
-            'medicalRecord.datesOfMedicalVisits.$[elem].lastNotificationSent': new Date()
+            'medicalRecord.datesOfMedicalVisits.$[elem].lastNotificationSent':
+              new Date(),
           };
           await Pet.updateOne(
             { _id: event.petId },
             { $set: updateQuery },
             {
-              arrayFilters: [{ 'elem._id': event.recordId }]
+              arrayFilters: [{ 'elem._id': event.recordId }],
             }
           );
           break;
       }
 
-      console.log(`✅ Actualizado lastNotificationSent para ${event.type}: ${event.name}`);
+      console.log(
+        `✅ Actualizado lastNotificationSent para ${event.type}: ${event.name}`
+      );
     } catch (error) {
       console.error(`❌ Error actualizando lastNotificationSent:`, error);
     }
@@ -317,7 +369,7 @@ class MedicalNotificationService {
     const labels = {
       vaccine: 'Vacuna',
       deworming: 'Desparasitación',
-      medical_visit: 'Cita Médica'
+      medical_visit: 'Cita Médica',
     };
     return labels[type as keyof typeof labels] || type;
   }
@@ -334,7 +386,7 @@ class MedicalNotificationService {
       surgery: 'Cirugía',
       dental_care: 'Control dental',
       behavior: 'Comportamiento',
-      other: 'Otro motivo'
+      other: 'Otro motivo',
     };
     return reasons[reason] || reason;
   }
