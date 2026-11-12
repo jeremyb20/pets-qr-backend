@@ -8,6 +8,7 @@ import { uploadImages } from '../middlewares/uploadMiddleware';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import adminSeoCtrl from '../controllers/admin/admin-seo.controller';
 import promotionController from '../controllers/admin/admin-promotion.controller';
+import adminVeterinaryCtl from '../controllers/admin/admin-veterinary.controller';
 
 const router = Router();
 
@@ -242,6 +243,37 @@ router.get(
   authenticateToken,
   isAdmin,
   adminCtl.getAllFeedback
+);
+
+router.get(
+  '/veterinaries',
+  authenticateToken,
+  isAdmin,
+  adminVeterinaryCtl.getAllVeterinaries
+);
+router.post(
+  '/veterinaries',
+  authenticateToken,
+  isAdmin,
+  adminVeterinaryCtl.createVeterinary
+);
+router.get(
+  '/veterinaries/:id',
+  authenticateToken,
+  isAdmin,
+  adminVeterinaryCtl.getVeterinaryById
+);
+router.put(
+  '/veterinaries/:id',
+  authenticateToken,
+  isAdmin,
+  adminVeterinaryCtl.updateVeterinary
+);
+router.delete(
+  '/veterinaries/:id',
+  authenticateToken,
+  isAdmin,
+  adminVeterinaryCtl.deleteVeterinary
 );
 
 export default router;

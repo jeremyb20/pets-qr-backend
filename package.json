@@ -19,6 +19,7 @@
     "migrate-data": "node back-end/scripts/migrateData-with-compass.js",
     "migrate-qrcodes": "ts-node back-end/scripts/migrateOldQRCodes.ts",
     "migrate-users-schema": "ts-node back-end/scripts/migrate-users-schema.ts",
+    "migrate-roles": "ts-node back-end/scripts/migrate-roles-to-names.ts",
     "migrate-qrcodes:prod": "npm run build && node dist/scripts/migrateOldQRCodes.js",
     "migrate-phone": "ts-node back-end/scripts/migrate-phone.ts",
     "migrate-pet-id": "ts-node back-end/scripts/add-memberPetId.ts",

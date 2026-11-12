@@ -25,3 +25,6 @@ npx web-push generate-vapid-keys
 
 R2 Cloudfare config
 https://www.youtube.com/watch?v=eHXSuyXR-jk
+
+pnpm migrate-roles
+Equivale a ejecutar ts-node back-end/scripts/migrate-roles-to-names.ts.

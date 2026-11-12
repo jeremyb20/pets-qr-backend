@@ -57,6 +57,7 @@ import {
   getNextBirthday,
 } from '../utils/dateUtils';
 import FeedbackModel from '../models/Feedback.model';
+import { ROLES } from '../middlewares/authMiddleware';
 
 export interface DeviceInfo {
   name: string;
@@ -1740,7 +1741,7 @@ const userCtl: UserController = {
         email: email.toLowerCase(),
         password: hashedPassword,
         userStatus: 1, // Activo
-        role: 3, // Rol de usuario normal
+        role: ROLES.USER, // Rol de usuario normal
         isActivated: false, // Activado automáticamente para registro normal
         pets: [],
         configuration: {
@@ -2008,7 +2009,7 @@ const userCtl: UserController = {
         email: parsedUserData.email.toLowerCase(),
         password: hashedPassword,
         userStatus: 1,
-        role: 3,
+        role: ROLES.USER,
         isActivated: false,
         pets: [],
         configuration: {

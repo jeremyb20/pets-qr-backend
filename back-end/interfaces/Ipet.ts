@@ -22,15 +22,30 @@ export interface IPetPermissions {
   showOwnerPetName: boolean;
   showBirthDate: boolean;
   showAddressInfo: boolean;
+  showAgeInfo: boolean;
   showVeterinarianContact: boolean;
   showPhoneVeterinarian: boolean;
   showHealthAndRequirements: boolean;
   showFavoriteActivities: boolean;
   showLocationInfo: boolean;
+  showLocationConsent: boolean;
   showNotes: boolean;
   showBreedInfo: boolean;
   showWeightInfo: boolean;
   showGenderInfo: boolean;
+  showClinicalRecord: boolean;
+  showAllergies: boolean;
+  showMedications: boolean;
+  showEmergencyContacts: boolean;
+}
+
+export interface IEmergencyContact {
+  name: string;
+  relationship?: string;
+  phone: string;
+  email?: string;
+  isPrimary?: boolean;
+  _id?: Types.ObjectId;
 }
 
 // Interfaz base para notificaciones
@@ -108,6 +123,9 @@ export interface IPet {
   ownerPetName: string;
   medicalRecord?: IMedicalRecord; // ← Objeto con tres arrays
   notes: string;
+  veterinaryId?: Types.ObjectId;
+  registeredByUserId?: Types.ObjectId;
+  emergencyContacts?: IEmergencyContact[];
   _id: Types.ObjectId;
 }
 

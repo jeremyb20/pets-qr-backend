@@ -261,8 +261,9 @@ const UserSchema = new Schema<IUser>(
       default: 1,
     },
     role: {
-      type: Number,
-      default: 1,
+      type: String,
+      enum: ['admin', 'veterinarian', 'groomer', 'user'],
+      default: 'user',
     },
     pets: [
       {

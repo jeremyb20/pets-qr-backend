@@ -186,7 +186,7 @@ const createUserFromOldRecord = async (oldRecord) => {
     photo_id_profile: oldRecord.photo_id_profile,
     isActivated: oldRecord.isActivated || false,
     userStatus: oldRecord.userState || 1,
-    role: 3,
+    role: 'user',
     resetPasswordToken: oldRecord.resetPasswordToken,
     resetPasswordExpires: oldRecord.resetPasswordExpires,
     token: oldRecord.token,

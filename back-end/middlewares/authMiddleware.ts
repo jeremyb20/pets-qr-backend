@@ -4,13 +4,36 @@ import 'dotenv/config';
 
 // Definir tipos para los roles
 export const ROLES = {
-  ADMIN: 0,
-  VETERINARIAN: 1,
-  GROOMER: 2,
-  USER: 3,
+  ADMIN: 'admin',
+  VETERINARIAN: 'veterinarian',
+  GROOMER: 'groomer',
+  USER: 'user',
 } as const;
 
 export type UserRole = (typeof ROLES)[keyof typeof ROLES];
+
+// Mapa temporal para tokens/documentos legados que aún usan números
+const LEGACY_ROLE_MAP: Record<number, UserRole> = {
+  0: ROLES.ADMIN,
+  1: ROLES.VETERINARIAN,
+  2: ROLES.GROOMER,
+  3: ROLES.USER,
+};
+
+export const normalizeRole = (role: unknown): UserRole | null => {
+  if (typeof role === 'string') {
+    if (role === 'client') return ROLES.USER;
+    return (Object.values(ROLES) as string[]).includes(role)
+      ? (role as UserRole)
+      : null;
+  }
+
+  if (typeof role === 'number') {
+    return LEGACY_ROLE_MAP[role] ?? null;
+  }
+
+  return null;
+};
 
 // Middleware de autenticación (verificación del token)
 export const authenticateToken = (

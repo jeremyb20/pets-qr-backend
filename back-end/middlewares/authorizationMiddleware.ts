@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ROLES, UserRole } from './authMiddleware';
+import { normalizeRole, UserRole } from './authMiddleware';
 
 export const requireRole = (allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -14,7 +14,9 @@ export const requireRole = (allowedRoles: UserRole[]) => {
       return;
     }
 
-    if (!allowedRoles.includes(user.role)) {
+    const currentRole = normalizeRole(user.role);
+
+    if (!currentRole || !allowedRoles.includes(currentRole)) {
       res.status(403).json({
         success: false,
         msg: `Insufficient privileges. Required roles: ${allowedRoles.join(

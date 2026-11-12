@@ -1,5 +1,6 @@
 import {
   IDewormingControl,
+  IEmergencyContact,
   IMedicalRecord,
   IMedicalVisits,
   IPet,
@@ -15,15 +16,21 @@ export const DefaultPermissions = {
   showEmailInfo: true, // Muestra email del dueño
   showBirthDate: true, // Muestra fecha de nacimiento de la mascota
   showAddressInfo: true, // Muestra dirección del dueño
+  showAgeInfo: true, // Muestra la edad calculada de la mascota
   showVeterinarianContact: true, // Muestra contacto del veterinario
   showPhoneVeterinarian: true, // Muestra teléfono del veterinario
   showHealthAndRequirements: true, // Muestra información de salud
   showFavoriteActivities: true, // Muestra actividades favoritas
   showLocationInfo: true, // Muestra ubicación (lat/lng)
   showLocationConsent: false, // Consentimiento de ubicación
+  showNotes: false, // Muestra notas internas del dueño
   showBreedInfo: true, // Muestra información de raza
   showWeightInfo: true, // Muestra información de peso
   showGenderInfo: true, // Muestra información de género
+  showClinicalRecord: false, // Muestra historial clínico veterinario
+  showAllergies: false, // Muestra alergias de la mascota
+  showMedications: false, // Muestra medicamentos de la mascota
+  showEmergencyContacts: false, // Muestra contactos de emergencia
 };
 
 // models/MedicalRecord.model.ts (actualización)
@@ -139,6 +146,32 @@ const MedicalRecordSchema = new Schema<IMedicalRecord>({
       default: [],
     },
   ],
+});
+
+const EmergencyContactSchema = new Schema<IEmergencyContact>({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  relationship: {
+    type: String,
+    trim: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+  },
+  isPrimary: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const PetSchema = new Schema<IPet>(
@@ -264,6 +297,10 @@ const PetSchema = new Schema<IPet>(
         type: Boolean,
         default: true,
       },
+      showNotes: {
+        type: Boolean,
+        default: false,
+      },
       showVeterinarianContact: {
         type: Boolean,
         default: true,
@@ -299,6 +336,22 @@ const PetSchema = new Schema<IPet>(
       showGenderInfo: {
         type: Boolean,
         default: true,
+      },
+      showClinicalRecord: {
+        type: Boolean,
+        default: false,
+      },
+      showAllergies: {
+        type: Boolean,
+        default: false,
+      },
+      showMedications: {
+        type: Boolean,
+        default: false,
+      },
+      showEmergencyContacts: {
+        type: Boolean,
+        default: false,
       },
     },
     petStatusReport: {
@@ -344,6 +397,20 @@ const PetSchema = new Schema<IPet>(
       type: String,
       required: false,
     },
+    veterinaryId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Veterinary',
+      default: null,
+    },
+    registeredByUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    emergencyContacts: {
+      type: [EmergencyContactSchema],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -355,6 +422,8 @@ PetSchema.index({ owner: 1 });
 PetSchema.index({ petStatus: 1 });
 PetSchema.index({ isDigitalIdentificationActive: 1 });
 PetSchema.index({ 'petViewCounter.dateViewed': -1 });
+PetSchema.index({ veterinaryId: 1 });
+PetSchema.index({ registeredByUserId: 1 });
 
 // Métodos estáticos para el modelo
 PetSchema.statics.findByOwner = function (

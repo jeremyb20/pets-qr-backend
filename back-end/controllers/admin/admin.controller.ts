@@ -15,6 +15,7 @@ import { FlattenMaps } from 'mongoose';
 import { IUser } from '../../interfaces/IUser';
 import { IPet } from '../../interfaces/Ipet';
 import FeedbackModel from '../../models/Feedback.model';
+import { normalizeRole } from '../../middlewares/authMiddleware';
 
 // Interfaces para los tipos
 const adminCtl: AdminController = {
@@ -240,11 +241,13 @@ const adminCtl: AdminController = {
     } = req.body;
 
     try {
+      const normalizedRole = normalizeRole(role);
+
       // Construir el objeto de actualización
       const updateData: any = {
         email,
         userStatus,
-        role,
+        ...(normalizedRole && { role: normalizedRole }),
         pets,
         updatedAt: new Date(),
       };

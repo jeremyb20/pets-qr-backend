@@ -84,7 +84,7 @@ export interface IUser extends Document {
   lastName: string;
   password: string;
   userStatus: number;
-  role: number;
+  role: 'admin' | 'veterinarian' | 'groomer' | 'user';
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   passwordChangedAt?: Date;

@@ -7,6 +7,7 @@ import { IPet } from '../interfaces/Ipet';
 import 'dotenv/config';
 import { IUser } from '../interfaces/IUser';
 import { IPetTagOrder } from '../types/pet-tag.types';
+import { ROLES } from '../middlewares/authMiddleware';
 
 export class AdminNotificationService {
   /**
@@ -19,7 +20,7 @@ export class AdminNotificationService {
     try {
       // Buscar todos los admins (puedes tener múltiples admins)
       const admins = await User.find({
-        role: 0, // Asumiendo que tienes un campo 'role'
+        role: ROLES.ADMIN, // Asumiendo que tienes un campo 'role'
         userStatus: 3,
       });
 
@@ -87,7 +88,7 @@ export class AdminNotificationService {
   static async notifyNewUser(userData: IUser): Promise<void> {
     try {
       const admins = await User.find({
-        role: 0,
+        role: ROLES.ADMIN,
         userStatus: 3,
       });
 
@@ -149,7 +150,7 @@ export class AdminNotificationService {
     changes: string[];
   }): Promise<void> {
     try {
-      const admins = await User.find({ role: 0, userStatus: 3 });
+      const admins = await User.find({ role: ROLES.ADMIN, userStatus: 3 });
 
       if (!admins.length) return;
 
@@ -185,7 +186,7 @@ export class AdminNotificationService {
    */
   static async notifyNewPetTagOrder(orderData: IPetTagOrder): Promise<void> {
     try {
-      const admins = await User.find({ role: 0, userStatus: 3 });
+      const admins = await User.find({ role: ROLES.ADMIN, userStatus: 3 });
       if (!admins.length) return;
 
       const title = '¡Nueva orden de pet tag! 🏷️';
@@ -239,7 +240,7 @@ export class AdminNotificationService {
     try {
       // Obtener administradores (role: 0, userStatus: 3 = activo)
       const admins = await User.find({
-        role: 0,
+        role: ROLES.ADMIN,
         userStatus: 3,
       });
 
