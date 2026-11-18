@@ -84,7 +84,6 @@ class MedicalNotificationService {
   ): Promise<void> {
     const medicalRecords = pet.medicalRecord as IMedicalRecord;
     if (!medicalRecords) {
-      console.log(`ℹ️ Mascota ${pet.petName} no tiene registro médico`);
       return;
     }
 

@@ -596,6 +596,7 @@ const userCtl: UserController = {
          createdAt
          medicalRecord
          notes
+         birthdayEmailEnabled
         `,
           options: {
             skip: skip,
@@ -642,6 +643,7 @@ const userCtl: UserController = {
         medicalRecord: pet.medicalRecord,
         notes: pet.notes || '',
         owner: pet.owner || '',
+        birthdayEmailEnabled: !!pet.birthdayEmailEnabled,
       }));
 
       const response: ApiResponse<IPet[]> = {
@@ -1257,7 +1259,7 @@ const userCtl: UserController = {
       const parsedPetData =
         typeof petData === 'string' ? JSON.parse(petData) : petData;
 
-      const { id, permissions, photo_id, ...updateFields } = parsedPetData;
+      const { id, permissions, photo_id, birthdayEmailEnabled, ...updateFields } = parsedPetData;
 
       // Buscar la mascota
       const pet = await Pet.findById(id);
@@ -1332,6 +1334,7 @@ const userCtl: UserController = {
         ...updateFields,
         // Mantener permissions si se enviaron
         ...(permissions && { permissions }),
+        ...(birthdayEmailEnabled !== undefined && { birthdayEmailEnabled }),
         updatedAt: new Date(),
       };
 

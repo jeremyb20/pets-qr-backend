@@ -14,6 +14,7 @@ dotenv.config();
 import './back-end/config/redis'; // Inicializar Redis
 import NotificationScheduler from './back-end/services/notificationScheduler';
 import MedicalNotificationService from './back-end/services/emailNotificationScheduler';
+import BirthdayNotificationService from './back-end/services/birthdayNotificationScheduler';
 // Importar rutas
 import adminRoutes from './back-end/routes/admin';
 import userRoutes from './back-end/routes/users';
@@ -145,6 +146,7 @@ app.get('/*path', (req: Request, res: Response, next: NextFunction): void => {
 // Inicializar el programador de notificaciones
 new NotificationScheduler();
 MedicalNotificationService.getInstance();
+BirthdayNotificationService.getInstance();
 
 // Manejo de errores global
 app.use(

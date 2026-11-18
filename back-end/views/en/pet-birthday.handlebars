@@ -4,10 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mật khẩu đã được cập nhật - PlaquitasCR</title>
+    <title>Happy Birthday! - PlaquitasCR</title>
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
     <style>
-        /* Các styles giống nhau */
         *,
         html {
             margin: 0;
@@ -53,31 +52,31 @@
             line-height: 1.6;
         }
 
-        .success-box {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            padding: 15px;
-            border-radius: 5px;
+        .celebration-box {
+            background-color: #fff7e6;
+            border: 1px solid #ffe0a3;
+            padding: 20px;
+            border-radius: 8px;
             margin: 20px 0;
-            color: #155724;
-        }
-
-        .warning-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
+            text-align: center;
             color: #856404;
         }
 
+        .birthday-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #F14B72;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
         .info-box {
-            background-color: #e8f4fd;
-            border: 1px solid #b8daff;
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
             padding: 15px;
             border-radius: 5px;
             margin: 20px 0;
-            color: #004085;
+            color: #0c5460;
         }
 
         .footer {
@@ -117,29 +116,25 @@
             margin-bottom: 15px;
         }
 
+        .closing {
+            margin-top: 25px;
+            font-style: italic;
+        }
+
+        .signature {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+
         .user-name {
             color: #4CAF50;
             font-weight: bold;
         }
 
-        .security-list {
-            padding-left: 20px;
-            margin: 15px 0;
-        }
-
-        .security-list li {
-            margin-bottom: 8px;
-        }
-
-        .login-button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 5px;
-            display: inline-block;
+        .pet-name {
+            color: #F14B72;
             font-weight: bold;
-            margin: 15px 0;
         }
 
         @media only screen and (max-width: 600px) {
@@ -154,72 +149,60 @@
             .text-block {
                 font-size: 14px;
             }
+
+            .birthday-title {
+                font-size: 18px;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- Header with logo -->
+        <!-- Header -->
         <div class="header">
             <img class="logo" src="{{logoUrl}}" alt="PlaquitasCR Logo" />
         </div>
 
         <!-- Main content -->
         <div class="content">
+            <!-- Birthday title -->
+            <p class="birthday-title">🎉 Happy Birthday, {{petName}}! 🎂</p>
+
             <!-- Personalized greeting -->
-            <p class="greeting">Xin chào <span class="user-name">{{userName}}</span>,</p>
+            <p class="greeting">Hi <span class="user-name">{{userName}}</span>,</p>
 
-            <!-- Success message -->
-            <div class="success-box">
-                <strong>✅ Mật khẩu đã được cập nhật thành công</strong>
-                <p style="margin: 10px 0 0 0; font-size: 14px;">
-                    Mật khẩu của bạn đã được thay đổi thành công.
+            <!-- Celebration box -->
+            <div class="celebration-box">
+                <strong>🐾 Today is a special day:</strong>
+                <p style="margin-top: 10px; font-size: 15px;">
+                    <strong>{{petName}}</strong> is celebrating a birthday{{#if age}} and turns <strong>{{age}}</strong> year(s) old{{/if}}.
                 </p>
             </div>
 
-            <!-- Change information -->
+            <!-- Message -->
+            <p class="text-block instruction">
+                From {{companyName}}, we send lots of love to 
+                <span class="pet-name">{{petName}}</span>. Wishing a day full of joy, 
+                treats, and cuddles! 🐾
+            </p>
+
+            <!-- Info box -->
             <div class="info-box">
-                <p><strong>📅 Ngày và giờ thay đổi:</strong><br>{{changeDate}}</p>
-                <p><strong>🌐 Thiết bị/IP:</strong><br>{{deviceInfo}}</p>
-            </div>
-
-            <!-- Security recommendations -->
-            <div class="warning-box">
-                <strong>🔒 Khuyến nghị bảo mật:</strong>
-                <ul class="security-list">
-                    <li>Không chia sẻ mật khẩu của bạn với bất kỳ ai</li>
-                    <li>Sử dụng mật khẩu duy nhất cho mỗi tài khoản</li>
-                    <li>Bật xác thực hai yếu tố nếu có sẵn</li>
-                    <li>Thay đổi mật khẩu của bạn thường xuyên</li>
-                </ul>
-            </div>
-
-            <!-- Main action -->
-            <div style="text-align: center; margin: 25px 0;">
-                <p class="text-block">Bạn có thể đăng nhập ngay với mật khẩu mới:</p>
-                <a href="{{loginUrl}}" class="login-button" target="_blank">
-                    Đăng nhập vào PlaquitasCR
-                </a>
-            </div>
-
-            <!-- Warning if you don't recognize the change -->
-            <div class="warning-box">
-                <strong>⚠️ Bạn không nhận ra thay đổi này?</strong>
-                <p style="margin: 10px 0 0 0; font-size: 14px;">
-                    Nếu bạn không thực hiện thay đổi mật khẩu này, vui lòng:
+                <strong>💝 Thank you for trusting us:</strong>
+                <p style="margin-top: 10px; font-size: 14px;">
+                    Thank you for being part of our community and for caring for your pet with so much love.
                 </p>
-                <ul class="security-list">
-                    <li>Liên hệ ngay với bộ phận hỗ trợ của chúng tôi</li>
-                    <li>Kiểm tra hoạt động gần đây của tài khoản</li>
-                    <li>Cân nhắc thay đổi mật khẩu của bạn một lần nữa</li>
-                </ul>
             </div>
+
+            <!-- Closing -->
+            <p class="text-block closing">
+                With love,
+            </p>
 
             <!-- Signature -->
-            <p class="text-block" style="margin-top: 25px;">
-                {{closing}}<br>
-                <strong>{{signature}}</strong>
+            <p class="text-block signature">
+                The {{companyName}} Team
             </p>
         </div>
 
@@ -227,10 +210,10 @@
         <div class="footer">
             <div class="support-info">
                 <p style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 15px;">
-                    Cần trợ giúp?
+                    Need help?
                 </p>
                 <p>
-                    <strong>Hỗ trợ khách hàng:</strong>
+                    <strong>Customer Support:</strong>
                     <a class="phone-link" href="tel:{{phoneNumber}}">
                         {{phoneNumber}}
                     </a>
@@ -254,17 +237,17 @@
                     </a>
                 </p>
                 <p style="margin-top: 20px; font-size: 12px; color: #999;">
-                    Đây là email tự động, vui lòng không trả lời tin nhắn này.
+                    This is an automated email, please do not reply to this message.
                 </p>
             </div>
-                
-                <!-- Copyright information -->
+
+            <!-- Copyright information -->
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
                 <p style="font-size: 12px; color: #999;">
-                    © {{year}} {{companyName}}. Mọi quyền được bảo lưu.
+                    © {{year}} {{companyName}}. All rights reserved.
                 </p>
                 <p style="font-size: 11px; color: #999; margin-top: 5px;">
-                    PlaquitasCR - Sự chăm sóc tốt nhất cho thú cưng của bạn
+                    PlaquitasCR - The best care for your pet
                 </p>
             </div>
         </div>

@@ -124,6 +124,14 @@ class EmailService {
         fr: 'Rappel Médical - PlaquitasCR',
         zh: '医疗提醒 - PlaquitasCR',
       },
+      'pet-birthday': {
+        en: 'Happy Birthday! - PlaquitasCR',
+        es: '¡Feliz Cumpleaños! - PlaquitasCR',
+        ar: 'عيد ميلاد سعيد! - PlaquitasCR',
+        vi: 'Chúc mừng sinh nhật! - PlaquitasCR',
+        fr: 'Joyeux anniversaire! - PlaquitasCR',
+        zh: '生日快乐！ - PlaquitasCR',
+      },
     };
 
     return (
@@ -319,6 +327,43 @@ class EmailService {
         ...context,
         // Asegurar valores por defecto
         observations: context.observations || 'Sin observaciones adicionales',
+        year: new Date().getFullYear(),
+        companyName: 'PlaquitasCR',
+        logoUrl:
+          process.env.LOGO_URL ||
+          'https://plaquitascr.com/assets/images/plaquitascr.png',
+        phoneNumber: process.env.PHONE_NUMBER || '+50670160434',
+        facebookUrl:
+          process.env.FACEBOOK_URL ||
+          'https://www.facebook.com/profile.php?id=100064041162056',
+        facebookUsername: process.env.FACEBOOK_USERNAME || '@PlaquitasCR',
+        instagramUrl:
+          process.env.INSTAGRAM_URL || 'https://www.instagram.com/plaquitas_cr',
+        instagramUsername: process.env.INSTAGRAM_USERNAME || '@plaquitas_cr',
+        supportEmail: process.env.SUPPORT_EMAIL || 'support@plaquitascr.com',
+      },
+    });
+  }
+
+  /**
+   * Envía correo de cumpleaños de la mascota
+   */
+  async sendPetBirthdayEmail(
+    email: string,
+    context: {
+      userName: string;
+      petName: string;
+      age?: number;
+    },
+    lang: string = 'es'
+  ): Promise<boolean> {
+    return this.sendEmail({
+      to: email,
+      subject: this.getSubject('pet-birthday', lang),
+      template: 'pet-birthday',
+      lang,
+      context: {
+        ...context,
         year: new Date().getFullYear(),
         companyName: 'PlaquitasCR',
         logoUrl:

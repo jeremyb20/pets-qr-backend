@@ -411,6 +411,14 @@ const PetSchema = new Schema<IPet>(
       type: [EmergencyContactSchema],
       default: [],
     },
+    birthdayEmailEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    birthdayEmailLastSentYear: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: true,

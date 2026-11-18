@@ -126,6 +126,8 @@ export interface IPet {
   veterinaryId?: Types.ObjectId;
   registeredByUserId?: Types.ObjectId;
   emergencyContacts?: IEmergencyContact[];
+  birthdayEmailEnabled?: boolean;
+  birthdayEmailLastSentYear?: number | null;
   _id: Types.ObjectId;
 }
 

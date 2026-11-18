@@ -4,10 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Réinitialisation de mot de passe - PlaquitasCR</title>
+    <title>¡Feliz Cumpleaños! - PlaquitasCR</title>
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
     <style>
-        /* Mismos estilos */
         *,
         html {
             margin: 0;
@@ -53,47 +52,31 @@
             line-height: 1.6;
         }
 
-        .reset-button {
-            background-color: #4CAF50;
-            border: none;
-            color: #fff;
-            padding: 15px 32px;
+        .celebration-box {
+            background-color: #fff7e6;
+            border: 1px solid #ffe0a3;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
             text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            margin: 20px 0;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .reset-button:hover {
-            background-color: #45a049;
-        }
-
-        .warning-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
             color: #856404;
         }
 
-        .link-box {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 5px;
-            word-break: break-all;
+        .birthday-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #F14B72;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        .link-text {
-            color: #007bff;
-            text-decoration: none;
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            color: #0c5460;
         }
 
         .footer {
@@ -133,10 +116,6 @@
             margin-bottom: 15px;
         }
 
-        .instruction {
-            margin-bottom: 15px;
-        }
-
         .closing {
             margin-top: 25px;
             font-style: italic;
@@ -153,6 +132,11 @@
             font-weight: bold;
         }
 
+        .pet-name {
+            color: #F14B72;
+            font-weight: bold;
+        }
+
         @media only screen and (max-width: 600px) {
             .container {
                 padding: 15px;
@@ -166,9 +150,8 @@
                 font-size: 14px;
             }
 
-            .reset-button {
-                padding: 12px 24px;
-                font-size: 14px;
+            .birthday-title {
+                font-size: 18px;
             }
         }
     </style>
@@ -176,105 +159,95 @@
 
 <body>
     <div class="container">
-        <!-- Header with logo -->
+        <!-- Header -->
         <div class="header">
             <img class="logo" src="{{logoUrl}}" alt="PlaquitasCR Logo" />
         </div>
 
         <!-- Main content -->
         <div class="content">
+            <!-- Birthday title -->
+            <p class="birthday-title">🎉 ¡Feliz Cumpleaños, {{petName}}! 🎂</p>
+
             <!-- Personalized greeting -->
-            <p class="greeting">Bonjour <span class="user-name">{{userName}}</span>,</p>
+            <p class="greeting">Hola <span class="user-name">{{userName}}</span>,</p>
 
-            <!-- Instruction 1 -->
-            <p class="text-block instruction">
-                Vous avez reçu cet e-mail car vous avez demandé à réinitialiser votre mot de passe.
-            </p>
-
-            <!-- Instruction 2 -->
-            <p class="text-block instruction">
-                Pour compléter le processus, veuillez cliquer sur le lien suivant :
-            </p>
-
-            <!-- Action button -->
-            <div style="text-align: center;">
-                <a href="{{resetUrl}}" class="reset-button" target="_blank">
-                    Réinitialiser le mot de passe
-                </a>
-            </div>
-
-            <!-- Expiration warning -->
-            <div class="warning-box">
-                <strong>⚠️ Important :</strong> Ce lien expirera dans 1 heure.
-            </div>
-
-            <!-- Alternative link -->
-            <div class="link-box">
-                <p style="margin-bottom: 10px; font-size: 14px; color: #666;">
-                    Si le bouton ne fonctionne pas, copiez et collez le lien suivant dans votre navigateur :
+            <!-- Celebration box -->
+            <div class="celebration-box">
+                <strong>🐾 Hoy es un día muy especial:</strong>
+                <p style="margin-top: 10px; font-size: 15px;">
+                    <strong>{{petName}}</strong> está celebrando su cumpleaños{{#if age}} y cumple <strong>{{age}}</strong> año(s){{/if}}.
                 </p>
-                <a href="{{resetUrl}}" class="link-text">{{resetUrl}}</a>
             </div>
 
-            <!-- Instruction 3 -->
+            <!-- Message -->
             <p class="text-block instruction">
-                Si vous n'avez pas demandé cette réinitialisation, veuillez ignorer cet e-mail. Votre mot de passe
-                restera sécurisé.
+                Desde {{companyName}} te enviamos un abrazo lleno de cariño para 
+                <span class="pet-name">{{petName}}</span>. ¡Que tenga un día lleno de alegría, 
+                premios y muchas caricias! 🐾
             </p>
+
+            <!-- Info box -->
+            <div class="info-box">
+                <strong>💝 Gracias por confiar en nosotros:</strong>
+                <p style="margin-top: 10px; font-size: 14px;">
+                    Gracias por ser parte de nuestra comunidad y por cuidar de tu mascota con tanto amor.
+                </p>
+            </div>
 
             <!-- Closing -->
             <p class="text-block closing">
-                Merci d'utiliser nos services.
+                Con cariño,
             </p>
 
             <!-- Signature -->
             <p class="text-block signature">
-                L'équipe PlaquitasCR
+                El equipo de {{companyName}}
             </p>
         </div>
 
-        <!-- Footer with contact information -->
+        <!-- Footer -->
         <div class="footer">
             <div class="support-info">
                 <p style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 15px;">
-                    Besoin d'aide ?
+                    ¿Necesita ayuda?
                 </p>
                 <p>
-                    <strong>Support client :</strong>
+                    <strong>Soporte al Cliente:</strong>
                     <a class="phone-link" href="tel:{{phoneNumber}}">
                         {{phoneNumber}}
                     </a>
                 </p>
                 <p>
-                    <strong>E-mail :</strong>
+                    <strong>Email:</strong>
                     <a class="social-link" href="mailto:{{supportEmail}}">
                         {{supportEmail}}
                     </a>
                 </p>
                 <p>
-                    <strong>Facebook :</strong>
+                    <strong>Facebook:</strong>
                     <a class="social-link" href="{{facebookUrl}}" target="_blank" rel="noopener noreferrer">
                         {{facebookUsername}}
                     </a>
                 </p>
                 <p>
-                    <strong>Instagram :</strong>
+                    <strong>Instagram:</strong>
                     <a class="social-link" href="{{instagramUrl}}" target="_blank" rel="noopener noreferrer">
                         {{instagramUsername}}
                     </a>
                 </p>
                 <p style="margin-top: 20px; font-size: 12px; color: #999;">
-                    Ceci est un e-mail automatique, veuillez ne pas répondre à ce message.
+                    Este es un correo automático, por favor no responda a este mensaje.
                 </p>
             </div>
 
-            <!-- Copyright information -->
+            <!-- Información de copyright -->
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
                 <p style="font-size: 12px; color: #999;">
-                    © {{year}} {{companyName}}. Tous droits réservés.
+                    © {{year}} {{companyName}}. Todos los derechos reservados.
                 </p>
                 <p style="font-size: 11px; color: #999; margin-top: 5px;">
-                    PlaquitasCR - Les meilleurs soins pour votre animal
+                    PlaquitasCR - El mejor cuidado para tu mascota
                 </p>
             </div>
         </div>
