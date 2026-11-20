@@ -2,7 +2,11 @@
 import cron from 'node-cron';
 import Pet from '../models/Pet.model';
 import EmailService from './emailService';
-import { calculateAge, getDaysUntilNextBirthday } from '../utils/dateUtils';
+import {
+  calculateAge,
+  getDaysUntilNextBirthday,
+  parseBirthDate,
+} from '../utils/dateUtils';
 
 class BirthdayNotificationService {
   private emailService: EmailService;
@@ -22,9 +26,11 @@ class BirthdayNotificationService {
   }
 
   private init(): void {
-    // Diario a las 8:00 AM
-    cron.schedule('0 8 * * *', this.checkBirthdays.bind(this));
-    console.log('✅ Birthday Notification Service initialized');
+    const timezone = process.env.TZ || 'America/Costa_Rica';
+    cron.schedule('0 8 * * *', this.checkBirthdays.bind(this), { timezone });
+    console.log(
+      `✅ Birthday Notification Service initialized (08:00 ${timezone})`
+    );
   }
 
   private async checkBirthdays(): Promise<void> {
@@ -43,11 +49,13 @@ class BirthdayNotificationService {
         .populate('owner')
         .lean();
 
+      console.log(`🎂 Revisando cumpleaños: ${pets.length} mascota(s) elegible(s)`);
+
       for (const pet of pets) {
         const owner: any = (pet as any).owner;
         if (!owner?.email || !pet.birthDate) continue;
 
-        const birthDate = new Date(pet.birthDate as string);
+        const birthDate = parseBirthDate(pet.birthDate as string);
         if (isNaN(birthDate.getTime())) continue;
 
         const daysUntil = getDaysUntilNextBirthday(birthDate, now);

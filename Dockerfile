@@ -1,5 +1,8 @@
 FROM node:20.19.6-alpine
 
+RUN apk add --no-cache tzdata
+ENV TZ=America/Costa_Rica
+
 WORKDIR /app
 
 # Instalar pnpm globalmente

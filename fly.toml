@@ -13,6 +13,7 @@ processes = []
 
 [env]
   PORT = "8080"
+  TZ = "America/Costa_Rica"
 
 [experimental]
   allowed_public_ports = []

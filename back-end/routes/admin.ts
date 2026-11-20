@@ -14,6 +14,13 @@ const router = Router();
 
 router.get('/getAllUsers', verification, adminCtl.getAllUsersLegacy); // obtiene todos los usuarios (legacy)
 
+router.post(
+  '/forceBirthdayCheck',
+  authenticateToken,
+  isAdmin,
+  adminCtl.forceBirthdayCheck
+);
+
 router.get(
   '/getAllRegisteredUsers',
   authenticateToken,

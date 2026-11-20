@@ -1259,7 +1259,13 @@ const userCtl: UserController = {
       const parsedPetData =
         typeof petData === 'string' ? JSON.parse(petData) : petData;
 
-      const { id, permissions, photo_id, birthdayEmailEnabled, ...updateFields } = parsedPetData;
+      const {
+        id,
+        permissions,
+        photo_id,
+        birthdayEmailEnabled,
+        ...updateFields
+      } = parsedPetData;
 
       // Buscar la mascota
       const pet = await Pet.findById(id);
@@ -2998,7 +3004,6 @@ const userCtl: UserController = {
 
         const verificationData =
           (await verificationResponse.json()) as TurnstileResponse;
-        console.log(verificationData, 'verificationDataverificationData');
         // Verificar si el reCAPTCHA fue exitoso
         if (!verificationData.success) {
           console.error('❌ reCAPTCHA verification failed:', verificationData);

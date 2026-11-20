@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 // Configurar variables de entorno
 dotenv.config();
+process.env.TZ = process.env.TZ || 'America/Costa_Rica';
 
 // Configuración de Mongoose
 mongoose.set('strictQuery', false);

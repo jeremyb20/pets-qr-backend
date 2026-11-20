@@ -112,4 +112,5 @@ export interface AdminController {
     res: Response,
     next?: NextFunction
   ): Promise<void>;
+  forceBirthdayCheck(req: Request, res: Response): Promise<void>;
 }

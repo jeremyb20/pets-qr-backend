@@ -16,6 +16,7 @@ import { IUser } from '../../interfaces/IUser';
 import { IPet } from '../../interfaces/Ipet';
 import FeedbackModel from '../../models/Feedback.model';
 import { normalizeRole } from '../../middlewares/authMiddleware';
+import BirthdayNotificationService from '../../services/birthdayNotificationScheduler';
 
 // Interfaces para los tipos
 const adminCtl: AdminController = {
@@ -1091,6 +1092,22 @@ const adminCtl: AdminController = {
       res.status(500).json({
         success: false,
         message: 'Error fetching feedbacks',
+      });
+    }
+  },
+
+  forceBirthdayCheck: async (_req: Request, res: Response): Promise<void> => {
+    try {
+      await BirthdayNotificationService.getInstance().forceCheck();
+      res.status(200).json({
+        success: true,
+        message: 'Birthday reminder check completed',
+      });
+    } catch (error) {
+      console.error('Error forcing birthday check:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error forcing birthday check',
       });
     }
   },
